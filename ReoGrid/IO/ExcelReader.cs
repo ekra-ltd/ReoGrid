@@ -22,6 +22,7 @@ using System.Linq;
 using System.Text;
 using System.IO;
 using System.Diagnostics;
+using System.Globalization;
 using System.Text.RegularExpressions;
 
 #if WINFORM || ANDROID
@@ -373,7 +374,7 @@ namespace unvell.ReoGrid.IO.OpenXML
 
 				if (//row.customHeight == "1"
 						//&& 
-					!string.IsNullOrEmpty(row.height) && double.TryParse(row.height, out rowHeight))
+					!string.IsNullOrEmpty(row.height) && double.TryParse(row.height, NumberStyles.Float, CultureInfo.InvariantCulture, out rowHeight))
 				{
 					rowHeader = rgSheet.GetRowHeader(rowIndex);
 					ushort height = (ushort)Math.Round(rowHeight * dpi / 72f);
@@ -1511,7 +1512,7 @@ namespace unvell.ReoGrid.IO.OpenXML
 				pattern = pattern.Substring(2, pattern.Length - 4);
 			}
 
-			var culture = System.Threading.Thread.CurrentThread.CurrentCulture;
+			var culture = CultureInfo.InvariantCulture;
 
 			int len = pattern.Length;
 

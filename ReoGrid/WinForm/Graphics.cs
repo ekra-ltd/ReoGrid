@@ -785,7 +785,10 @@ namespace unvell.ReoGrid.WinForm
 
 			// unknown bugs happened here (several times)
 			// cell.Style is null (cell.Style.FontSize is zero)
-			if (style.FontSize <= 0) style.FontSize = 6f;
+			if (style.FontSize <= 0) {
+				style.FontSize = 6f;
+				style.FontName = @"Calibri";
+			}
 
 			float fontSize = (float)Math.Round(style.FontSize * sheet.renderScaleFactor, 1);
 

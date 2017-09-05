@@ -440,6 +440,12 @@ namespace unvell.ReoGrid.IO.OpenXML.Schema
 
 		[XmlElement("colBreaks")]
 		public ColumnBreaks colBreaks;
+
+		/// <summary>
+		/// Условное форматирование
+		/// </summary>
+		[XmlElement("conditionalFormatting")]
+		public CT_ConditionalFormatting[] ConditionalFormatting { get; set; }
 	}
 
 	public class SheetProperty
@@ -724,6 +730,62 @@ namespace unvell.ReoGrid.IO.OpenXML.Schema
 
 		[XmlIgnore]
 		internal string _xmlTarget;
+
+		[XmlElement("dxfs")]
+		public DifferentialFormatCollection differentialFormats;
+	}
+
+	public class DifferentialFormatCollection
+	{
+		[XmlAttribute("count")]
+		public int Count
+		{
+			get { return this.list.Count; }
+			set { }
+		}
+
+		[XmlElement("dxf")]
+		public List<DifferentioalFormat> list = new List<DifferentioalFormat>();
+
+		public void Add(DifferentioalFormat item)
+		{
+			this.list.Add(item);
+		}
+
+		public int FindIndex(Predicate<DifferentioalFormat> match)
+		{
+			return this.list.FindIndex(match);
+		}
+	}
+
+	public class DifferentioalFormat
+	{
+		[XmlElement("font")]
+		public Font Font { get; set; }
+
+
+		[XmlElement("numFmt")]
+		public NumberFormat NumFmt { get; set; }
+
+		[XmlElement("fill")]
+		public Fill Fill { get; set; }
+
+
+		[XmlElement("alignment")]
+		public Alignment Alignment { get; set; }
+
+
+		[XmlElement("border")]
+		public Border Boarder { get; set; }
+
+
+		[XmlElement("protection")]
+		public Protection Protection { get; set; }
+
+
+		// в реогрид нет (
+		//[XmlAttribute("extLst")]
+		//public Extension
 	}
 
 	public class NumberFormatCollection

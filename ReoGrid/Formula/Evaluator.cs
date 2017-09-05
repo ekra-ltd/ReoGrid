@@ -20,8 +20,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 
 using unvell.ReoGrid.Utility;
 
@@ -505,6 +503,10 @@ namespace unvell.ReoGrid.Formula
 				case BuiltinFunctionNames.COUNTIF_EN:
 				case BuiltinFunctionNames.COUNTIF_RU:
 					return ExcelFunctions.CountIf(cell, GetFunctionArgs(cell, funNode.Children, 2));
+
+				case BuiltinFunctionNames.SQRT_EN:
+				case BuiltinFunctionNames.SQRT_RU:
+					return ExcelFunctions.Sqrt(cell, GetFunctionArgs(cell, funNode.Children, 1, 1));
 
 				#endregion // Stat
 

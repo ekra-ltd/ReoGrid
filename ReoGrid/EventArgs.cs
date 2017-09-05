@@ -17,9 +17,6 @@
  ****************************************************************************/
 
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 
 #if WINFORM || ANDROID
 using RGFloat = System.Single;
@@ -35,11 +32,9 @@ using RGKeys = System.Windows.Forms.Keys;
 
 using unvell.Common;
 using unvell.ReoGrid.DataFormat;
-using unvell.ReoGrid.Views;
 using unvell.ReoGrid.Graphics;
 using unvell.ReoGrid.Rendering;
 using unvell.ReoGrid.Interaction;
-using unvell.ReoGrid.Main;
 
 namespace unvell.ReoGrid.Events
 {
@@ -1175,6 +1170,31 @@ namespace unvell.ReoGrid.Events
 	}
 	#endregion // Drawing
 
+	#region События по перемещению частей таблицы (copy/cut/pastle) с возможностью обработки CTRL+Z CTRL+Y
+
+	public class CopyCellContentEventArgs : EventArgs
+	{
+		public Cell FromCell { get; private set; }
+		public Cell ToCell { get; private set; }
+
+		internal CopyCellContentEventArgs(Cell fromCell, Cell toCell)
+		{
+			FromCell = fromCell;
+			ToCell = toCell;
+		}
+	}
+
+	public class DeleteCellContentEventArgs : EventArgs
+	{
+		public Cell Cell { get; private set; }
+
+		internal DeleteCellContentEventArgs(Cell cell)
+		{
+			Cell = cell;
+		}
+	}
+
+	#endregion
 	#endregion // Worksheet Arguments
 }
 

@@ -146,7 +146,8 @@ namespace unvell.ReoGrid.Formula
 		public const string VLOOKUP_EN = "VLOOKUP";
 		public const string VLOOKUP_RU = "ВПР";
 
-
+		public const string SQRT_EN = "SQRT";
+		public const string SQRT_RU = "КОРЕНЬ";
 	}
 }
 

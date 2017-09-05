@@ -18,6 +18,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using System.Text;
 
@@ -78,6 +79,7 @@ namespace unvell.ReoGrid.DataFormat
 
 				isNumeric = double.TryParse(strdata, out value);
 
+				if (!isNumeric) isNumeric = double.TryParse(strdata, NumberStyles.Any, CultureInfo.InvariantCulture, out value);
 				if (!isNumeric) isNumeric = double.TryParse(strdata.Replace(",", ""), out value);
 
 				if (isNumeric) cell.InnerData = value;

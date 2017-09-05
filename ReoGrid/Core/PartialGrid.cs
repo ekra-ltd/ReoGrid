@@ -23,6 +23,7 @@ using System.Linq;
 using System.Text;
 
 using unvell.ReoGrid.Core;
+using unvell.ReoGrid.Events;
 
 #if FORMULA
 using unvell.ReoGrid.Formula;
@@ -754,7 +755,9 @@ namespace unvell.ReoGrid
 								#region Copy Data
 								if ((flag & PartialGridCopyFlag.CellData) == PartialGridCopyFlag.CellData)
 								{
+									BeforeCopyCellContent?.Invoke(this, new CopyCellContentEventArgs(fromCell, toCell));
 									CellUtility.CopyCellContent(toCell, fromCell);
+									AfterCopyCellContent?.Invoke(this, new CopyCellContentEventArgs(fromCell, toCell));
 								}
 								#endregion // Copy Data
 
@@ -1054,6 +1057,13 @@ namespace unvell.ReoGrid
 
 			return range;
 		}
-#endregion // Partial Grid
+		#endregion // Partial Grid
+
+		#region Поиск событий перемемещения областей
+
+		public event EventHandler<CopyCellContentEventArgs> BeforeCopyCellContent;
+		public event EventHandler<CopyCellContentEventArgs> AfterCopyCellContent;
+
+		#endregion
 	}
 }

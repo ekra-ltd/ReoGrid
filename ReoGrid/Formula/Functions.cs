@@ -20,8 +20,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 
 using unvell.ReoGrid.Utility;
 
@@ -923,6 +921,29 @@ namespace unvell.ReoGrid.Formula
 		#region Date
 
 		#endregion // Date
+
+		#region Математические
+		#region Sqrt
+
+		public static FormulaValue Sqrt(Cell cell, FormulaValue[] args)
+		{
+			double val = 0;
+
+			foreach (var arg in args)
+			{
+				switch (arg.type)
+				{
+					case FormulaValueType.Number:
+						val = Math.Sqrt((double)arg.value);
+						break;
+				}
+			}
+
+			return val;
+		}
+
+		#endregion
+		#endregion
 	}
 }
 

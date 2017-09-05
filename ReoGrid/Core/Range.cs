@@ -193,6 +193,7 @@ namespace unvell.ReoGrid
 
 			IterateCells(fixedRange, (row, col, cell) =>
 			{
+				BeforeDeleteCellContent?.Invoke(this, new DeleteCellContentEventArgs(cell));
 				if (maxcol < col) maxcol = col;
 
 				if (!checkReadonly || !cell.IsReadOnly)
@@ -500,6 +501,8 @@ namespace unvell.ReoGrid
 		/// Event raised when entire data from a range is changed
 		/// </summary>
 		public event EventHandler<RangeEventArgs> RangeDataChanged;
+
+		public event EventHandler<DeleteCellContentEventArgs> BeforeDeleteCellContent;
 
 		#endregion // Event
 

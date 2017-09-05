@@ -19,9 +19,6 @@
 #if DRAWING
 
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 
 #if WINFORM || ANDROID
 using RGFloat = System.Single;
@@ -66,7 +63,7 @@ namespace unvell.ReoGrid.Chart
 		protected virtual ColumnChartPlotView CreateColumnChartPlotView()
 		{
 			return new ColumnChartPlotView(this);
-    }
+	}
 
 		/// <summary>
 		/// Creates and returns column line chart legend instance.
@@ -75,6 +72,86 @@ namespace unvell.ReoGrid.Chart
 		protected override ChartLegend CreateChartLegend(LegendType type)
 		{
 			return new ColumnLineChartLegend(this);
+		}
+
+		protected new virtual void UpdateAxisInfo(AxisDataInfo ai, double minData, double maxData)
+		{
+			var clientRect = this.PlotViewContainer;
+
+			double range = maxData - minData;
+
+			ai.Levels = (int)Math.Ceiling(clientRect.Height / 30f);
+
+			// when clientRect is zero, nothing to do
+			if (double.IsNaN(ai.Levels))
+			{
+				return;
+			}
+
+			if (minData == maxData)
+			{
+				if (maxData == 0)
+					maxData = ai.Levels;
+				else
+					minData = 0;
+			}
+
+			int scaler;
+			double stride = ChartUtility.CalcLevelStride(minData, maxData, ai.Levels, out scaler);
+			ai.Scaler = scaler;
+
+			double m;
+
+			if (!ai.AutoMinimum)
+			{
+				if (this.AxisOriginToZero(minData, maxData, range))
+				{
+					ai.Minimum = 0;
+				}
+				else
+				{
+					m = minData % stride;
+					if (m == 0)
+					{
+						if (minData == 0)
+						{
+							ai.Minimum = minData;
+						}
+						else
+						{
+							ai.Minimum = minData - stride;
+						}
+					}
+					else
+					{
+						if (minData < 0)
+						{
+							ai.Minimum = minData - stride - m;
+						}
+						else
+						{
+							ai.Minimum = minData - m;
+						}
+					}
+				}
+			}
+
+			if (!ai.AutoMaximum)
+			{
+				m = maxData % stride;
+				if (m == 0)
+				{
+					ai.Maximum = maxData + stride;
+				}
+				else
+				{
+					ai.Maximum = maxData - m + stride;
+				}
+			}
+
+			ai.Levels = (int)Math.Round((ai.Maximum - ai.Minimum) / stride);
+
+			ai.LargeStride = stride;
 		}
 	}
 
