@@ -36,7 +36,6 @@ using RGFloat = System.Double;
 using unvell.Common;
 
 #if WINFORM || WPF
-using unvell.Common.Win32Lib;
 #endif // WINFORM || WPF
 
 using unvell.ReoGrid.Core;
@@ -105,6 +104,8 @@ namespace unvell.ReoGrid.Views
 
 			for (int r = visibleRegion.startRow; r < toRow; r++)
 			{
+				if(sheet.rows.Count <= r)
+					continue;
 				RowHeader rowHead = sheet.rows[r];
 				if (rowHead.InnerHeight <= 0) continue;
 
@@ -260,6 +261,7 @@ namespace unvell.ReoGrid.Views
 
 			#region Vertical Borders
 			int rightColBoundary = visibleRegion.endCol + (dc.FullCellClip ? 0 : 1);
+			if (rightColBoundary > sheet.cols.Count) rightColBoundary = sheet.cols.Count;
 
 			for (int c = visibleRegion.startCol; c <= rightColBoundary; c++)
 			{
@@ -307,6 +309,7 @@ namespace unvell.ReoGrid.Views
 					var rowHeader = sheet.rows[r];
 					if (!rowHeader.IsVisible) continue;
 				}
+				else continue;
 
 				int y = r == sheet.rows.Count ? sheet.rows[r - 1].Bottom : sheet.rows[r].Top;
 

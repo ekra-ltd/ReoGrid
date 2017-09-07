@@ -1,13 +1,8 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Globalization;
-using System.Linq;
-using System.Text;
+﻿using System.Globalization;
 using unvell.Common;
 using unvell.ReoGrid.Core;
 using unvell.ReoGrid.Drawing.Text;
 using unvell.ReoGrid.Graphics;
-using unvell.ReoGrid.Rendering;
 using unvell.ReoGrid.XML;
 
 namespace unvell.ReoGrid.Utility
@@ -346,9 +341,14 @@ namespace unvell.ReoGrid.Utility
 			}
 			else
 			{
-				ColumnHeader colhead = sheet.RetrieveColumnHeader(col);
+				ColumnHeader colhead = null;
 
-				if (colhead.InnerStyle != null)
+				if (sheet.ColumnCount < col)
+				{
+					colhead = sheet.RetrieveColumnHeader(col);
+				}
+
+				if (colhead?.InnerStyle != null)
 				{
 					pKind = StyleParentKind.Col;
 					return colhead.InnerStyle;

@@ -1,6 +1,7 @@
 ﻿using System;
 using System.IO;
 using System.Windows;
+using System.Windows.Controls;
 using System.Windows.Media;
 using unvell.ReoGrid.CellTypes;
 using unvell.ReoGrid.Chart;
@@ -327,6 +328,17 @@ namespace unvell.ReoGrid.WPFDemo
 				grid.Save(dlg.FileName);
 
 				System.Diagnostics.Process.Start(dlg.FileName);
+			}
+		}
+
+		private void File_Print_Click(object sender, RoutedEventArgs e)
+		{
+			var worksheet = grid.CurrentWorksheet;
+			PrintDialog dialog = new PrintDialog();
+			if (dialog.ShowDialog() == true)
+			{
+				worksheet.PrintSettings.Landscape = false;
+				dialog.PrintDocument(worksheet.GetDocumentPaginator(), "--");
 			}
 		}
 

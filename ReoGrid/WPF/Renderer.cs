@@ -27,6 +27,7 @@ using System.Windows;
 using System.Windows.Media;
 
 using unvell.Common;
+using unvell.ReoGrid.Core;
 using unvell.ReoGrid.Graphics;
 
 using Point = unvell.ReoGrid.Graphics.Point;
@@ -549,6 +550,10 @@ namespace unvell.ReoGrid.Rendering
 
 		public Graphics.Size MeasureCellText(Cell cell, DrawMode drawMode, double scale)
 		{
+			if (cell.formattedText == null)
+			{
+				UpdateCellRenderFont(cell, UpdateFontReason.FontChanged); 
+			}
 			if (cell.InnerStyle.RotationAngle != 0)
 			{
 				System.Windows.Media.Matrix m = System.Windows.Media.Matrix.Identity;
