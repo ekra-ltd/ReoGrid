@@ -21,7 +21,6 @@ using System.Collections.Generic;
 using System.Text;
 
 #if DEBUG
-using System.Diagnostics;
 #endif // DEBUG
 
 #if WINFORM || ANDROID
@@ -220,6 +219,7 @@ namespace unvell.ReoGrid
 						try
 						{
 							RecalcCell(cell);
+							RecalcConditionalFormats(cell);
 						}
 						catch (Exception ex)
 						{
@@ -318,6 +318,7 @@ namespace unvell.ReoGrid
 			{
 				UpdateReferencedFormulaCells(cell, dirtyCellStack);
 			}
+			RecalcConditionalFormats(cell);
 #endif // FORMULA
 
 #if DRAWING
@@ -1008,7 +1009,8 @@ namespace unvell.ReoGrid
 							this.worksheet.SetCellFormula(this, value);
 							this.worksheet.RecalcCell(this);
 						}
-#else // FORMULA
+						worksheet.RecalcConditionalFormats(this);
+#else
 						this.worksheet.SetSingleCellData(this, value);
 #endif // FORMULA
 					}
@@ -1261,7 +1263,7 @@ namespace unvell.ReoGrid
 
 namespace unvell.ReoGrid.Utility
 {
-#region Cell Utility
+	#region Cell Utility
 	/// <summary>
 	/// Common utility functions for cell.
 	/// </summary>

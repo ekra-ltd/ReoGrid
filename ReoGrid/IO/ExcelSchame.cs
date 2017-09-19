@@ -444,9 +444,11 @@ namespace unvell.ReoGrid.IO.OpenXML.Schema
 		/// <summary>
 		/// Условное форматирование
 		/// </summary>
-		[XmlElement("conditionalFormatting")]
-		public CT_ConditionalFormatting[] ConditionalFormatting { get; set; }
-	}
+		[XmlElement]
+		public CT_ConditionalFormatting[] conditionalFormatting { get; set; } 
+
+	    public CT_ExtensionList extLst;
+    }
 
 	public class SheetProperty
 	{
@@ -916,7 +918,12 @@ namespace unvell.ReoGrid.IO.OpenXML.Schema
 
 	public class Bold { }
 	public class Italic { }
-	public class Strikethrough { }
+
+    public class Strikethrough
+    {
+        [XmlAttribute]
+        public string val { get; set; }
+    }
 	public class Underline { }
 
 	// <fill>

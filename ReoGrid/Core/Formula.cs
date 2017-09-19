@@ -426,6 +426,8 @@ namespace unvell.ReoGrid
 			}
 
 			UpdateCellData(cell, value, dirtyCellStack);
+			RecalcConditionalFormats(cell);
+
 		}
 
 #endregion // RecalcCell

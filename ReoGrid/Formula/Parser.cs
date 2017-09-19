@@ -196,8 +196,7 @@ namespace unvell.ReoGrid.Formula
 				var right = ReadExponent(lexer);
 				if (right == null) throw CreateException(lexer, "expect expression");
 
-				node = CreateNode(lexer, type, node.Start, lexer.CommittedLength - node.Start,
-					new List<STNode> { node, right });
+				node = CreateNode(lexer, type, node.Start, lexer.CommittedLength - node.Start, new List<STNode> { node, right });
 			}
 
 			return node;
@@ -213,8 +212,7 @@ namespace unvell.ReoGrid.Formula
 				var right = ReadPercent(lexer);
 				if (right == null) throw CreateException(lexer, "expect expression");
 
-				node = CreateNode(lexer, STNodeType.POW, node.Start, lexer.CommittedLength - node.Start,
-					new List<STNode> { node, right });
+				node = CreateNode(lexer, STNodeType.POW, node.Start, lexer.CommittedLength - node.Start, new List<STNode> { node, right });
 			}
 
 			return node;
@@ -532,8 +530,7 @@ namespace unvell.ReoGrid.Formula
 		{
 			get
 			{
-				return this.match == null ? 0 : (
-					this.match.Groups["token"].Success ? this.match.Groups["token"].Index : this.match.Index);
+				return this.match == null ? 0 : (this.match.Groups["token"].Success ? this.match.Groups["token"].Index : this.match.Index);
 			}
 		}
 
@@ -541,7 +538,15 @@ namespace unvell.ReoGrid.Formula
 
 		private Match match;
 
-		public Match CurrentToken { get { return this.match; } }
+		public Match CurrentToken
+		{
+			get
+			{
+				if (_useHookMatch)
+					return _hookMatch;
+				return this.match;
+			}
+		}
 
 		public ExcelFormulaLexer(IWorkbook workbook, Cell cell, string input)
 			: this(workbook, cell, input, 0, input.Length)
@@ -563,7 +568,8 @@ namespace unvell.ReoGrid.Formula
 		{
 			if (this.match != null)
 			{
-				CommittedLength += this.match.Length;
+				int length = _useHookMatch ? _hookMatch.Length : match.Length;
+				CommittedLength += /*this.match.Length*/length;
 
 				if (CommittedLength >= Length)
 				{
@@ -571,7 +577,12 @@ namespace unvell.ReoGrid.Formula
 				}
 				else
 				{
-					this.match = this.match.NextMatch();
+					if (_useHookMatch)
+						match = TokenRegex.Match(Input, CommittedLength);
+					else
+						this.match = this.match.NextMatch();
+					HookNextMatch();
+
 				}
 			}
 			else
@@ -608,15 +619,43 @@ namespace unvell.ReoGrid.Formula
 
 		public bool IsMatch(string groupName, string value)
 		{
-			return this.match != null && this.match.Groups[groupName].Success
-				&& (value == null || this.match.Groups[groupName].Value.Equals(value));
+			var m = this.match;
+			if (_useHookMatch)
+				m = _hookMatch;
+			return m != null && m.Groups[groupName].Success
+				&& (value == null || m.Groups[groupName].Value.Equals(value));
 		}
 
 		public void Reset()
 		{
 			this.CommittedLength = 0;
 			this.match = TokenRegex.Match(this.Input, this.Start);
+			HookNextMatch();
 		}
+
+		// к сожалению, регулярное выражение составлено не точно и такие формулы как
+		// W2C!$B$1 оно разбирает как {cell:W2, identifier:C, token:!, cell:$B$1}
+		// а должно {identifier:W2C, token:!, cell:$B$1}
+		// поэтому когда мы определяем что это cell, надо просомотреть строку до конца 
+		// и проверить что это может быть identifier
+		private void HookNextMatch()
+		{
+			_useHookMatch = false;
+			if (match != null && match.Success && IsMatch("cell"))
+			{
+				_hookMatch = HookRegex.Match(Input, CommittedLength);
+				if (_hookMatch.Success && _hookMatch.Length > match.Length)
+				{
+					_useHookMatch = true;
+				}
+			}
+		}
+
+		private Match _hookMatch = Match.Empty;
+
+		private bool _useHookMatch = false;
+
+		private static Regex HookRegex = new Regex(@"\s*((?<identifier>\w+))", RegexOptions.Compiled);
 	}
 	#endregion
 

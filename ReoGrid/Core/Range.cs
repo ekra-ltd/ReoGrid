@@ -234,12 +234,14 @@ namespace unvell.ReoGrid
 						formulaDirtyCells.Add(referecedRange.Key);
 					}
 				}
+				RecalcConditionalFormats();
 #endif // FORMULA
 
 				return true;
 			});
 
 #if FORMULA
+			RecalcConditionalFormats();
 			foreach (var dirtyCell in formulaDirtyCells)
 			{
 				RecalcCell(dirtyCell);
@@ -1018,6 +1020,7 @@ namespace unvell.ReoGrid
 										formulaDirtyCells.Add(referecedRange.Key);
 									}
 								}
+								RecalcConditionalFormats();
 #endif // FORMULA
 
 								this.RaiseCellDataChangedEvent(cell);
@@ -1033,6 +1036,7 @@ namespace unvell.ReoGrid
 			}
 
 #if FORMULA
+			RecalcConditionalFormats();
 			foreach (var dirtyCell in formulaDirtyCells)
 			{
 				RecalcCell(dirtyCell);

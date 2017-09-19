@@ -24,7 +24,6 @@ using System.IO;
 using System.Diagnostics;
 using System.Globalization;
 using System.Text.RegularExpressions;
-
 #if WINFORM || ANDROID
 using RGFloat = System.Single;
 #elif WPF
@@ -35,12 +34,17 @@ using RGWorkbook = unvell.ReoGrid.IWorkbook;
 using RGWorksheet = unvell.ReoGrid.Worksheet;
 
 using unvell.Common;
+using unvell.ReoGrid.Core.Worksheet.Additional;
 using unvell.ReoGrid.Rendering;
 using unvell.ReoGrid.DataFormat;
 using unvell.ReoGrid.Utility;
 using unvell.ReoGrid.IO.OpenXML.Schema;
 using unvell.ReoGrid.Graphics;
 using unvell.ReoGrid.Drawing;
+using Border = unvell.ReoGrid.IO.OpenXML.Schema.Border;
+using Fill = unvell.ReoGrid.IO.OpenXML.Schema.Fill;
+using GradientFill = unvell.ReoGrid.IO.OpenXML.Schema.GradientFill;
+using NumberFormat = unvell.ReoGrid.IO.OpenXML.Schema.NumberFormat;
 
 namespace unvell.ReoGrid.IO.OpenXML
 {
@@ -82,6 +86,15 @@ namespace unvell.ReoGrid.IO.OpenXML
 			foreach (var sheet in document.Workbook.sheets)
 			{
 				LoadWorksheet(rgWorkbook, document, sheet);
+			}
+
+			foreach (var sheet in rgWorkbook.Worksheets)
+			{
+				sheet.TryAddConditionalFormats();
+			}
+			foreach (var sheet in rgWorkbook.Worksheets)
+			{
+				sheet.RecalcConditionalFormats();
 			}
 
 #if DEBUG
@@ -294,6 +307,58 @@ namespace unvell.ReoGrid.IO.OpenXML
 			// stylesheet
 			var styles = doc.LoadEntryFile<Stylesheet>(doc.Workbook._path, "styles.xml");
 			doc.Stylesheet = styles;
+
+			#region Conditional formatting
+
+			var list = new List<ConditionalFormat>();
+			List<string> cfRuleIds = new List<string>();
+			if (sheet.conditionalFormatting != null)
+			{
+				list.AddRange(ConditionalFormatHelper.From2006(sheet.conditionalFormatting, styles));
+			}
+			if (sheet.extLst != null)
+			{
+				foreach (var extension in sheet.extLst.ext)
+				{
+					if (extension.ConditionalFormattings != null)
+					{
+						var list2009 = ConditionalFormatHelper.From2009(extension.ConditionalFormattings);
+						
+						foreach (var format2009 in list2009)
+						{
+							foreach (var rule2009 in format2009.Rules)
+							{
+								list.RemoveAll(format =>
+								{
+									foreach (var rule in format.Rules)
+									{
+										if (!string.IsNullOrEmpty(rule.Ext2009Id) && rule.Ext2009Id == rule2009.SGuid)
+										{
+											ConditionalFormatHelper.Subsitute(rule, rule2009);
+											return true;
+										}
+
+									}
+									return false;
+								});
+							}
+
+						}
+						list.AddRange(list2009);
+					}
+				}
+			}
+
+			
+
+			if (list != null && list.Count > 0)
+			{
+				PrepareCf(doc, list);
+				rgSheet.ConditionalFormats = new List<ConditionalFormat>();
+				rgSheet.ConditionalFormats.AddRange(list);
+			}
+
+			#endregion
 
 			// fonts
 			var fonts = styles.fonts;
@@ -1031,7 +1096,60 @@ namespace unvell.ReoGrid.IO.OpenXML
 #endif // DEBUG
 
 		}
-#endregion // Worksheet
+
+		private static void PrepareCf(Document doc, List<ConditionalFormat> list)
+		{
+			foreach (var v in list)
+			{
+				foreach (var rule in v.Rules)
+				{
+					var dxf = rule.DifferentialFormat;
+					if (dxf?.Fill?.PatternFill?.BackgroundColor?.ThemeColor != null)
+					{
+						PrepareCfColor(doc, dxf.Fill.PatternFill.BackgroundColor);
+					}
+					if (dxf?.Fill?.PatternFill?.ForegroundColor?.ThemeColor != null)
+					{
+						PrepareCfColor(doc, dxf.Fill.PatternFill.ForegroundColor);
+					}
+					if (dxf?.NumberFormat?.NumberFormatId != null)
+					{
+						
+					}
+				}
+			}
+		}
+
+		private static void PrepareCfColor(Document doc, Color t)
+		{
+			uint index = t.ThemeColor.Value;
+			SolidColor solidColor = new SolidColor();
+			ColorValue colorValue = new ColorValue
+			{
+				tint = t.TInt != null ? $@"{t.TInt.Value}" : null,
+				rgb =
+					t.RgbColorValue != null
+						? $@"{t.RgbColorValue.Value[0]:X2}{t.RgbColorValue.Value[1]:X2}{t.RgbColorValue.Value[2]:X2}{t
+							.RgbColorValue.Value[3]:X2}"
+						: null,
+				theme = t.ThemeColor != null ? $@"{t.ThemeColor.Value}" : null,
+				indexed = t.Indexed != null ? $@"{t.Indexed}" : null,
+				auto = t.Automatic != null ? $@"{t.Automatic}" : null,
+				//_rgColor =  ???
+			};
+
+			if (ConvertFromIndexedColor(doc, colorValue, ref solidColor))
+			{
+				if (t.RgbColorValue == null) t.RgbColorValue = new Argb();
+				t.ThemeColor = null; // Удаляем номер темы, все данные будут сохраняться сюда
+				t.RgbColorValue.Value[0] = solidColor.A;
+				t.RgbColorValue.Value[1] = solidColor.R;
+				t.RgbColorValue.Value[2] = solidColor.G;
+				t.RgbColorValue.Value[3] = solidColor.B;
+			}
+		}
+
+		#endregion // Worksheet
 
 #region Style
 		private static void SetStyleFont(Document doc, WorksheetRangeStyle styleset, Schema.Font font)

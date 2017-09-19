@@ -81,8 +81,8 @@
         [System.Xml.Serialization.XmlIgnoreAttribute()] public bool typeSpecified;
 
         /// <remarks/>
-        [System.Xml.Serialization.XmlAttributeAttribute(/*Form = System.Xml.Schema.XmlSchemaForm.Qualified*/)] public uint
-            dxfId;
+        [System.Xml.Serialization.XmlAttributeAttribute(/*Form = System.Xml.Schema.XmlSchemaForm.Qualified*/)]
+        public uint dxfId;
 
         /// <remarks/>
         [System.Xml.Serialization.XmlIgnoreAttribute()] public bool dxfIdSpecified;
@@ -107,6 +107,7 @@
         [System.Xml.Serialization.XmlAttributeAttribute(/*Form = System.Xml.Schema.XmlSchemaForm.Qualified*/)] public
             ST_ConditionalFormattingOperator @operator;
 
+        // TODO пробежаться по всем Specified-полям! (заменить на ?-тип)
         /// <remarks/>
         [System.Xml.Serialization.XmlIgnoreAttribute()] public bool operatorSpecified;
 
@@ -177,15 +178,16 @@
         public CT_ExtensionList extLst;
 
         /// <remarks/>
-        [System.Xml.Serialization.XmlAttributeAttribute(/*Form = System.Xml.Schema.XmlSchemaForm.Qualified*/)] public
-            ST_CfvoType type;
+        [System.Xml.Serialization.XmlAttributeAttribute(/*Form = System.Xml.Schema.XmlSchemaForm.Qualified*/)]
+        public ST_CfvoType type;
 
         /// <remarks/>
-        [System.Xml.Serialization.XmlAttributeAttribute(/*Form = System.Xml.Schema.XmlSchemaForm.Qualified*/)] public string
-            val;
+        [System.Xml.Serialization.XmlAttributeAttribute(/*Form = System.Xml.Schema.XmlSchemaForm.Qualified*/)]
+        public string val;
 
         /// <remarks/>
-        [System.Xml.Serialization.XmlAttributeAttribute(/*Form = System.Xml.Schema.XmlSchemaForm.Qualified*/)] [System.ComponentModel.DefaultValueAttribute(true)] public bool gte;
+        [System.Xml.Serialization.XmlAttributeAttribute(/*Form = System.Xml.Schema.XmlSchemaForm.Qualified*/)] [System.ComponentModel.DefaultValueAttribute(true)]
+        public bool gte;
 
         public CT_Cfvo()
         {
@@ -214,9 +216,15 @@
     [System.Xml.Serialization.XmlTypeAttribute(Namespace = "http://schemas.openxmlformats.org/spreadsheetml/2006/main")]
     public partial class CT_Extension
     {
+        /// <summary>
+        /// условное форматирование старых версий
+        /// </summary>
+        [System.Xml.Serialization.XmlElementAttribute("conditionalFormattings", Namespace = "http://schemas.microsoft.com/office/spreadsheetml/2009/9/main")]
+        public Excel2009.CT_ConditionalFormattings ConditionalFormattings;
 
         /// <remarks/>
-        [System.Xml.Serialization.XmlAnyElementAttribute()] public System.Xml.XmlElement Any;
+        [System.Xml.Serialization.XmlAnyElementAttribute()]
+        public System.Xml.XmlElement Any;
 
         /// <remarks/>
         [System.Xml.Serialization.XmlAttributeAttribute(/*Form = System.Xml.Schema.XmlSchemaForm.Qualified,*/
@@ -239,7 +247,9 @@
         [System.Xml.Serialization.XmlAttributeAttribute(/*Form = System.Xml.Schema.XmlSchemaForm.Qualified*/)] [System.ComponentModel.DefaultValueAttribute(ST_IconSetType.Item3TrafficLights1)] public ST_IconSetType iconSet;
 
         /// <remarks/>
-        [System.Xml.Serialization.XmlAttributeAttribute(/*Form = System.Xml.Schema.XmlSchemaForm.Qualified*/)] [System.ComponentModel.DefaultValueAttribute(true)] public bool showValue;
+        [System.Xml.Serialization.XmlAttributeAttribute(/*Form = System.Xml.Schema.XmlSchemaForm.Qualified*/)]
+        [System.ComponentModel.DefaultValueAttribute(true)]
+        public bool showValue;
 
         /// <remarks/>
         [System.Xml.Serialization.XmlAttributeAttribute(/*Form = System.Xml.Schema.XmlSchemaForm.Qualified*/)] [System.ComponentModel.DefaultValueAttribute(true)] public bool percent;

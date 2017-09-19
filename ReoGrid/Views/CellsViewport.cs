@@ -17,7 +17,6 @@
  ****************************************************************************/
 
 using System;
-
 #if DEBUG
 using System.Diagnostics;
 #endif
@@ -46,6 +45,9 @@ using unvell.ReoGrid.Actions;
 using unvell.ReoGrid.Data;
 using unvell.ReoGrid.Graphics;
 using unvell.ReoGrid.Interaction;
+using Point = unvell.ReoGrid.Graphics.Point;
+using Rectangle = unvell.ReoGrid.Graphics.Rectangle;
+using Size = unvell.ReoGrid.Graphics.Size;
 
 namespace unvell.ReoGrid.Views
 {

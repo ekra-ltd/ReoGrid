@@ -17,19 +17,17 @@
  ****************************************************************************/
 
 using System;
-using System.IO;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Text;
-
-using unvell.ReoGrid.Utility;
+using unvell.ReoGrid.DataFormat;
+using unvell.ReoGrid.Graphics;
 using unvell.ReoGrid.IO.OpenXML.Schema;
-
+using unvell.ReoGrid.Rendering;
+using unvell.ReoGrid.Utility;
 using RGWorkbook = unvell.ReoGrid.IWorkbook;
 using RGWorksheet = unvell.ReoGrid.Worksheet;
-using unvell.ReoGrid.DataFormat;
-using unvell.ReoGrid.Rendering;
-using unvell.ReoGrid.Graphics;
 
 namespace unvell.ReoGrid.IO.OpenXML
 {
@@ -319,7 +317,7 @@ namespace unvell.ReoGrid.IO.OpenXML
 					if (!string.IsNullOrEmpty(prefix)) sb.Append(prefix);
 					sb.Append('(');
 					if ((arg.NegativeStyle & NumberDataFormatter.NumberNegativeStyle.Minus) == NumberDataFormatter.NumberNegativeStyle.Minus) sb.Append("-");
-          sb.Append(digits);
+		  sb.Append(digits);
 					sb.Append(')');
 					if (!string.IsNullOrEmpty(postfix)) sb.Append(postfix);
 					break;
@@ -1009,6 +1007,21 @@ namespace unvell.ReoGrid.IO.OpenXML
 			int maxRows = Math.Max(rgSheet.MaxContentRow, 0);
 			int maxCols = Math.Max(rgSheet.MaxContentCol, 0);
 
+			#region Conditioanl formatting
+
+			if (rgSheet?.ConditionalFormats != null && rgSheet.ConditionalFormats.Count > 0)
+			{
+				rgSheet.ResetConditionalFormatting();
+				var item = Core.Worksheet.Additional.ConditionalFormatHelper.ToExcel2009(rgSheet.ConditionalFormats);
+				if (sheet.extLst == null) sheet.extLst = new CT_ExtensionList();
+				sheet.extLst.ext = new[]
+				{
+					new CT_Extension {uri = @"{78C0D931-6437-407d-A8EE-F0AAD7539E65}", ConditionalFormattings = item},
+				};
+			}
+
+			#endregion
+
 			#region Sheet Properties
 
 			var dimensionRange = new RangePosition(0, 0, maxRows + 1, maxCols + 1);
@@ -1426,7 +1439,9 @@ namespace unvell.ReoGrid.IO.OpenXML
 				}
 			}
 #endif // DRAWING
-#endregion // Floating Objects
+			#endregion // Floating Objects
+
+
 		}
 #endregion // Worksheet
 	}
@@ -1841,7 +1856,7 @@ namespace unvell.ReoGrid.IO.OpenXML
 
 namespace unvell.ReoGrid.IO.OpenXML.Schema
 {
-#region Workbook
+	#region Workbook
 	partial class Workbook
 	{
 		internal Document _doc;

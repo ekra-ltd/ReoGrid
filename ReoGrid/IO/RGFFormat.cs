@@ -763,6 +763,7 @@ namespace unvell.ReoGrid
 
 			#region Formula
 #if FORMULA
+			RecalcConditionalFormats();
 			foreach (var cell in this.formulaRanges.Keys)
 			{
 				// TODO: pass dirty stack?

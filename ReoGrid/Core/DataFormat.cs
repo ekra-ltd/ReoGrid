@@ -93,6 +93,7 @@ namespace unvell.ReoGrid
 			}
 
 #if FORMULA
+			RecalcConditionalFormats();
 			foreach (var cell in formulaDirtyCells)
 			{
 				RecalcCell(cell);
@@ -121,6 +122,8 @@ namespace unvell.ReoGrid
 			UpdateCellTextBounds(cell);
 
 #if FORMULA
+			RecalcConditionalFormats();
+
 			if (formulaDirtyCells != null)
 			{
 				// reference ranges (including cells)
