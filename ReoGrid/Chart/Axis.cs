@@ -309,8 +309,7 @@ namespace unvell.ReoGrid.Chart
 					if (titles.TryGetValue(i, out var text) && !string.IsNullOrEmpty(text))
 					{
 						var size = boxes[i];
-						var textRect = new Rectangle(columnWidth * i, 0, columnWidth, clientRect.Height);
-
+						var textRect = new Rectangle(columnWidth * i, 0, columnWidth, clientRect.Height*2);
 						g.DrawText(text, this.FontName, this.FontSize, this.ForeColor, textRect, ReoGridHorAlign.Center, ReoGridVerAlign.Middle);
 					}
 				}

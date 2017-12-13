@@ -1793,7 +1793,16 @@ namespace unvell.ReoGrid
 						Copy();
 						break;
 					case KeyCode.Control | KeyCode.X:
-						Cut();
+						// Cut();
+						Copy();
+						if (this.controlAdapter != null && !HasSettings(WorksheetSettings.Edit_Readonly))
+						{
+							var actionSupportedControl = this.controlAdapter.ControlInstance as IActionControl;
+							if (actionSupportedControl != null)
+							{
+								actionSupportedControl.DoAction(this, new RemoveRangeDataAction(this.selectionRange));
+							}
+						}
 						break;
 					case KeyCode.Control | KeyCode.V:
 						Paste();

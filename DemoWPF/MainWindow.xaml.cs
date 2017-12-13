@@ -103,7 +103,7 @@ namespace unvell.ReoGrid.WPFDemo
 
 				Title = "Line Chart Sample",
 
-				DataSource = new WorksheetChartDataSource(worksheet, "A2:A6", "B3:F6")
+				DataSource = new WorksheetChartDataSource(worksheet, "A3:A6", "B3:F6")
 				{
 					CategoryNameRange = new RangePosition("B2:F2"),
 				},

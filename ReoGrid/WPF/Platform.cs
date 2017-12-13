@@ -28,7 +28,7 @@ using unvell.ReoGrid.Interaction;
 
 namespace unvell.ReoGrid
 {
-	partial class Cell
+    partial class Cell
 	{
 		[NonSerialized]
 		internal FormattedText formattedText;
@@ -37,8 +37,8 @@ namespace unvell.ReoGrid
 
 namespace unvell.ReoGrid.Rendering
 {
-	#region PlatformUtility
-	partial class PlatformUtility
+    #region PlatformUtility
+    partial class PlatformUtility
 	{
 		internal static bool IsKeyDown(KeyCode key)
 		{
@@ -118,12 +118,13 @@ namespace unvell.ReoGrid.Rendering
 
 			double totalWidth = 0;
 
-			if (typeface.TryGetGlyphTypeface(out glyphTypeface))
+            var size = fontSize * 1.33d;
+            if (typeface.TryGetGlyphTypeface(out glyphTypeface))
 			{
 				//fontInfo.Ascent = typeface.FontFamily.Baseline;
 				//fontInfo.LineHeight = typeface.CapsHeight;
 
-				var size = fontSize * 1.33d;
+				
 
 				//this.GlyphIndexes.Capacity = text.Length;
 
@@ -138,8 +139,9 @@ namespace unvell.ReoGrid.Rendering
 					totalWidth += width;
 				}
 			}
-
-			return new Graphics.Size(totalWidth, typeface.CapsHeight);
+            // return new Graphics.Size(totalWidth, typeface.CapsHeight);
+            // Не знаю как расчитать высоту
+            return new Graphics.Size(totalWidth, typeface.CapsHeight * 18.0f);
 		}
 
 		public static System.Windows.FontStyle ToWPFFontStyle(unvell.ReoGrid.Drawing.Text.FontStyles textStyle)

@@ -235,19 +235,21 @@ namespace unvell.ReoGrid
 			}
 		}
 
-		private class CfSaveStyle
-		{
-			public SolidColor BackColor { get; set; }
-			public SolidColor TextColor { get; set; }
-		}
+        [Serializable]
+        private class CfSaveStyle
+        {
+            public SolidColor BackColor { get; set; }
+            public SolidColor TextColor { get; set; }
+        }
 
-		private class CfApplyStyle
-		{
-			public SolidColor? BackColor { get; set; }
-			public SolidColor? TextColor { get; set; }
-		}
+        [Serializable]
+        private class CfApplyStyle
+        {
+            public SolidColor? BackColor { get; set; }
+            public SolidColor? TextColor { get; set; }
+        }
 
-	}
+    }
 
 }
 
@@ -771,32 +773,33 @@ namespace unvell.ReoGrid.Core.Worksheet.Additional
 			return result;
 		}
 
-		private static Font From2006(E2006.Font value)
-		{
-			Font result = null;
-			if (value != null)
-			{
-				result = new Font
-				{
-					Bold = ToBooleanProperty(value.bold),
-					Color = From2006(value.color),
-					Outline = ToBooleanProperty(null),
-					Charset = null,
-					Condense = ToBooleanProperty(null),
-					Extend = ToBooleanProperty(null),
-					Family = From2006FontFamily(value.family),
-					FontScheme = null,
-					FontSize = From2006FontSize(value.size),
-					Italic = ToBooleanProperty(value.italic),
-					Name = From2006FontName(value.name),
-					Shadow = ToBooleanProperty(null),
-					Strike = /*strike ? new BooleanProperty {Value = true} : null*/null,
-					Underline = From2006(value.underline),
-					VerticalAlign = null,
-				};
-			}
-			return result;
-		}
+        private static Font From2006(E2006.Font value)
+        {
+            Font result = null;
+            if (value != null)
+            {
+                bool strike = value?.strikethrough?.val != null && value?.strikethrough?.val != "0";
+                result = new Font
+                {
+                    Bold = ToBooleanProperty(value.bold),
+                    Color = From2006(value.color),
+                    Outline = ToBooleanProperty(null),
+                    Charset = null,
+                    Condense = ToBooleanProperty(null),
+                    Extend = ToBooleanProperty(null),
+                    Family = From2006FontFamily(value.family),
+                    FontScheme = null,
+                    FontSize = From2006FontSize(value.size),
+                    Italic = ToBooleanProperty(value.italic),
+                    Name = From2006FontName(value.name),
+                    Shadow = ToBooleanProperty(null),
+                    Strike = strike ? new BooleanProperty {Value = true} : null,
+                    Underline = From2006(value.underline),
+                    VerticalAlign = null,
+                };
+            }
+            return result;
+        }
 
 		private static NumberFormat From2006(E2006.NumberFormat value)
 		{
