@@ -21,19 +21,16 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 
 using unvell.ReoGrid.Data;
-using unvell.ReoGrid.Graphics;
 
 namespace unvell.ReoGrid.Chart
 {
-	/// <summary>
-	/// Represents the interface of data source used for chart.
-	/// </summary>
-	/// <typeparam name="T">Standard data serial classes.</typeparam>
-	public interface IChartDataSource<T> : IDataSource<T> where T : IChartDataSerial
+    /// <summary>
+    /// Represents the interface of data source used for chart.
+    /// </summary>
+    /// <typeparam name="T">Standard data serial classes.</typeparam>
+    public interface IChartDataSource<T> : IDataSource<T> where T : IChartDataSerial
 	{
 		/// <summary>
 		/// Get number of categories.
@@ -214,7 +211,9 @@ namespace unvell.ReoGrid.Chart
 			}
 			else
 			{
-				return this.worksheet.GetCellData<string>(this.CategoryNameRange.Row, this.CategoryNameRange.Col + index);
+                if(CategoryNameRange.Cols == 1 && CategoryNameRange.Rows > 1)
+                    return this.worksheet.GetCellData<string>(this.CategoryNameRange.Row + index, this.CategoryNameRange.Col );
+                return this.worksheet.GetCellData<string>(this.CategoryNameRange.Row, this.CategoryNameRange.Col + index);
 			}
 		}
 

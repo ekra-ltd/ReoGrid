@@ -19,7 +19,6 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 
 #if WINFORM || ANDROID
 using RGFloat = System.Single;
@@ -27,17 +26,16 @@ using RGFloat = System.Single;
 using RGFloat = System.Double;
 #endif // WINFORM
 
-using unvell.ReoGrid.Data;
 using unvell.ReoGrid.Drawing;
 using unvell.ReoGrid.Graphics;
 using unvell.ReoGrid.Rendering;
 
 namespace unvell.ReoGrid.Chart
 {
-	/// <summary>
-	/// Axis data information for axis-based chart.
-	/// </summary>
-	public class AxisDataInfo
+    /// <summary>
+    /// Axis data information for axis-based chart.
+    /// </summary>
+    public class AxisDataInfo
 	{
 		/// <summary>
 		/// Get or set the plot vertial levels.
@@ -228,7 +226,7 @@ namespace unvell.ReoGrid.Chart
 			else if (orientation == AxisOrientation.Horizontal)
 			{
 				RGFloat columnWidth = clientRect.Width / ai.Levels;
-				var textRect = new Rectangle(clientRect.Left - (columnWidth / 2), clientRect.Top, columnWidth, clientRect.Height);
+				var textRect = new Rectangle(clientRect.Left - (columnWidth / 2), clientRect.Top, columnWidth, /*clientRect.Height*/fontHeight);
 
 				for (int level = 0; level <= ai.Levels; level ++)
 				{
@@ -319,9 +317,11 @@ namespace unvell.ReoGrid.Chart
 				RGFloat rowHeight = (clientRect.Height) / dataCount;
 
 				var maxHeight = boxes.Max(b => b.Height);
-				var showableRows = clientRect.Width / maxHeight;
+                // 2017-12-25 отображались не все подписи слева
+                //var showableRows = clientRect.Width / maxHeight;
+                var showableRows = clientRect.Height / maxHeight;
 
-				int showTitleStride = (int)Math.Ceiling(dataCount / showableRows);
+                int showTitleStride = (int)Math.Ceiling(dataCount / showableRows);
 				if (showTitleStride < 1) showTitleStride = 1;
 
 				for (int i = 0; i < dataCount; i += showTitleStride)

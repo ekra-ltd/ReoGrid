@@ -97,17 +97,22 @@ namespace unvell.ReoGrid.WPFDemo
 			var range = worksheet.Ranges["B3:F6"];
 			worksheet.AddHighlightRange(range);
 
-			var chart = new LineChart
+			var chart = //new LineChart
+                new BarChart
 			{
 				Location = new Point(360, 140),
 
 				Title = "Line Chart Sample",
 
-				DataSource = new WorksheetChartDataSource(worksheet, "A3:A6", "B3:F6")
-				{
-					CategoryNameRange = new RangePosition("B2:F2"),
-				},
-			};
+                //DataSource = new WorksheetChartDataSource(worksheet, "A3:A6", "B3:F6")
+                //{
+                //	CategoryNameRange = new RangePosition("B2:F2"),
+                //},
+                DataSource = new WorksheetChartDataSource(worksheet, "B2:F2", "B3:F6", RowOrColumn.Column)
+                {
+                	CategoryNameRange = new RangePosition("A3:A6"),
+                },
+            };
 
 			worksheet.FloatingObjects.Add(chart);
 
