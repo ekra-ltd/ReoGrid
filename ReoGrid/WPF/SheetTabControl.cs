@@ -533,7 +533,7 @@ namespace unvell.ReoGrid.WPF
 		public event EventHandler<SheetTabMouseEventArgs> TabMouseDown;
 	}
 
-	class SheetTabItem : Decorator
+	sealed class SheetTabItem : Decorator
 	{
 		private SheetTabControl owner;
 

@@ -734,7 +734,6 @@ namespace unvell.ReoGrid.Views
 				if (!string.IsNullOrEmpty(cell.DisplayText))
 				{
 					DrawCellBackground(dc, cell.InternalRow, cell.InternalCol, cell);
-
 					DrawCellText(dc, cell);
 				}
 			}
@@ -905,11 +904,69 @@ namespace unvell.ReoGrid.Views
 					//dc.Renderer.DrawRectangle(cell.PrintTextBounds, SolidColor.Blue);
 				}
 
-				#endregion // Determine clip region
+                #endregion // Determine clip region
 
+                //dc.Renderer.DrawRectangle(clipRect, SolidColor.LightCoral);
+
+                var skipRotate = cell?.Style is null || cell.Style.RotationAngle == 0;
+                if(!skipRotate)
+                {
+                    double angleDegree = -cell.Style.RotationAngle;
+                    double a = angleDegree * Math.PI / 180;
+                    var m = System.Windows.Media.Matrix.Identity;
+                    var l = cell.TextBounds.Left;
+                    var t = cell.TextBounds.Top;
+                    var w = cell.TextBounds.Width;
+                    var h = cell.TextBounds.Height;
+                    m.RotateAt(angleDegree, l + w / 2, t + h / 2);
+                    if (angleDegree > 0)
+                    {
+                        if (cell.Style.HAlign == ReoGridHorAlign.Left)
+                        {
+                            m.Translate(-w / 2 * (1 - Math.Cos(a)) + h / 2 * Math.Sin(a), 0);
+                        }
+                        else if (cell.Style.HAlign == ReoGridHorAlign.Right)
+                        {
+                            m.Translate(+w / 2 * (1 - Math.Cos(a)) - h / 2 * Math.Sin(a), 0);
+                        }
+                        if (cell.Style.VAlign == ReoGridVerAlign.Bottom)
+                        {
+                            m.Translate(0, -w / 2 * Math.Sin(a) - h / 2 * Math.Sin(a));
+                        }
+                        else if (cell.Style.VAlign == ReoGridVerAlign.Top)
+                        {
+                            m.Translate(0, +w / 2 * Math.Sin(a) - h / 2 * Math.Abs(Math.Sin(a)) );
+                        }
+                    }
+                    if (angleDegree < 0)
+                    {
+                        if (cell.Style.HAlign == ReoGridHorAlign.Left)
+                        {
+                            m.Translate(-w / 2 * (1 - Math.Cos(a)) + h / 2 * Math.Sin(a) + h, 0);
+                        }
+                        else if (cell.Style.HAlign == ReoGridHorAlign.Right)
+                        {
+                            m.Translate(+w / 2 * (1 - Math.Cos(a)) - h / 2 * Math.Abs( Math.Sin(a)), 0);
+                        }
+                        if (cell.Style.VAlign == ReoGridVerAlign.Bottom)
+                        {
+                            m.Translate(0, -w / 2 * Math.Abs(Math.Sin(a)) - h / 2 * Math.Sin(a) );
+                        }
+                        else if (cell.Style.VAlign == ReoGridVerAlign.Top)
+                        {
+                            m.Translate(0, +w / 2 * Math.Abs(Math.Sin(a)) + h / 2 * Math.Sin(a));
+                        }
+                    }
+                    dc.Graphics.PushTransform(m);
+                }
 				dc.Renderer.DrawCellText(cell, textColor, dc.DrawMode, this.scaleFactor);
 
 				#region clip region
+                if(!skipRotate)
+                {
+                    dc.Graphics.PopTransform();
+                }
+
 				if (needWidthClip)
 				{
 					dc.Graphics.PopClip();

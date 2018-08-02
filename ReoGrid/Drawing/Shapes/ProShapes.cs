@@ -31,12 +31,12 @@ using unvell.ReoGrid.Graphics;
 
 namespace unvell.ReoGrid.Drawing.Shapes
 {
-	
-	#region Path
-	/// <summary>
-	/// Represents path shape drawing object.
-	/// </summary>
-	public abstract class PathShape : ShapeObject
+
+    #region Path
+    /// <summary>
+    /// Represents path shape drawing object.
+    /// </summary>
+    public abstract class PathShape : ShapeObject
 	{
 		public override void OnBoundsChanged(Graphics.Rectangle oldRect)
 		{
@@ -222,13 +222,18 @@ namespace unvell.ReoGrid.Drawing.Shapes
 
 			if (this.sweepAngle > 0)
 			{
+                // 2017-12-25 исправлена отрисовка круговой диаграммы
 				System.Windows.Media.PathFigure pf = new System.Windows.Media.PathFigure();
-			
-				pf.Segments.Add(new System.Windows.Media.LineSegment(this.OriginPoint, false));
-				pf.Segments.Add(new System.Windows.Media.ArcSegment(new System.Windows.Point(0, 0),
-					new System.Windows.Size(this.Width, this.Height), this.sweepAngle, true, System.Windows.Media.SweepDirection.Clockwise, false));
+                pf.StartPoint = this.OriginPoint;
+                double h = OriginPoint.X;
+                double start = (startAngle) * Math.PI / 180.0;
+                double full= (startAngle + sweepAngle) * Math.PI / 180.0;
+                pf.Segments.Add(new System.Windows.Media.LineSegment(new System.Windows.Point(h * (1 - Math.Cos(start)), h * (1 + Math.Sin(start))), false));
+                 pf.Segments.Add(
+                     new System.Windows.Media.ArcSegment(new System.Windows.Point(h * (1 - Math.Cos(full)), h * (1 + Math.Sin(full))),
+                     new System.Windows.Size(/*this.Width*/h, /*this.Height*/h), 0, sweepAngle > 180, System.Windows.Media.SweepDirection.Counterclockwise, false));
 
-				Path.Figures.Add(pf);
+                Path.Figures.Add(pf);
 			}
 
 #elif ANDROID

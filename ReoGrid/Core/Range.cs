@@ -536,6 +536,10 @@ namespace unvell.ReoGrid
 			if (range.Cols == -1) range.EndCol = this.cols.Count;
 			if (range.EndRow > this.rows.Count - 1 || range.Rows == -1) range.EndRow = this.rows.Count - 1;
 			if (range.EndCol > this.cols.Count - 1 || range.Cols == -1) range.EndCol = this.cols.Count - 1;
+
+            if (range.Rows > 100) range.Rows = 100;
+            if (range.Cols > 50) range.Cols = 50;
+
 			return range;
 		}
 

@@ -3,6 +3,7 @@ using System.IO;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
+using unvell.ReoGrid.Actions;
 using unvell.ReoGrid.CellTypes;
 using unvell.ReoGrid.Chart;
 using unvell.ReoGrid.Drawing.Shapes;
@@ -34,7 +35,10 @@ namespace unvell.ReoGrid.WPFDemo
 
 			// add demo sheet 3: cell types
 			AddDemoSheet3();
-		}
+
+            ChangeColumnsRowsCount(grid, ColumnsCount, RowsCount);
+
+        }
 
 		private void UpdateMenuChecks()
 		{
@@ -98,8 +102,8 @@ namespace unvell.ReoGrid.WPFDemo
 			worksheet.AddHighlightRange(range);
 
 			var chart = //new LineChart
-                new BarChart
-			{
+                new Pie2DChart
+                {
 				Location = new Point(360, 140),
 
 				Title = "Line Chart Sample",
@@ -400,5 +404,41 @@ namespace unvell.ReoGrid.WPFDemo
 
 		#endregion Menu - Sheet
 
-	}
+		/// <summary>
+        /// Изменить количество строк и столбцов компонента
+        /// </summary>
+        /// <param name="reogrid"></param>
+        /// <param name="columns">Количество столбцов (макс. 32'768)</param>
+        /// <param name="rows">Количество строк (макс. 1'048'576)</param>
+        private static void ChangeColumnsRowsCount(ReoGridControl reogrid, int columns, int rows)
+        {
+            if (columns <= 0 || columns > MaxColumns)
+                throw new ArgumentException(nameof(columns));
+            if (rows <= 0 || rows > MaxRows)
+                throw new ArgumentException(nameof(rows));
+
+            var ag = new WorksheetActionGroup();
+
+            if (rows < reogrid.CurrentWorksheet.RowCount)
+                ag.Actions.Add(new RemoveRowsAction(rows, reogrid.CurrentWorksheet.RowCount - rows));
+            else if (rows > reogrid.CurrentWorksheet.RowCount)
+                ag.Actions.Add(new InsertRowsAction(reogrid.CurrentWorksheet.RowCount, rows - reogrid.CurrentWorksheet.RowCount));
+
+            if (columns < reogrid.CurrentWorksheet.ColumnCount)
+                ag.Actions.Add(new RemoveColumnsAction(columns, reogrid.CurrentWorksheet.ColumnCount - columns));
+            else if (columns > reogrid.CurrentWorksheet.ColumnCount)
+                ag.Actions.Add(new InsertColumnsAction(reogrid.CurrentWorksheet.ColumnCount, columns - reogrid.CurrentWorksheet.ColumnCount));
+
+            if (ag.Actions.Count > 0)
+            {
+                reogrid.DoAction(ag);
+                reogrid.ClearActionHistory();
+            }
+        }
+
+        private const int MaxColumns = 32768;
+        private const int MaxRows = 1048574;
+        private const int ColumnsCount = 1000;
+        private const int RowsCount = 10000;
+    }
 }
