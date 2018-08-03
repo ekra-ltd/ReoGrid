@@ -154,4 +154,7 @@
   <data name="NewBuildDefinition_8952_png" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>..\resources\newbuilddefinition_8952.png.dat;System.Byte[], mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </data>
+  <data name="close_png" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\close_png;System.Byte[], mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
 </root>

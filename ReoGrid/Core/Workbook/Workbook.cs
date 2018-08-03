@@ -763,16 +763,23 @@ namespace unvell.ReoGrid
 
 			this.sheetTab.NewSheetClick += sheetTab_NewSheetClick;
 			this.sheetTab.TabMoved += sheetTab_TabMoved;
+            this.sheetTab.SheetTabRemove += sheetTab_Remove;
+            this.sheetTab.TabRename += sheetTab_Rename;
 		}
 
-		internal void DetechSheetTabControl()
+	    
+
+
+	    internal void DetechSheetTabControl()
 		{
 			if (this.sheetTab != null)
 			{
 				this.sheetTab.NewSheetClick -= sheetTab_NewSheetClick;
 				this.sheetTab.TabMoved -= sheetTab_TabMoved;
+			    this.sheetTab.SheetTabRemove -= sheetTab_Remove;
+			    this.sheetTab.TabRename -= sheetTab_Rename;
 
-				this.sheetTab = null;
+                this.sheetTab = null;
 			}
 		}
 
@@ -797,13 +804,35 @@ namespace unvell.ReoGrid
 			this.worksheets.Insert(targetIndex, sheet);
 		}
 
-		#endregion // Sheet Tab Events
+	    private void sheetTab_Remove(object sender, SheetTabRemoveEventArgs e)
+	    {
+            //throw new NotImplementedException();
+	        RemoveWorksheet(e.Index);
+	        // if (e.Index > 0)
+	        //     sheetTab.SelectedIndex = e.Index - 1;
 
-		#endregion // Sheet Tab Control Interaction
+	    }
 
-		#region Settings
+	    private void sheetTab_Rename(object sender, SheetTabRenameEventArgs sheetTabRenameEventArgs)
+	    {
+	        try
+	        {
+	            this.Worksheets[sheetTabRenameEventArgs.Index].Name = sheetTabRenameEventArgs.Name;
+	        }
+	        catch (Exception e)
+	        {
+	            
+	        }
+	        //throw new NotImplementedException();
+	    }
 
-		private WorkbookSettings settings = WorkbookSettings.Default;
+        #endregion // Sheet Tab Events
+
+        #endregion // Sheet Tab Control Interaction
+
+        #region Settings
+
+        private WorkbookSettings settings = WorkbookSettings.Default;
 
 		/// <summary>
 		/// Set settings for this workbook

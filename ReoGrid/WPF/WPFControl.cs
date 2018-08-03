@@ -81,6 +81,7 @@ namespace unvell.ReoGrid
 				ControlWidth = 400,
 			};
 
+
 			this.horScrollbar = new ScrollBar()
 			{
 				Orientation = Orientation.Horizontal,
@@ -539,7 +540,11 @@ namespace unvell.ReoGrid
 
 		private void OnTextInputStart(object sender, TextCompositionEventArgs args)
 		{
-			if (!this.currentWorksheet.IsEditing)
+		    if (sheetTab.IsInEditMode)
+		    {
+		        // skip
+		    }
+			else if (!this.currentWorksheet.IsEditing)
 			{
 				this.currentWorksheet.StartEdit();
 				this.currentWorksheet.CellEditText = string.Empty;
@@ -965,7 +970,8 @@ namespace unvell.ReoGrid
 
 			protected override void OnPreviewKeyDown(KeyEventArgs e)
 			{
-				var sheet = this.Owner.CurrentWorksheet;
+
+                var sheet = this.Owner.CurrentWorksheet;
 
 				// in single line text
 				if (!TextWrap && Text.IndexOf('\n') == -1)
@@ -999,6 +1005,8 @@ namespace unvell.ReoGrid
 
 			protected override void OnKeyDown(KeyEventArgs e)
 			{
+			    e.Handled = false;
+                return;
 				var sheet = this.Owner.CurrentWorksheet;
 
 				if (sheet.currentEditingCell != null && Visibility == System.Windows.Visibility.Visible)
@@ -1045,12 +1053,15 @@ namespace unvell.ReoGrid
 			}
 			protected override void OnLostKeyboardFocus(KeyboardFocusChangedEventArgs e)
 			{
-				base.OnLostKeyboardFocus(e);
+			    e.Handled = false;
+			    return;
+
+                base.OnLostKeyboardFocus(e);
 				this.Owner.CurrentWorksheet.EndEdit(Text, EndEditReason.NormalFinish);
 			}
 			protected override void OnTextChanged(TextChangedEventArgs e)
 			{
-				base.OnTextChanged(e);
+                base.OnTextChanged(e);
 				this.Text = this.Owner.currentWorksheet.RaiseCellEditTextChanging(this.Text);
 			}
 			protected override void OnPreviewTextInput(TextCompositionEventArgs e)

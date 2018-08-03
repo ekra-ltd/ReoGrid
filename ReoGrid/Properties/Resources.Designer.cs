@@ -73,6 +73,16 @@ namespace unvell.ReoGrid.Properties {
         /// <summary>
         ///   Looks up a localized resource of type System.Byte[].
         /// </summary>
+        internal static byte[] close_png {
+            get {
+                object obj = ResourceManager.GetObject("close_png", resourceCulture);
+                return ((byte[])(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Byte[].
+        /// </summary>
         internal static byte[] cross {
             get {
                 object obj = ResourceManager.GetObject("cross", resourceCulture);

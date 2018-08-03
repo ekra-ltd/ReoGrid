@@ -20,10 +20,14 @@
 
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Linq;
 using System.Text;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Controls.Primitives;
+using System.Windows.Data;
+using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Shapes;
@@ -244,6 +248,7 @@ namespace unvell.ReoGrid.WPF
 				this.splitterMoving = false;
 				rightThumb.ReleaseMouseCapture();
 			};
+			UpdateTabsState();
 		}
 
 		private bool splitterMoving = false;
@@ -357,23 +362,33 @@ namespace unvell.ReoGrid.WPF
 
 		public void InsertTab(int index, string title)
 		{
-			var tab = new SheetTabItem(this, title)
+			try
 			{
-				Height = this.canvas.Height,
-			};
+				var tab = new SheetTabItem(this, title)
+				{
+					Height = this.canvas.Height,
+				};
+				tab.TabRenaming += OnTabRenaming;
+				tab.TabRename += OnTabRename;
+				tab.TabRenamed += OnTabRenamed;
 
-			this.canvas.Width += tab.Width + 1;
-			this.canvas.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(tab.Width + 1) });
+				this.canvas.Width += tab.Width + 1;
+				this.canvas.ColumnDefinitions.Add(new ColumnDefinition {Width = new GridLength(tab.Width + 1)});
 
-			this.canvas.Children.Add(tab);
+				this.canvas.Children.Add(tab);
 
-			Grid.SetColumn(tab, index);
+				Grid.SetColumn(tab, index);
 
-			tab.MouseDown += Tab_MouseDown;
+				tab.MouseDown += Tab_MouseDown;
 
-			if (this.canvas.Children.Count == 1)
+				if (this.canvas.Children.Count == 1)
+				{
+					tab.IsSelected = true;
+				}
+			}
+			finally
 			{
-				tab.IsSelected = true;
+				UpdateTabsState();
 			}
 		}
 
@@ -402,19 +417,51 @@ namespace unvell.ReoGrid.WPF
 
 		public void RemoveTab(int index)
 		{
-			var tab = (SheetTabItem)this.canvas.Children[index];
-
-			this.canvas.Children.RemoveAt(index);
-			this.canvas.ColumnDefinitions.RemoveAt(index);
-
-			for (int i = index; i < this.canvas.Children.Count; i++)
+			try
 			{
-				Grid.SetColumn(this.canvas.Children[i], i);
-			}
+				var tab = (SheetTabItem) this.canvas.Children[index];
 
-			this.canvas.Width -= tab.Width;
+				this.canvas.Children.RemoveAt(index);
+				this.canvas.ColumnDefinitions.RemoveAt(index);
+
+				for (int i = index; i < this.canvas.Children.Count; i++)
+				{
+					Grid.SetColumn(this.canvas.Children[i], i);
+					this.canvas.Children[i].InvalidateVisual(); // TODO merged
+				}
+
+				this.canvas.Width -= tab.Width;
+			}
+			finally
+			{
+				UpdateTabsState();
+			}
 		}
 
+		/// <summary>
+		/// Запрос на удаление листа
+		/// </summary>
+		/// <param name="item">удаляемый лист</param>
+		/// <returns>true, если выполнено удаление, иначе - false</returns>
+		internal bool SheetTabRemoveRequest(SheetTabItem item)
+		{
+			if (item == null) return false;
+			var tabContainer = canvas;
+			var index = tabContainer.Children.IndexOf(item);
+			if (index < 0) return false;
+			if (!item.IsCanRemove)
+				return false;
+
+			var e = new SheetTabRemovingEventArgs { Index = index, Cancel = false };
+			SheetTabRemoving?.Invoke(this, e);
+			if (!e.Cancel)
+			{
+				SheetTabRemove?.Invoke(this, new SheetTabRemoveEventArgs { Index = index });
+				return true;
+			}
+			return false;
+		}
+		
 		public void UpdateTab(int index, string title, Color backColor, Color textColor)
 		{
 			SheetTabItem item = this.canvas.Children[index] as SheetTabItem;
@@ -426,17 +473,44 @@ namespace unvell.ReoGrid.WPF
 				item.BackColor = backColor;
 				item.TextColor = textColor;
 			}
+			double width = 1;
+			foreach (UIElement uiElement in canvas.Children )
+			{
+				if (uiElement is SheetTabItem tab)
+					width += tab.Width;
+			}
+			canvas.Width = width;
 		}
 
 		public void ClearTabs()
 		{
-			this.canvas.Children.Clear();
-			this.canvas.ColumnDefinitions.Clear();
-			this.canvas.Width = 0;
+			try
+			{
+				this.canvas.Children.Clear();
+				this.canvas.ColumnDefinitions.Clear();
+				this.canvas.Width = 0;
+			}
+			finally
+			{
+				UpdateTabsState();
+			}
 		}
 
 		public int TabCount { get { return this.canvas.Children.Count; } }
 
+		/// <summary>
+		/// Функция обновляет состояние Tab-ов (разрешает/запрещает их удаление)
+		/// </summary>
+		private void UpdateTabsState()
+		{
+			var count = TabCount;
+			foreach (var uiElement in canvas.Children)
+			{
+				if (uiElement is SheetTabItem tab)
+					tab.IsCanRemove = count > 1;
+			}
+		}
+		
 		#endregion // Tab Management
 
 		#region Paint
@@ -468,6 +542,38 @@ namespace unvell.ReoGrid.WPF
 		}
 		#endregion // Paint
 
+		#region Переименование вкладки
+
+		public bool IsInEditMode
+		{
+			get;
+			private set;
+		}
+		
+		public Action<int> RenameSheetTabItemCallback { get; set; }
+
+		private void OnTabRenaming(object sender, CancelEventArgs e)
+		{
+			var e2 = new SheetTabRenamingEventArgs(canvas.Children.IndexOf(sender as UIElement));
+			TabRenaming?.Invoke(this, e2);
+			if(!e2.Cancel)
+				IsInEditMode = true;
+		}
+
+
+		private void OnTabRename(object sender, NamedEventArgs e)
+		{
+			TabRename?.Invoke(this, new SheetTabRenameEventArgs(canvas.Children.IndexOf(sender as UIElement), e.Name));
+		}
+
+		private void OnTabRenamed(object sender, EventArgs eventArgs)
+		{
+			IsInEditMode = false;
+			TabRenamed?.Invoke(this, new SheetTabRenamedEventArgs(canvas.Children.IndexOf(sender as UIElement)));
+		}
+		
+		#endregion
+		
 		public double TranslateScrollPoint(int p)
 		{
 			return this.canvas.RenderTransform.Transform(new Point(p, 0)).X;
@@ -531,10 +637,30 @@ namespace unvell.ReoGrid.WPF
 		public event EventHandler NewSheetClick;
 
 		public event EventHandler<SheetTabMouseEventArgs> TabMouseDown;
+		
+		public event EventHandler<SheetTabRemovingEventArgs> SheetTabRemoving;
+
+		public event EventHandler<SheetTabRemoveEventArgs> SheetTabRemove;
+		
+		public event EventHandler<SheetTabRenamingEventArgs> TabRenaming;
+
+		public event EventHandler<SheetTabRenameEventArgs> TabRename;
+
+		public event EventHandler<SheetTabRenamedEventArgs> TabRenamed;
 	}
 
 	sealed class SheetTabItem : Decorator
 	{
+		#region Приватные поля
+		
+		private Grid _grid;
+		
+		private SheetTabItemHeader _label;
+		
+		private Action<int> _renameSheetTabItemCallback;
+		
+		#endregion
+
 		private SheetTabControl owner;
 
 		public static readonly DependencyProperty IsSelectedProperty =
@@ -554,30 +680,49 @@ namespace unvell.ReoGrid.WPF
 				}
 			}
 		}
+		
+		public static readonly DependencyProperty IsCanRemoveProperty =
+			DependencyProperty.Register(nameof(IsCanRemove), typeof(Boolean), typeof(SheetTabItem));
 
+		public bool IsCanRemove
+		{
+			get => (bool)GetValue(IsCanRemoveProperty);
+			set
+			{
+				SetValue(IsCanRemoveProperty, value);
+				InvalidateVisual();
+			}
+		}
+		
 		public SheetTabItem(SheetTabControl owner, string title)
 		{
 			this.owner = owner;
 
 			this.SnapsToDevicePixels = true;
-
+			InitializeImpl();
+			
 			this.ChangeTitle(title);
 		}
 
 		public void ChangeTitle(string title)
 		{
-			var label = new TextBlock
-			{
-				Text = title,
-				VerticalAlignment = System.Windows.VerticalAlignment.Center,
-				HorizontalAlignment = System.Windows.HorizontalAlignment.Center,
-				Background = Brushes.Transparent,
-			};
+			// var label = new TextBlock
+			// {
+			// 	Text = title,
+			// 	VerticalAlignment = System.Windows.VerticalAlignment.Center,
+			// 	HorizontalAlignment = System.Windows.HorizontalAlignment.Center,
+			// 	Background = Brushes.Transparent,
+			// };
+			// 
+			// label.Measure(new Size(double.PositiveInfinity, double.PositiveInfinity));
+			// 
+			// this.Child = label;
+			// this.Width = label.DesiredSize.Width + 9;
+			_label.ChangeTitle(title);
 
-			label.Measure(new Size(double.PositiveInfinity, double.PositiveInfinity));
-
-			this.Child = label;
-			this.Width = label.DesiredSize.Width + 9;
+			// _label.Measure(new Size(double.PositiveInfinity, double.PositiveInfinity));
+			_grid.Measure(new Size(double.PositiveInfinity, double.PositiveInfinity));
+			Width = _grid.DesiredSize.Width + 9;
 		}
 
 		private GuidelineSet gls = new GuidelineSet();
@@ -636,6 +781,91 @@ namespace unvell.ReoGrid.WPF
 			}
 
 			g.Pop();
+		}
+
+		#region События
+
+		public event EventHandler<CancelEventArgs> TabRenaming;
+
+		public event EventHandler<NamedEventArgs> TabRename;
+
+		public event EventHandler<EventArgs> TabRenamed;
+		
+		#endregion
+		
+		private void Image_MouseUp(object sender, MouseButtonEventArgs e)
+		{
+			owner.SheetTabRemoveRequest(this);
+		}
+
+		private void OnMouseDoubleClick(object sender, MouseButtonEventArgs mouseButtonEventArgs)
+		{
+		}
+		
+		private void OnSizeChanging(object sender, EventArgs eventArgs)
+		{
+		}
+
+		private void OnTabRenaming(object o, CancelEventArgs e)
+		{
+			TabRenaming?.Invoke(this, e);
+		}
+
+		private void OnTabRename(object o, NamedEventArgs e)
+		{
+			TabRename?.Invoke(this, e);
+		}
+
+		private void OnTabRenamed(object sender, EventArgs e)
+		{
+			TabRenamed?.Invoke(this, e);
+		}
+		
+		private void InitializeImpl()
+		{
+			_grid = new Grid();
+			_grid.ColumnDefinitions.Add(new ColumnDefinition { });
+			_grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(16) });
+
+			#region Title
+
+			var content = _label = new SheetTabItemHeader();
+			_label.TabRenaming += OnTabRenaming;
+			_label.TabRename += OnTabRename;
+			_label.TabRenamed +=OnTabRenamed;
+			_label.SizeChanging += OnSizeChanging;
+
+			Grid.SetColumn(content, 0);
+			
+
+			#endregion
+
+			#region Image
+		
+			var imageSource = new BitmapImage();
+			imageSource.BeginInit();
+			imageSource.StreamSource = new System.IO.MemoryStream(Properties.Resources.close_png);
+			imageSource.EndInit();
+
+			var image = new Image
+			{
+				Source = imageSource,
+				VerticalAlignment = VerticalAlignment.Center,
+				HorizontalAlignment = HorizontalAlignment.Center,
+			};
+			image.SetBinding(IsEnabledProperty, new Binding(nameof(IsCanRemove))
+			{
+				RelativeSource = new RelativeSource(RelativeSourceMode.FindAncestor, typeof(SheetTabItem), 1),
+			});
+			Grid.SetColumn(image, 1);
+			#endregion
+
+			_grid.Children.Add(content);
+			_grid.Children.Add(image);
+			image.MouseUp += Image_MouseUp;
+
+			Child = _grid;
+
 		}
 	}
 
@@ -703,6 +933,241 @@ namespace unvell.ReoGrid.WPF
 
 			g.Pop();
 		}
+	}
+	
+		
+	class SheetTabItemHeader : ContentControl
+	{
+		#region Свойства зависимости
+
+		public static readonly DependencyProperty IsInEditModeProperty =
+			DependencyProperty.Register(nameof(IsInEditMode), typeof(Boolean), typeof(SheetTabItem));
+
+		public static readonly DependencyProperty EditingTextProperty =
+			DependencyProperty.Register(nameof(EditingText), typeof(string), typeof(SheetTabItem));
+		#endregion
+
+		#region Свойства
+
+		public bool IsInEditMode
+		{
+			get => (bool)GetValue(IsInEditModeProperty);
+			set => SetValue(IsInEditModeProperty, value);
+		}
+
+		public string EditingText
+		{
+			get => (string)GetValue(EditingTextProperty);
+			set => SetValue(EditingTextProperty, value);
+		}
+
+		#endregion
+
+		#region Приватные поля
+
+		private TextBlock _label;
+
+		#endregion
+
+		#region Конструктор
+
+		public SheetTabItemHeader()
+		{
+			Content = _label = new TextBlock
+			{
+				Text = string.Empty,
+				VerticalAlignment = VerticalAlignment.Center,
+				HorizontalAlignment = HorizontalAlignment.Center,
+				Background = Brushes.Transparent,
+			};
+
+			
+			var trigger = new Trigger {Property = IsInEditModeProperty, Value = true};
+			var dataTemplate = new DataTemplate();
+			var factoryStackPanel = new FrameworkElementFactory(typeof(StackPanel));
+
+			var factory = new FrameworkElementFactory(typeof(TextBox));
+			factory.AddHandler(LostFocusEvent, new RoutedEventHandler(LostFocusHandler));
+			factory.AddHandler(KeyUpEvent, new KeyEventHandler(KeyUpHandler));
+			factory.AddHandler(GotFocusEvent, new RoutedEventHandler(GotFocusHandler));
+			factory.AddHandler(TextBoxBase.TextChangedEvent, new TextChangedEventHandler(TextChangedEventHandler));
+			factory.SetValue(FocusExtension.IsFocusedProperty, true);
+			factory.SetBinding(TextBox.TextProperty, new Binding(nameof(EditingText))
+			{
+				RelativeSource = new RelativeSource(RelativeSourceMode.FindAncestor, typeof(SheetTabItemHeader), 1),
+				Mode = BindingMode.TwoWay,
+				UpdateSourceTrigger =  UpdateSourceTrigger.PropertyChanged,
+			});
+			factory.SetValue(VerticalContentAlignmentProperty, VerticalAlignment.Stretch);
+
+			//factoryStackPanel.AppendChild(factory);
+			//dataTemplate.VisualTree = /*factory*/factoryStackPanel;
+			dataTemplate.VisualTree = factory;
+			var setter = new Setter(ContentTemplateProperty, dataTemplate);
+			trigger.Setters.Add(setter);
+			var style = new Style(typeof(SheetTabItemHeader));
+			style.Triggers.Add(trigger);
+			Style = style;
+			
+			MouseDoubleClick += MouseDoubleClickHandler;
+		}
+
+
+		#endregion
+
+		#region Методы
+
+		public void ChangeTitle(string title)
+		{
+			_label.Text = title;
+			EditingText = title;
+		}
+
+		private void ChangeSizeRequest()
+		{
+			SizeChanging?.Invoke(this, new EventArgs());
+		}
+
+		#endregion
+
+		#region События
+
+		public event EventHandler<CancelEventArgs> TabRenaming;
+
+		public event EventHandler<NamedEventArgs> TabRename;
+
+		public event EventHandler<EventArgs> TabRenamed;
+
+		public event EventHandler<EventArgs> SizeChanging;
+
+		#endregion
+
+		#region Обработчики событий
+
+		private void MouseDoubleClickHandler(object sender, MouseButtonEventArgs e)
+		{
+			if (!IsInEditMode)
+			{
+				var renaming = new CancelEventArgs();
+				TabRenaming?.Invoke(this, renaming);
+				if (!renaming.Cancel)
+				{
+					IsInEditMode = true;
+				}
+				else
+				{
+					TabRenamed?.Invoke(this, new EventArgs());
+				}
+			}
+		}
+
+		private void LostFocusHandler(object sender, RoutedEventArgs e)
+		{
+			try
+			{
+				TabRename(this, new NamedEventArgs(EditingText));
+			}
+			finally
+			{
+				IsInEditMode = false;
+				TabRenamed(this, new EventArgs());
+			}
+		}
+
+		private void KeyUpHandler(object sender, KeyEventArgs e)
+		{
+			if (e.Key == Key.Escape)
+			{
+				IsInEditMode = false;
+				TabRenamed(this, new EventArgs());
+				e.Handled = true;
+			}
+			else if (e.Key == Key.Enter)
+			{
+				try
+				{
+					TabRename(this, new NamedEventArgs(EditingText));
+				}
+				finally
+				{
+					IsInEditMode = false;
+					TabRenamed(this, new EventArgs());
+					e.Handled = true;
+				}
+			}
+		}
+
+		private void GotFocusHandler(object sender, RoutedEventArgs e)
+		{
+			if (sender is TextBox txt)
+			{
+				txt.Text = EditingText;
+				txt.SelectAll();
+			}
+		}
+
+		private static void OnEditingTextPropertyChanged(
+			DependencyObject d,
+			DependencyPropertyChangedEventArgs e)
+		{
+			if (d is SheetTabItemHeader item)
+			{
+				item.ChangeSizeRequest();
+			}
+		}
+
+		private void TextChangedEventHandler(object sender, TextChangedEventArgs e)
+		{
+			if (IsInEditMode)
+			{
+				ChangeSizeRequest();
+			}
+		}
+
+		#endregion
+
+
+	}
+
+	class NamedEventArgs : EventArgs
+	{
+		public NamedEventArgs(string name)
+		{
+			Name = name;
+		}
+
+		public string Name { get; private set; }
+	}
+
+	public static class FocusExtension
+	{
+		public static bool GetIsFocused(DependencyObject obj)
+		{
+			return (bool)obj.GetValue(IsFocusedProperty);
+		}
+
+		public static void SetIsFocused(DependencyObject obj, bool value)
+		{
+			obj.SetValue(IsFocusedProperty, value);
+		}
+
+		public static readonly DependencyProperty IsFocusedProperty =
+			DependencyProperty.RegisterAttached(
+				"IsFocused", typeof(bool), typeof(FocusExtension),
+				new UIPropertyMetadata(false, OnIsFocusedPropertyChanged));
+
+
+		private static void OnIsFocusedPropertyChanged(
+			DependencyObject d,
+			DependencyPropertyChangedEventArgs e)
+		{
+			var uie = (UIElement)d;
+			if ((bool)e.NewValue)
+			{
+				uie.Focus(); // Don't care about false values.
+			}
+		}
+
 	}
 }
 

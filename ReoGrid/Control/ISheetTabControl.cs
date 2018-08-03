@@ -91,10 +91,65 @@ namespace unvell.ReoGrid.Main
 		public int TargetIndex { get; set; }
 	}
 
-	/// <summary>
-	/// Represents the border style of tab item.
-	/// </summary>
-	public enum SheetTabBorderStyle
+    /// <summary>
+    /// Событие перед удалением вкладки
+    /// </summary>
+    public class SheetTabRemovingEventArgs : CancelEventArgs
+    {
+        /// <summary>
+        /// Number of tab specified by this index to be moved.
+        /// </summary>
+        public int Index { get; set; }
+    }
+
+    /// <summary>
+    /// Событие удаления вкладки
+    /// </summary>
+    public class SheetTabRemoveEventArgs : EventArgs
+    {
+        /// <summary>
+        /// Number of tab specified by this index to be moved.
+        /// </summary>
+        public int Index { get; set; }
+    }
+
+    public class SheetTabRenamingEventArgs : CancelEventArgs
+    {
+        public SheetTabRenamingEventArgs(int index)
+        {
+            Index = index;
+        }
+
+        public int Index { get; }
+    }
+
+    public class SheetTabRenameEventArgs : EventArgs
+    {
+        public SheetTabRenameEventArgs(int index, string name)
+        {
+            Index = index;
+            Name = name;
+        }
+
+        public int Index { get; }
+
+        public string Name { get; }
+    }
+
+    public class SheetTabRenamedEventArgs : EventArgs
+    {
+        public SheetTabRenamedEventArgs(int index)
+        {
+            Index = index;
+        }
+
+        public int Index { get; }
+    }
+
+    /// <summary>
+    /// Represents the border style of tab item.
+    /// </summary>
+    public enum SheetTabBorderStyle
 	{
 		/// <summary>
 		/// Sharp Rectangle
@@ -195,23 +250,39 @@ namespace unvell.ReoGrid.Main
 		/// </summary>
 		event EventHandler NewSheetClick;
 
-		/// <summary>
-		/// Event raised when mouse is pressed down on tab items.
-		/// </summary>
-		event EventHandler<SheetTabMouseEventArgs> TabMouseDown;
+        /// <summary>
+        /// Событие возникает перед удалением листа
+        /// </summary>
+	    event EventHandler<SheetTabRemovingEventArgs> SheetTabRemoving;
 
-		///// <summary>
-		///// Move item to specified position.
-		///// </summary>
-		///// <param name="index">number of tab to be moved.</param>
-		///// <param name="targetIndex">position of moved to.</param>
-		//void MoveItem(int index, int targetIndex);
+	    /// <summary>
+	    /// Событие удаления листа
+	    /// </summary>
+	    event EventHandler<SheetTabRemoveEventArgs> SheetTabRemove;
 
-		/// <summary>
-		/// Scroll view to show tab item by specified index.
-		/// </summary>
-		/// <param name="index">Number of item to scrolled.</param>
-		void ScrollToItem(int index);
+        /// <summary>
+        /// Event raised when mouse is pressed down on tab items.
+        /// </summary>
+        event EventHandler<SheetTabMouseEventArgs> TabMouseDown;
+
+	    event EventHandler<SheetTabRenamingEventArgs> TabRenaming;
+
+	    event EventHandler<SheetTabRenameEventArgs> TabRename;
+
+	    event EventHandler<SheetTabRenamedEventArgs> TabRenamed;
+
+        ///// <summary>
+        ///// Move item to specified position.
+        ///// </summary>
+        ///// <param name="index">number of tab to be moved.</param>
+        ///// <param name="targetIndex">position of moved to.</param>
+        //void MoveItem(int index, int targetIndex);
+
+        /// <summary>
+        /// Scroll view to show tab item by specified index.
+        /// </summary>
+        /// <param name="index">Number of item to scrolled.</param>
+        void ScrollToItem(int index);
 
 		/// <summary>
 		/// Get or set the width of sheet tab control
@@ -258,5 +329,7 @@ namespace unvell.ReoGrid.Main
 		/// Determine whether or not to show new sheet button.
 		/// </summary>
 		bool NewButtonVisible { get; set; }
-	}
+
+
+    }
 }
