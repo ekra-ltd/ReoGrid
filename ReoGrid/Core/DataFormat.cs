@@ -120,6 +120,7 @@ namespace unvell.ReoGrid
 
 			unvell.ReoGrid.Utility.StyleUtility.UpdateCellRenderAlign(this, cell);
 			UpdateCellTextBounds(cell);
+            UpdateCellFont(cell);
 
 #if FORMULA
 			RecalcConditionalFormats();

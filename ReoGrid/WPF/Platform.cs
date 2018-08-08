@@ -29,10 +29,14 @@ using unvell.ReoGrid.Interaction;
 namespace unvell.ReoGrid
 {
     partial class Cell
-	{
-		[NonSerialized]
-		internal FormattedText formattedText;
-	}
+    {
+        [NonSerialized] internal FormattedText formattedText
+            //{ get { return _debugFormattedText; } set { _debugFormattedText = value; } }
+            //
+            //private FormattedText _debugFormattedText;
+            ;
+
+    }
 }
 
 namespace unvell.ReoGrid.Rendering

@@ -588,10 +588,15 @@ namespace unvell.ReoGrid
 		/// </summary>
 		public event EventHandler<WorksheetRemovedEventArgs> WorksheetRemoved;
 
-		/// <summary>
-		/// Event raised before name of worksheet changing
-		/// </summary>
-		public event EventHandler<WorksheetNameChangingEventArgs> BeforeWorksheetNameChange;
+        /// <summary>
+        /// Вызывается перед удалением листа (можно отменить)
+        /// </summary>
+	    public event EventHandler<WorksheetRemovingEventArgs> BeforeWorksheetRemove;
+
+        /// <summary>
+        /// Event raised before name of worksheet changing
+        /// </summary>
+        public event EventHandler<WorksheetNameChangingEventArgs> BeforeWorksheetNameChange;
 
 		/// <summary>
 		/// Event raised when name of worksheet is changed
@@ -763,14 +768,20 @@ namespace unvell.ReoGrid
 
 			this.sheetTab.NewSheetClick += sheetTab_NewSheetClick;
 			this.sheetTab.TabMoved += sheetTab_TabMoved;
+            this.sheetTab.SheetTabRemoving += sheetTab_Removing;
             this.sheetTab.SheetTabRemove += sheetTab_Remove;
             this.sheetTab.TabRename += sheetTab_Rename;
 		}
 
-	    
+        private void sheetTab_Removing(object sender, SheetTabRemovingEventArgs e)
+        {
+                var args = new WorksheetRemovingEventArgs(worksheets[e.Index], e.Index);
+                BeforeWorksheetRemove?.Invoke(this, args);
+                if (args.Cancel)
+                    e.Cancel = true;
+        }
 
-
-	    internal void DetechSheetTabControl()
+        internal void DetechSheetTabControl()
 		{
 			if (this.sheetTab != null)
 			{
@@ -778,6 +789,7 @@ namespace unvell.ReoGrid
 				this.sheetTab.TabMoved -= sheetTab_TabMoved;
 			    this.sheetTab.SheetTabRemove -= sheetTab_Remove;
 			    this.sheetTab.TabRename -= sheetTab_Rename;
+			    this.sheetTab.SheetTabRemoving -= sheetTab_Removing;
 
                 this.sheetTab = null;
 			}

@@ -29,6 +29,7 @@ using System.Windows.Media;
 
 using unvell.Common;
 using unvell.Common.Win32Lib;
+using unvell.ReoGrid.DataFormat;
 using unvell.ReoGrid.Graphics;
 using unvell.ReoGrid.Interaction;
 using unvell.ReoGrid.Main;
@@ -86,7 +87,7 @@ namespace unvell.ReoGrid
 			{
 				Orientation = Orientation.Horizontal,
 				Height = ScrollBarSize,
-				SmallChange = Worksheet.InitDefaultColumnWidth,
+				SmallChange=	Worksheet.InitDefaultColumnWidth,
 			};
 
 			this.verScrollbar = new System.Windows.Controls.Primitives.ScrollBar()
@@ -467,6 +468,11 @@ namespace unvell.ReoGrid
 		/// <param name="e"></param>
 		protected override void OnKeyDown(KeyEventArgs e)
 		{
+		    if (sheetTab.IsInEditMode)
+		    {
+		        e.Handled = false;
+                return;
+		    }
 			if (!this.currentWorksheet.IsEditing)
 			{
 				var wfkeys = (KeyCode)KeyInterop.VirtualKeyFromKey(e.Key);
@@ -498,7 +504,24 @@ namespace unvell.ReoGrid
 
 		protected override void OnKeyUp(KeyEventArgs e)
 		{
-			if (!this.currentWorksheet.IsEditing)
+		    if (e.Key == Key.F3 && !currentWorksheet.SelectionRange.IsEmpty)
+		    {
+		        CurrentWorksheet.SetRangeDataFormat(
+		            CurrentWorksheet.SelectionRange,
+		            CellDataFormatFlag.Percent, new NumberDataFormatter.NumberFormatArgs{DecimalPlaces = 2});
+		        e.Handled = true;
+		        return;
+            }
+		    if (e.Key == Key.F4 && !currentWorksheet.SelectionRange.IsEmpty)
+		    {
+		        CurrentWorksheet.SetRangeDataFormat(
+		            CurrentWorksheet.SelectionRange,
+		            CellDataFormatFlag.General, null);
+		        e.Handled = true;
+		        return;
+		    }
+
+            if (!this.currentWorksheet.IsEditing)
 			{
 				var wfkeys = (KeyCode)KeyInterop.VirtualKeyFromKey(e.Key);
 
@@ -526,6 +549,8 @@ namespace unvell.ReoGrid
 				}
 
 				//base.OnKeyUp(e);
+
+			   
 			}
 		}
 
@@ -647,7 +672,7 @@ namespace unvell.ReoGrid
 			public Rectangle GetContainerBounds()
 			{
 				double w = this.canvas.ActualWidth;
-				double h = this.canvas.ActualHeight + 1;
+				double h = this.canvas.ActualHeight+1;
 
 				if (this.canvas.verScrollbar.Visibility == Visibility.Visible)
 				{
@@ -976,60 +1001,64 @@ namespace unvell.ReoGrid
 				// in single line text
 				if (!TextWrap && Text.IndexOf('\n') == -1)
 				{
-					Action moveAction = null;
+                    Action moveAction = null;
 
 					if (e.Key == Key.Up)
 					{
-						moveAction = () => sheet.MoveSelectionUp();
+                        moveAction = () => sheet.MoveSelectionUp();
 					}
 					else if (e.Key == Key.Down)
 					{
-						moveAction = () => sheet.MoveSelectionDown();
-					}
-					else if (e.Key == Key.Left && SelectionStart == 0)
-					{
-						moveAction = () => sheet.MoveSelectionLeft();
-					}
-					else if (e.Key == Key.Right && SelectionStart == Text.Length)
-					{
-						moveAction = () => sheet.MoveSelectionRight();
-					}
-					if (moveAction != null)
-					{
-						sheet.EndEdit(Text);
-						moveAction();
-						e.Handled = true;
-					}
+                        moveAction = () => sheet.MoveSelectionDown();
+                    }
+                    else if (e.Key == Key.Left && SelectionStart == 0)
+                    {
+                        moveAction = () => sheet.MoveSelectionLeft();
+                    }
+                    else if (e.Key == Key.Right && SelectionStart == Text.Length)
+                    {
+                        moveAction = () => sheet.MoveSelectionRight();
+                    }
+				    if (moveAction != null)
+				    {
+                        sheet.EndEdit(Text);
+				        moveAction();
+                        e.Handled = true;
+                    }
 				}
 			}
 
 			protected override void OnKeyDown(KeyEventArgs e)
 			{
-			    e.Handled = false;
-                return;
-				var sheet = this.Owner.CurrentWorksheet;
+			    if (Owner.sheetTab.IsInEditMode)
+			    {
+			        e.Handled = false;
+			    }
+			    else
+			    {
+			        var sheet = this.Owner.CurrentWorksheet;
 
-				if (sheet.currentEditingCell != null && Visibility == System.Windows.Visibility.Visible)
-				{
-					if ((Keyboard.IsKeyDown(Key.LeftCtrl) || Keyboard.IsKeyDown(Key.RightCtrl))
-						&& e.Key == Key.Enter)
-					{
-						var str = this.Text;
-						var selstart = this.SelectionStart;
-						str = str.Insert(this.SelectionStart, Environment.NewLine);
-						this.Text = str;
-						this.SelectionStart = selstart + Environment.NewLine.Length;
-					}
-					else if (!Keyboard.IsKeyDown(Key.LeftCtrl) && !Keyboard.IsKeyDown(Key.RightCtrl) && e.Key == Key.Enter)
-					{
-						sheet.EndEdit(this.Text);
-						sheet.MoveSelectionForward();
-						e.Handled = true;
-					}
-					else if (e.Key == Key.Enter)
-					{
-						// TODO: auto adjust row height
-					}
+			        if (sheet.currentEditingCell != null && Visibility == System.Windows.Visibility.Visible)
+			        {
+			            if ((Keyboard.IsKeyDown(Key.LeftCtrl) || Keyboard.IsKeyDown(Key.RightCtrl))
+			                && e.Key == Key.Enter)
+			            {
+			                var str = this.Text;
+			                var selstart = this.SelectionStart;
+			                str = str.Insert(this.SelectionStart, Environment.NewLine);
+			                this.Text = str;
+			                this.SelectionStart = selstart + Environment.NewLine.Length;
+			            }
+			            else if (!Keyboard.IsKeyDown(Key.LeftCtrl) && !Keyboard.IsKeyDown(Key.RightCtrl) && e.Key == Key.Enter)
+			            {
+			                sheet.EndEdit(this.Text);
+			                sheet.MoveSelectionForward();
+			                e.Handled = true;
+			            }
+			            else if (e.Key == Key.Enter)
+			            {
+			                // TODO: auto adjust row height
+			            }
 					// shift + tab
 					else if ((Keyboard.IsKeyDown(Key.LeftShift) || Keyboard.IsKeyDown(Key.RightShift)) && e.Key == Key.Tab)
 					{
@@ -1044,12 +1073,13 @@ namespace unvell.ReoGrid
 						sheet.MoveSelectionForward();
 						e.Handled = true;
 					}
-					else if (e.Key == Key.Escape)
-					{
-						sheet.EndEdit(EndEditReason.Cancel);
-						e.Handled = true;
-					}
-				}
+			            else if (e.Key == Key.Escape)
+			            {
+			                sheet.EndEdit(EndEditReason.Cancel);
+			                e.Handled = true;
+			            }
+			        }
+			    }
 			}
 			protected override void OnLostKeyboardFocus(KeyboardFocusChangedEventArgs e)
 			{
@@ -1071,7 +1101,7 @@ namespace unvell.ReoGrid
 					int inputChar = e.Text[0];
 					if (inputChar != this.Owner.currentWorksheet.RaiseCellEditCharInputed(inputChar))
 					{
-
+						
 						e.Handled = true;
 					}
 

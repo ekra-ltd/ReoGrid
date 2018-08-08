@@ -17,7 +17,7 @@
  ****************************************************************************/
 
 using System;
-
+using System.ComponentModel;
 #if WINFORM || ANDROID
 using RGFloat = System.Single;
 #elif WPF
@@ -59,6 +59,26 @@ namespace unvell.ReoGrid.Events
 			this.Worksheet = sheet;
 		}
 	}
+
+    // <summary>
+    /// Common worksheet event arguments с возможностью отмены действия
+    /// </summary>
+    public class CancelWorksheetEventArgs : CancelEventArgs
+    {
+        /// <summary>
+        /// Instance of worksheet
+        /// </summary>
+        public Worksheet Worksheet { get; set; }
+
+        /// <summary>
+        /// Create common worksheet event arguments with specified instance of worksheet
+        /// </summary>
+        /// <param name="sheet">instance of worksheet related to the event</param>
+        public CancelWorksheetEventArgs(Worksheet sheet)
+        {
+            this.Worksheet = sheet;
+        }
+    }
 
 	#region Actions
 
@@ -160,10 +180,30 @@ namespace unvell.ReoGrid.Events
 		}
 	}
 
-	/// <summary>
-	/// Worksheet's name changing event argument
-	/// </summary>
-	public class WorksheetNameChangingEventArgs : WorksheetEventArgs
+    /// <summary>
+    /// Worksheet removing event argument
+    /// </summary>
+    public class WorksheetRemovingEventArgs : CancelWorksheetEventArgs
+    {
+        /// <summary>
+        /// Index of worksheet in workbook
+        /// </summary>
+        public int Index { get; set; }
+
+        /// <summary>
+        /// Create this event argument with specified worksheet
+        /// </summary>
+        /// <param name="sheet">instance of worksheet</param>
+        public WorksheetRemovingEventArgs(Worksheet sheet, int index)
+            : base(sheet)
+        {
+            Index = index;
+        }
+    }
+    /// <summary>
+    /// Worksheet's name changing event argument
+    /// </summary>
+    public class WorksheetNameChangingEventArgs : WorksheetEventArgs
 	{
 		/// <summary>
 		/// Get or set the new name used to instead of the old name of worksheet

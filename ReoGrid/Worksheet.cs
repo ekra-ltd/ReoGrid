@@ -1820,6 +1820,7 @@ namespace unvell.ReoGrid
 
 					#region (Shift+) Enter
 					case KeyCode.Enter:
+
 						OnEnterKeyPressed(false);
 						break;
 					case KeyCode.Shift | KeyCode.Enter:

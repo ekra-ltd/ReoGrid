@@ -18,6 +18,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Text;
 
 #if DEBUG
@@ -1389,7 +1390,10 @@ namespace unvell.ReoGrid.Utility
 			}
 			else if (data is string)
 			{
-				return double.TryParse((string)data, out value);
+			    return double.TryParse((string) data, out value) 
+                    // || double.TryParse((string) data, NumberStyles.Float | NumberStyles.AllowThousands, CultureInfo.InvariantCulture, out value)
+                    ;
+
 			}
 			else
 			{

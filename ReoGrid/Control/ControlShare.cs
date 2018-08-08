@@ -151,10 +151,15 @@ namespace unvell.ReoGrid
 				this.WorksheetRemoved?.Invoke(this, e);
 			};
 
+		    this.workbook.BeforeWorksheetRemove += (sender, args) =>
+		    {
+                this.BeforeWorksheetRemove?.Invoke(sender, args);
+		    };
 			this.workbook.WorksheetNameChanged += (s, e) =>
 			{
 				this.WorksheetNameChanged?.Invoke(this, e);
 			};
+
 
 			this.workbook.SettingsChanged += (s, e) =>
 			{
@@ -642,10 +647,15 @@ namespace unvell.ReoGrid
 		/// </summary>
 		public event EventHandler<WorksheetRemovedEventArgs> WorksheetRemoved;
 
-		/// <summary>
-		/// Event raised when the name of worksheet managed by this workbook is changed.
-		/// </summary>
-		public event EventHandler<WorksheetNameChangingEventArgs> WorksheetNameChanged;
+        /// <summary>
+        /// Событие возникающее перед удалением листа (можно отменить действие)
+        /// </summary>
+        public event EventHandler<WorksheetRemovingEventArgs> BeforeWorksheetRemove;
+
+        /// <summary>
+        /// Event raised when the name of worksheet managed by this workbook is changed.
+        /// </summary>
+        public event EventHandler<WorksheetNameChangingEventArgs> WorksheetNameChanged;
 
 		/// <summary>
 		/// Event raised when background color of worksheet name is changed.

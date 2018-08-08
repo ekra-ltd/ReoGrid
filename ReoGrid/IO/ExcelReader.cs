@@ -781,7 +781,16 @@ namespace unvell.ReoGrid.IO.OpenXML
 						}
 						else
 						{
-							rgCell.InnerData = cell.value.val;
+						    double d;
+						    if (double.TryParse(cell.value.val, NumberStyles.Float | NumberStyles.AllowThousands,
+						        CultureInfo.InvariantCulture, out d))
+						    {
+						        rgCell.InnerData = d;
+						    }
+						    else
+						    {
+						        rgCell.InnerData = cell.value.val;
+						    }
 						}
 					}
 
