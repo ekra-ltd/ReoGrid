@@ -36,7 +36,7 @@ namespace unvell.ReoGrid.DataFormat
 		/// </summary>
 		/// <param name="cell">cell instance</param>
 		/// <returns>true if cell has been formatted</returns>
-		public string FormatCell(Cell cell)
+		public FormatCellResult FormatCell(Cell cell)
 		{
 			bool isFormat = false;
 
@@ -155,7 +155,7 @@ namespace unvell.ReoGrid.DataFormat
 					currency = Math.Abs(currency);
 				}
 
-				return currency.ToString(numberPartFormat);
+				return new FormatCellResult(currency.ToString(numberPartFormat), currency);
 			}
 			else
 				return null;

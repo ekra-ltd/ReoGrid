@@ -13,7 +13,7 @@ namespace unvell.ReoGrid.DataFormat
 	/// </summary>
 	public class PercentDataFormatter : IDataFormatter
 	{
-		public string FormatCell(Cell cell)
+		public FormatCellResult FormatCell(Cell cell)
 		{
 			object data = cell.InnerData;
 
@@ -105,10 +105,10 @@ namespace unvell.ReoGrid.DataFormat
 				var format = NumberDataFormatter.FormatNumberCellAndGetPattern(cell, ref percent,
 					cell.DataFormatArgs as NumberDataFormatter.INumberFormatArgs);
 
-				return percent.ToString(format + "%");
+				return new FormatCellResult(percent.ToString(format + "%"), percent);
 			}
 
-			return isFormat ? formattedText : null;
+			return isFormat ? new FormatCellResult(formattedText, formattedText) : null;
 		}
 
 		/// <summary>

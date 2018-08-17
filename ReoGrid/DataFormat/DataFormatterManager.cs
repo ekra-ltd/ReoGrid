@@ -89,7 +89,7 @@ namespace unvell.ReoGrid.DataFormat
 		/// </summary>
 		/// <param name="cell">Instance of cell to be formatted.</param>
 		/// <returns>Return non-empty string if formatting was performed successfully; Otherwise return null.</returns>
-		string FormatCell(Cell cell);
+		FormatCellResult FormatCell(Cell cell);
 
 		/// <summary>
 		/// Indicate that whether or not to check the data type before format.
@@ -98,6 +98,22 @@ namespace unvell.ReoGrid.DataFormat
 		bool PerformTestFormat();
 	}
 
+	public class FormatCellResult
+	{
+		public FormatCellResult(string text, object data)
+		{
+			FormattedText = text;
+			Data = data;
+		}
+
+		public FormatCellResult()
+		{
+		}
+
+		public string FormattedText { get; set; }
+		public object Data { get; set; }
+	}
+	
 	/// <summary>
 	/// Data Formatter Manager
 	/// </summary>
@@ -155,11 +171,15 @@ namespace unvell.ReoGrid.DataFormat
 				{
 					var formatter = dataFormatters[flag];
 
+					FormatCellResult formatResult;
 					if (formatter.PerformTestFormat()
-						&& (formattedText = dataFormatters[flag].FormatCell(cell)) != null)
+						//&& ( = dataFormatters[flag].FormatCell(cell)) != null
+						&& (formatResult = dataFormatters[flag].FormatCell(cell)) != null)
 					{
+						formattedText = formatResult.FormattedText;
 						cell.DataFormat = flag;
 						cell.InnerDisplay = formattedText;
+						cell.InnerData = formatResult.Data;
 						found = true;
 						break;
 					}
@@ -189,14 +209,17 @@ namespace unvell.ReoGrid.DataFormat
 			{
 				if (DataFormatters.TryGetValue(cell.DataFormat, out var formatter))
 				{
-					string formattedText = DataFormatters[cell.DataFormat].FormatCell(cell);
-
-					if (formattedText == null)
+					var formattedResult = DataFormatters[cell.DataFormat].FormatCell(cell);
+					if (formattedResult == null)
 					{
-						formattedText = DataFormatters[CellDataFormatFlag.Text].FormatCell(cell);
+						formattedResult = DataFormatters[CellDataFormatFlag.Text].FormatCell(cell);
 					}
 
-					cell.InnerDisplay = formattedText;
+					cell.InnerDisplay = formattedResult.FormattedText;
+					if (formattedResult.Data != null)
+					{
+						cell.InnerData = formattedResult.Data;
+					}
 				}
 			}
 		}

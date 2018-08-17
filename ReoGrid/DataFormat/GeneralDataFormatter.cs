@@ -27,7 +27,7 @@ namespace unvell.ReoGrid.DataFormat
 	/// </summary>
 	internal class GeneralDataFormatter : IDataFormatter
 	{
-		public string FormatCell(Cell cell)
+		public FormatCellResult FormatCell(Cell cell)
 		{
 			object data = cell.InnerData;
 
@@ -86,7 +86,7 @@ namespace unvell.ReoGrid.DataFormat
 					cell.RenderHorAlign = ReoGridRenderHorAlign.Right;
 				}
 
-				return Convert.ToString(value);
+				return new FormatCellResult(Convert.ToString(value), value);
 			}
 			else
 			{

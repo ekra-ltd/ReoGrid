@@ -45,7 +45,7 @@ namespace unvell.ReoGrid.DataFormat
 		/// </summary>
 		/// <param name="cell">cell to be formatted</param>
 		/// <returns>Formatted text used to display as cell content</returns>
-		public string FormatCell(Cell cell)
+		public FormatCellResult FormatCell(Cell cell)
 		{
 			object data = cell.InnerData;
 
@@ -100,12 +100,12 @@ namespace unvell.ReoGrid.DataFormat
 
 				CultureInfo culture = null;
 
-				string pattern = System.Threading.Thread.CurrentThread.CurrentCulture.DateTimeFormat.ShortDatePattern;
+				// TODO Рассмотреть вохможность конвертирования из разных форматов
+				//string pattern = System.Threading.Thread.CurrentThread.CurrentCulture.DateTimeFormat.ShortDatePattern;
+				string pattern = "dd.MM.yyyy hh:mm:ss";//System.Threading.Thread.CurrentThread.CurrentCulture.DateTimeFormat.FullDateTimePattern;
 
-				if (cell.DataFormatArgs != null && cell.DataFormatArgs is DateTimeFormatArgs)
+				if (cell.DataFormatArgs is DateTimeFormatArgs dargs)
 				{
-					DateTimeFormatArgs dargs = (DateTimeFormatArgs)cell.DataFormatArgs;
-
 					// fixes issue #203: pattern is ignored incorrectly
 					if (!string.IsNullOrEmpty(dargs.Format))
 					{
@@ -147,7 +147,7 @@ namespace unvell.ReoGrid.DataFormat
 				}
 			}
 
-			return isFormat ? formattedText : null;
+			return isFormat ? new FormatCellResult(formattedText, value) : null;
 		}
 
 		/// <summary>

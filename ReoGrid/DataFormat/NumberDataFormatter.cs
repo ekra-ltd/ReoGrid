@@ -40,7 +40,7 @@ namespace unvell.ReoGrid.DataFormat
 		/// </summary>
 		/// <param name="cell">Instance of cell to be formatted</param>
 		/// <returns></returns>
-		public string FormatCell(Cell cell)
+		public FormatCellResult FormatCell(Cell cell)
 		{
 			object data = cell.InnerData;
 
@@ -112,7 +112,7 @@ namespace unvell.ReoGrid.DataFormat
 					numberPart = (value < 0) ? (prefix + numberPart + postfix) : numberPart;
 				}
 
-				return value.ToString(numberPart);
+				return new FormatCellResult(value.ToString(numberPart), value);
 			}
 			else
 			{

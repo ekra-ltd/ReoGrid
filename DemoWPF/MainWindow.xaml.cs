@@ -6,6 +6,7 @@ using System.Windows.Media;
 using unvell.ReoGrid.Actions;
 using unvell.ReoGrid.CellTypes;
 using unvell.ReoGrid.Chart;
+using unvell.ReoGrid.DataFormat;
 using unvell.ReoGrid.Drawing.Shapes;
 
 namespace unvell.ReoGrid.WPFDemo
@@ -29,10 +30,10 @@ namespace unvell.ReoGrid.WPFDemo
 
 			// add demo sheet 1: document template
 			AddDemoSheet1();
-
+            
 			// add demo sheet 2: chart and drawing
 			AddDemoSheet2();
-
+            
 			// add demo sheet 3: cell types
 			AddDemoSheet3();
 
@@ -315,7 +316,8 @@ namespace unvell.ReoGrid.WPFDemo
 				try
 				{
 					grid.Load(dlg.FileName);
-				}
+
+                }
 				catch (Exception ex)
 				{
 					MessageBox.Show(this, "Loading error: " + ex.Message, "Error", MessageBoxButton.OK, MessageBoxImage.Warning);
@@ -440,5 +442,17 @@ namespace unvell.ReoGrid.WPFDemo
         private const int MaxRows = 1048574;
         private const int ColumnsCount = 1000;
         private const int RowsCount = 10000;
-    }
+
+	    private void ONCHANGEFORMATTODATETIME_OnClick(object sender, RoutedEventArgs e)
+	    {
+	        grid.Worksheets[0].SetRangeDataFormat(
+	            "A1:A1",
+	            CellDataFormatFlag.DateTime,
+	            new DateTimeDataFormatter.DateTimeFormatArgs
+	            {
+	                CultureName = "ru-RU",
+	                Format = "dd/MM/yyyy"
+	            });
+	    }
+	}
 }

@@ -28,14 +28,15 @@ namespace unvell.ReoGrid.DataFormat
 {
 	internal class TextDataFormatter : IDataFormatter
 	{
-		public string FormatCell(Cell cell)
+		public FormatCellResult FormatCell(Cell cell)
 		{
 			if (cell.InnerStyle.HAlign == ReoGridHorAlign.General)
 			{
 				cell.RenderHorAlign = ReoGridRenderHorAlign.Left;
 			}
 
-			return Convert.ToString(cell.InnerData);
+			var text = Convert.ToString(cell.InnerData);
+			return new FormatCellResult(text, text);
 		}
 
 		public bool PerformTestFormat()

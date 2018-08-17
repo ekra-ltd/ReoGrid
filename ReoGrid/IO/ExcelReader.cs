@@ -817,7 +817,7 @@ namespace unvell.ReoGrid.IO.OpenXML
 
 					if (rgCell.DataFormat == CellDataFormatFlag.DateTime)
 					{
-						rgCell.Data = DataFormatterManager.Instance.DataFormatters[CellDataFormatFlag.DateTime].FormatCell(rgCell);
+						rgCell.Data = DataFormatterManager.Instance.DataFormatters[CellDataFormatFlag.DateTime].FormatCell(rgCell)?.Data;
 					}
 					else
 					{
@@ -1747,7 +1747,33 @@ namespace unvell.ReoGrid.IO.OpenXML
 							arg = carg;
 							#endregion // Currency
 						}
-						else if (pattern.EndsWith("%"))
+                        // # ##0,00 "₽"
+                        else if ((currencyMatch = Regex.Match(pattern, @"(?<number_format>[^""]+)""(?<currency_design>[^""]+)""")).Success)
+						{
+                            #region Денежный тип вторая попытка =)
+						    flag = CellDataFormatFlag.Currency;
+						    var carg = new CurrencyDataFormatter.CurrencyFormatArgs
+						    {
+						        PostfixSymbol = currencyMatch.Groups["currency_design"].Value
+						    };
+						    carg = (CurrencyDataFormatter.CurrencyFormatArgs)ReadNumberFormatArgs(currencyMatch.Groups["number_format"].Value, carg);
+						    arg = carg;
+						    #endregion
+						}
+						// "₽"# ##0,00
+                        else if ((currencyMatch = Regex.Match(pattern, @"""(?<currency_design>[^""]+)""(?<number_format>[^""]+)")).Success)
+						{
+						    #region Денежный тип третья попытка =)
+						    flag = CellDataFormatFlag.Currency;
+						    var carg = new CurrencyDataFormatter.CurrencyFormatArgs
+						    {
+						        PrefixSymbol = currencyMatch.Groups["currency_design"].Value
+						    };
+						    carg = (CurrencyDataFormatter.CurrencyFormatArgs)ReadNumberFormatArgs(currencyMatch.Groups["number_format"].Value, carg);
+						    arg = carg;
+						    #endregion
+                        }
+                        else if (pattern.EndsWith("%"))
 						{
 							#region Percent
 							flag = CellDataFormatFlag.Percent;
