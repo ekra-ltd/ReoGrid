@@ -18,6 +18,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -502,11 +503,23 @@ namespace unvell.ReoGrid.IO.OpenXML
 							{
 								int id = styles.numberFormats.Count + BaseUserNumberFormatId;
 
+							    var cultureCondFormat = string.Empty;
+							    if (!string.IsNullOrEmpty(dtarg.CultureName))
+							    {
+							        try
+							        {
+							            cultureCondFormat = $"[$-{CultureInfo.GetCultureInfo(dtarg.CultureName).LCID:X}]";
+							        }
+							        catch
+							        {
+							            
+							        }
+							    }
 								styles.numberFormats.Add(new NumberFormat
 								{
 									_iarg = dtarg,
 									formatId = id,
-									formatCode = dtarg.Format,
+									formatCode = $"{cultureCondFormat}{dtarg.Format}",
 								});
 
 								return id;

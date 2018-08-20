@@ -1785,17 +1785,30 @@ namespace unvell.ReoGrid.IO.OpenXML
 						}
 						else if (pattern.Any(c => c == 'm' || c == 'h' || c == 's' || c == 'y' || c == 'd'))
 						{
-							pattern = pattern.Replace("yyyy/mm", "yyyy/MM").Replace("mm/yy", "MM/yy")
+						    CultureInfo culture = null;
+						    foreach (var condFormat in GetConditionFormattingPart(pattern))
+						    {
+						        var cult = GetCultureConditionalFormatting(condFormat);
+						        if (cult != null)
+						        {
+						            culture = cult;
+						        }
+						    }
+						    pattern = RemoveConditionFormatting(pattern);
+                            pattern = pattern.Replace("yyyy/mm", "yyyy/MM").Replace("mm/yy", "MM/yy")
 											 .Replace("mm/d", "MM/d").Replace("m/d", "M/d")
 											 .Replace("d/mm", "d/MM").Replace("d/m", "d/M")
-											 .Replace("aaa", "ddd");
+											 .Replace("aaa", "ddd")
+                                            .Replace("mmmm\\ yy", "MMMM\\ yy")
+                                             .Replace("mmm\\-yy", "MMM\\-yy");
 
 							flag = CellDataFormatFlag.DateTime;
-
+                            
 							arg = new DateTimeDataFormatter.DateTimeFormatArgs
 							{
 								Format = pattern,
-							};
+                                CultureName = culture?.Name ?? CultureInfo.CurrentCulture.Name,
+                            };
 						}
 						else
 						{
@@ -1816,11 +1829,64 @@ namespace unvell.ReoGrid.IO.OpenXML
 			return flag;
 		}
 
-#endregion
+	    private static string ConditionalFormatPattern = @"\[(?<cond_format>[^\]]+)]";
+        /// <summary>
+        /// Попытка извлечь группу условного форматирования из паттерны
+        /// </summary>
+        /// <param name="pattern">паттерн</param>
+        /// <returns></returns>
+        private static IEnumerable<string> GetConditionFormattingPart(string pattern)
+	    {
+	        foreach (Match match in Regex.Matches(pattern, ConditionalFormatPattern))
+	        {
+	            if (match.Success && match.Groups["cond_format"].Success)
+	                yield return match.Groups["cond_format"].Value;
+	        }
+	    }
 
-#region Drawing
+	    private static  bool IsCultureConditionalFormatting(string conditionFormatting, out string lcid)
+	    {
+	        var match = Regex.Match(conditionFormatting, @"\$-(?<lcid>[0-9]+)");
+	        lcid = string.Empty;
+            if (match.Success)
+            {
+                lcid = match.Groups["lcid"].Value;
+            }
+	        return match.Success;
+	    }
+
+	    private static CultureInfo GetCultureConditionalFormatting(string conditionFormatting)
+	    {
+	        CultureInfo result = null;
+            string lcidStr;
+	        if (IsCultureConditionalFormatting(conditionFormatting, out lcidStr))
+	        {
+	            int lcid;
+	            if (int.TryParse(lcidStr, NumberStyles.HexNumber, CultureInfo.InvariantCulture, out lcid))
+	            {
+	                try
+	                {
+	                    result = CultureInfo.GetCultureInfo(lcid);
+	                }
+	                catch
+	                {
+	                    // ignore
+	                }
+	            }
+	        }
+	        return result;
+	    }
+
+	    private static string RemoveConditionFormatting(string pattern)
+	    {
+	        return Regex.Replace(pattern, ConditionalFormatPattern, string.Empty);
+	    }
+
+        #endregion
+
+        #region Drawing
 #if DRAWING
-		private static void LoadDrawingObjects(Document doc, Schema.Worksheet sheet, RGWorksheet rgSheet, Schema.Drawing drawingFile)
+        private static void LoadDrawingObjects(Document doc, Schema.Worksheet sheet, RGWorksheet rgSheet, Schema.Drawing drawingFile)
 		{
 			foreach (var archor in drawingFile.twoCellAnchors)
 			{

@@ -102,7 +102,7 @@ namespace unvell.ReoGrid.DataFormat
 
 				// TODO Рассмотреть вохможность конвертирования из разных форматов
 				//string pattern = System.Threading.Thread.CurrentThread.CurrentCulture.DateTimeFormat.ShortDatePattern;
-				string pattern = "dd.MM.yyyy hh:mm:ss";//System.Threading.Thread.CurrentThread.CurrentCulture.DateTimeFormat.FullDateTimePattern;
+				string pattern = "dd.MM.yyyy HH:mm:ss";
 
 				if (cell.DataFormatArgs is DateTimeFormatArgs dargs)
 				{
