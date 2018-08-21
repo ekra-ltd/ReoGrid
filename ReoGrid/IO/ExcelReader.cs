@@ -1594,7 +1594,7 @@ namespace unvell.ReoGrid.IO.OpenXML
 
 		private static Regex currencyFormatRegex = new Regex(@"([^\\\s]*)\\?(\s*)\[\$([^(\-|\])]+)-?[^\]]*\]\\?(\s*)([^\\\s]*)", RegexOptions.Compiled);
 
-		private static NumberDataFormatter.INumberFormatArgs ReadNumberFormatArgs(string pattern, NumberDataFormatter.INumberFormatArgs arg)
+		private static NumberDataFormatter.INumberFormatArgs ReadNumberFormatArgs(string pattern, NumberDataFormatter.INumberFormatArgs arg/*, CultureInfo culture = null*/)
 		{
 			if (pattern.StartsWith("[Red]", StringComparison.CurrentCultureIgnoreCase))
 			{
@@ -1747,32 +1747,32 @@ namespace unvell.ReoGrid.IO.OpenXML
 							arg = carg;
 							#endregion // Currency
 						}
-                        // # ##0,00 "₽"
-                        else if ((currencyMatch = Regex.Match(pattern, @"(?<number_format>[^""]+)""(?<currency_design>[^""]+)""")).Success)
+                        // "₽"# ##0,00"₽"
+                        else if (
+                                (currencyMatch = Regex.Match(pattern, @"(?<condFormat>\[(?<condFormatValue>[^\]]+)\])?(?<prefix>""(?<currency_design_prefix>[^""]+)"")?(?<number_format>[^""]+)(?<postfix>""(?<currency_design_postfix>[^""]+)"")?")).Success
+                                && (currencyMatch.Groups["prefix"].Success || currencyMatch.Groups["postfix"].Success))
 						{
                             #region Денежный тип вторая попытка =)
 						    flag = CellDataFormatFlag.Currency;
-						    var carg = new CurrencyDataFormatter.CurrencyFormatArgs
+                            var prefix = currencyMatch.Groups["prefix"].Success ? currencyMatch.Groups["currency_design_prefix"].Value : string.Empty;
+                            var postfix = currencyMatch.Groups["postfix"].Success ? currencyMatch.Groups["currency_design_postfix"].Value : string.Empty;
+                            var condFormat = currencyMatch.Groups["condFormat"].Success ? currencyMatch.Groups["condFormatValue"].Value : string.Empty;
+						    CultureInfo culture = null;
+						    if (!string.IsNullOrEmpty(condFormat))
 						    {
-						        PostfixSymbol = currencyMatch.Groups["currency_design"].Value
-						    };
+						        culture = GetCultureConditionalFormatting(condFormat);
+						    }
+						    culture = culture ?? CultureInfo.CurrentCulture;
+                            var carg = new CurrencyDataFormatter.CurrencyFormatArgs
+                            {
+                                PrefixSymbol = prefix,
+                                PostfixSymbol = postfix,
+                                CultureEnglishName = culture.Name,
+                            };
 						    carg = (CurrencyDataFormatter.CurrencyFormatArgs)ReadNumberFormatArgs(currencyMatch.Groups["number_format"].Value, carg);
 						    arg = carg;
 						    #endregion
 						}
-						// "₽"# ##0,00
-                        else if ((currencyMatch = Regex.Match(pattern, @"""(?<currency_design>[^""]+)""(?<number_format>[^""]+)")).Success)
-						{
-						    #region Денежный тип третья попытка =)
-						    flag = CellDataFormatFlag.Currency;
-						    var carg = new CurrencyDataFormatter.CurrencyFormatArgs
-						    {
-						        PrefixSymbol = currencyMatch.Groups["currency_design"].Value
-						    };
-						    carg = (CurrencyDataFormatter.CurrencyFormatArgs)ReadNumberFormatArgs(currencyMatch.Groups["number_format"].Value, carg);
-						    arg = carg;
-						    #endregion
-                        }
                         else if (pattern.EndsWith("%"))
 						{
 							#region Percent

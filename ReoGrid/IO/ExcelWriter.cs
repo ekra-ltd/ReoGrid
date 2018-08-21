@@ -460,7 +460,19 @@ namespace unvell.ReoGrid.IO.OpenXML
 							return id;
 						}
 
-						var currencyPattern = ConvertToExcelNumberPattern(carg, carg.PrefixSymbol, carg.PostfixSymbol);
+					    var cultureCondFormat = string.Empty;
+					    if (!string.IsNullOrEmpty(carg.CultureEnglishName))
+					    {
+					        try
+					        {
+					            cultureCondFormat = $"[$-{CultureInfo.GetCultureInfo(carg.CultureEnglishName).LCID:X}]";
+					        }
+					        catch
+					        {
+
+					        }
+					    }
+                        var currencyPattern = ConvertToExcelNumberPattern(carg, carg.PrefixSymbol, carg.PostfixSymbol);
 
 						id = styles.numberFormats.Count + BaseUserNumberFormatId;
 
@@ -468,7 +480,7 @@ namespace unvell.ReoGrid.IO.OpenXML
 						{
 							_iarg = carg,
 							formatId = id,
-							formatCode = currencyPattern,
+							formatCode = $"{cultureCondFormat}{currencyPattern}",
 						});
 
 						return id;
