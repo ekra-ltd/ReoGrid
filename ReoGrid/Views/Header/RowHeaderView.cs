@@ -112,6 +112,26 @@ namespace unvell.ReoGrid.Views
 					}
 				}
 			}
+			
+			for (int i = visibleRegion.startRow; i <= visibleRegion.endRow; i++)
+			{
+				RowHeader row = sheet.rows[i];
+				RGFloat y = row.Top * scaleFactor;
+				RGFloat heigth = 5 * scaleFactor;
+				// RGFloat width = header.InnerWidth * this.scaleFactor;
+
+				if (!row.IsVisible)
+				{
+					var scale = bounds.Bottom / 18.0f;
+					var areaWidth = scale * 5.0f;
+					var lineWidth =  0.1f * scaleFactor;
+					var widthOffset = lineWidth;
+					// g.DrawLine(splitterLinePen, x - 1, 0, x - 1, bounds.Bottom);
+					Rectangle rect = new Rectangle(-widthOffset, y - heigth / 2, bounds.Width, heigth);
+					g.FillRectangle(rect, SolidColor.White);
+					g.DrawRectangle(rect, SolidColor.Black, lineWidth, LineStyles.Solid);
+				}
+			}
 
 			if (visibleRegion.endRow >= 0)
 			{
@@ -199,11 +219,13 @@ namespace unvell.ReoGrid.Views
 					if (buttons == MouseButtons.None
 						&& sheet.HasSettings(WorksheetSettings.Edit_AllowAdjustRowHeight))
 					{
-						int row = -1;
-						bool inline = sheet.FindRowByPosition(location.Y, out row);
-
-						if (row >= 0) sheet.controlAdapter.ChangeCursor(inline ? CursorStyle.ChangeRowHeight :
-							(sheet.selectionMode == WorksheetSelectionMode.None ? CursorStyle.PlatformDefault : CursorStyle.FullRowSelect));
+						var rowResult = sheet.FindRowByPositionWithResult(location.Y);
+						int row = rowResult.Row;
+						bool inline = rowResult.IsInline;
+						if (row >= 0)
+						{
+							sheet.controlAdapter.ChangeCursor(inline ? CursorStyle.ChangeRowHeight : (sheet.selectionMode == WorksheetSelectionMode.None ? CursorStyle.PlatformDefault : CursorStyle.FullRowSelect));
+						}
 					}
 					break;
 

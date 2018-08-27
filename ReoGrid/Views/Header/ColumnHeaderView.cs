@@ -109,6 +109,25 @@ namespace unvell.ReoGrid.Views
 				}
 			}
 
+			for (int i = visibleRegion.startCol; i <= visibleRegion.endCol; i++)
+			{
+				ColumnHeader header = sheet.cols[i];
+
+				RGFloat x = header.Left * this.scaleFactor;
+				RGFloat width = header.InnerWidth * this.scaleFactor;
+
+				if (!header.IsVisible)
+				{
+					var scale = bounds.Bottom / 18.0f;
+					var areaWidth = scale * 5.0f;
+					var lineWidth = scale * 0.1f;
+					var topOffset = -lineWidth;
+					// g.DrawLine(splitterLinePen, x - 1, 0, x - 1, bounds.Bottom);
+					g.FillRectangle(new Rectangle(x - areaWidth / 2, topOffset, areaWidth, bounds.Bottom - topOffset / 2), SolidColor.White);
+					g.DrawRectangle(new Rectangle(x - areaWidth / 2, topOffset, areaWidth, bounds.Bottom - topOffset / 2), SolidColor.Black, lineWidth, LineStyles.Solid);
+				}
+			}
+			
 			RGFloat lx = sheet.cols[visibleRegion.endCol].Right * this.scaleFactor;
 			g.DrawLine(splitterLinePen, lx, 0, lx, bounds.Height);
 
@@ -232,16 +251,38 @@ namespace unvell.ReoGrid.Views
 					{
 						if (sheet.currentColWidthChanging == -1 && sheet.currentRowHeightChanging == -1)
 						{
-							int col = -1;
 
 							// find the column index
-							bool inline = sheet.FindColumnByPosition(location.X, out col)
-									&& sheet.HasSettings(WorksheetSettings.Edit_AllowAdjustColumnWidth);
+							var columnResult = sheet.FindColumnByPositionWithResult(location.X);
+							int col = columnResult.Column;
 
 							if (col >= 0)
 							{
-								CursorStyle curStyle = inline ? CursorStyle.ChangeColumnWidth :
-									(sheet.selectionMode == WorksheetSelectionMode.None ? CursorStyle.Selection : CursorStyle.FullColumnSelect);
+								// CursorStyle curStyle = inline ? CursorStyle.ChangeColumnWidth :
+								// 	(sheet.selectionMode == WorksheetSelectionMode.None ? CursorStyle.Selection : CursorStyle.FullColumnSelect);
+								CursorStyle curStyle;
+								if (columnResult.IsInline && sheet.HasSettings(WorksheetSettings.Edit_AllowAdjustColumnWidth))
+								{
+									if (columnResult.Direction == Worksheet.ColumnDirection.Left)
+									{
+										curStyle = CursorStyle.ChangeColumnWidth;
+									}
+									else
+									{
+										curStyle = CursorStyle.ResizeHorizontal;
+									}
+								}
+								else
+								{
+									if (sheet.selectionMode == WorksheetSelectionMode.None)
+									{
+										curStyle = CursorStyle.Selection;
+									}
+									else
+									{
+										curStyle = CursorStyle.FullColumnSelect;
+									}
+								}
 
 								var header = sheet.cols[col];
 

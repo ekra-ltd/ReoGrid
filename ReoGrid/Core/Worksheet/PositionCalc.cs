@@ -86,62 +86,161 @@ namespace unvell.ReoGrid
 			});
 		}
 
-		// TODO: need performance improvement
-		internal bool FindColumnByPosition(RGFloat x, out int col)
-		{
-			int v = -1;
-			bool inline = true;
+        internal enum ColumnDirection
+        {
+            Left,
+            Right,
+        }
 
-			RGFloat scaleThumb = 2 / this.renderScaleFactor;
+        internal class FindColumnByPositionResult
+        {
+            public bool IsInline { get; set; }
+            public int Column { get; set; }
+            public ColumnDirection Direction { get; set; }
+        }
 
-			for (int i = 0; i < this.cols.Count; i++)
-			{
-				if (x <= this.cols[i].Right - scaleThumb)
-				{
-					inline = false;
-					v = i;
-					break;
-				}
-				else if (x <= this.cols[i].Right + scaleThumb)
-				{
-					v = i;
-					break;
-				}
-			}
+        internal bool FindColumnByPosition(RGFloat x, out int col)
+        {
+            var result = FindColumnByPositionWithResult(x);
+            col = result.Column;
+            return result.IsInline;
+        }
 
-			col = v;
-			return inline;
-		}
+        // TODO: need performance improvement
+        internal FindColumnByPositionResult FindColumnByPositionWithResult(RGFloat x)
+        {
+            var result = new FindColumnByPositionResult { IsInline = true, Column = -1, Direction = ColumnDirection.Left, };
 
-		// TODO: need performance improvement
-		internal bool FindRowByPosition(RGFloat y, out int row)
-		{
-			int v = -1;
-			bool inline = true;
+            RGFloat scaleThumb = 2 / renderScaleFactor;
+            RGFloat scaleThumbHiddenColumn = 5 / renderScaleFactor;
 
-			RGFloat scaleThumb = 2 / this.renderScaleFactor;
+            for (int i = 0; i < this.cols.Count; i++)
+            {
+                if (!cols[i].IsVisible)
+                {
+                    if (x <= cols[i].Right - scaleThumbHiddenColumn)
+                    {
+                        result.IsInline = false;
+                        result.Column = i;
+                        break;
+                    }
+                    else if (x <= cols[i].Right + scaleThumbHiddenColumn)
+                    {
+                        result.Column = i;
+                        for (int j = i; j < cols.Count; j++)
+                        {
+                            if (cols[j].IsVisible) break;
+                            result.Column = j;
+                        }
+                        result.Direction = ColumnDirection.Right;
+                        break;
+                    }
+                }
+                else
+                {
+                    if (x <= this.cols[i].Right - scaleThumb)
+                    {
+                        result.Column = i;
+                        result.IsInline = false;
+                        // Если следующий столбец - скрытый, то следует проверить его
+                        if (i + 1 < cols.Count && !cols[i + 1].IsVisible)
+                        {
+                            if (x <= this.cols[i].Right - scaleThumbHiddenColumn)
+                                result.IsInline = false;
+                            else
+                                result.IsInline = true;
+                        }
+                        break;
+                    }
+                    else if (x <= this.cols[i].Right + scaleThumb)
+                    {
+                        result.Column = i;
+                        break;
+                    }
+                }
+            }
+            return result;
+        }
 
-			for (int i = 0; i < this.rows.Count; i++)
-			{
-				if (y <= this.rows[i].Bottom - scaleThumb)
-				{
-					inline = false;
-					v = i;
-					break;
-				}
-				else if (y <= this.rows[i].Bottom + scaleThumb)
-				{
-					v = i;
-					break;
-				}
-			}
+        // TODO: need performance improvement
+        internal FindRowByPositionResult FindRowByPositionWithResult(RGFloat y)
+        {
+            var result = new FindRowByPositionResult { IsInline = true, Row = -1, Direction = RowDirection.Top, };
 
-			row = v;
-			return inline;
-		}
-		#endregion // Header
+            RGFloat scaleThumb = 2 / this.renderScaleFactor;
+            RGFloat scaleThumbHiddenRow = 5 / this.renderScaleFactor;
 
-		internal Rectangle GetRangeBounds(int row, int col, int rows, int cols)
+            for (int i = 0; i < rows.Count; i++)
+            {
+                if (!rows[i].IsVisible)
+                {
+                    if (y <= rows[i].Bottom - scaleThumbHiddenRow)
+                    {
+                        result.IsInline = false;
+                        result.Row = i;
+                        break;
+                    }
+                    else if (y <= rows[i].Bottom + scaleThumbHiddenRow)
+                    {
+                        result.Row = i;
+                        for (int j = i; j < rows.Count; j++)
+                        {
+                            if (rows[j].IsVisible) break;
+                            result.Row = j;
+                        }
+                        result.Direction = RowDirection.Buttom;
+                        break;
+                    }
+                }
+                else
+                {
+                    if (y <= rows[i].Bottom - scaleThumb)
+                    {
+                        result.IsInline = false;
+                        result.Row = i;
+                        // Если следующая строка - скрытая, то следует проверить его
+                        if (i + 1 < cols.Count && !cols[i + 1].IsVisible)
+                        {
+                            if (y <= rows[i].Bottom - scaleThumbHiddenRow)
+                                result.IsInline = false;
+                            else
+                                result.IsInline = true;
+                        }
+                        break;
+                    }
+                    else if (y <= rows[i].Bottom + scaleThumb)
+                    {
+                        result.Row = i;
+                        break;
+                    }
+                }
+            }
+            return result;
+        }
+
+        internal enum RowDirection
+        {
+            Top,
+            Buttom,
+        }
+
+
+        internal class FindRowByPositionResult
+        {
+            public bool IsInline { get; set; }
+            public int Row { get; set; }
+            public RowDirection Direction { get; set; }
+        }
+
+        internal bool FindRowByPosition(RGFloat y, out int row)
+        {
+            var result = FindRowByPositionWithResult(y);
+            row = result.Row;
+            return result.IsInline;
+        }
+        #endregion // Header
+
+        internal Rectangle GetRangeBounds(int row, int col, int rows, int cols)
 		{
 			return GetRangePhysicsBounds(new RangePosition(row, col, rows, cols));
 		}
