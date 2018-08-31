@@ -1094,6 +1094,11 @@ namespace unvell.ReoGrid.Events
 			this.Exception = ex;
 		}
 	}
+
+    public class RangeSerialFillEventArgs: CopyOrMoveRangeEventArgs
+    {
+        public RangeSerialFillEventArgs(RangePosition fromRange, RangePosition toRange): base(fromRange, toRange) { }
+    }
 	#endregion // Range Operations
 
 	#region Settings

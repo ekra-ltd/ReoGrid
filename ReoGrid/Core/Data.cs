@@ -21,6 +21,10 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using unvell.ReoGrid.Actions;
+using unvell.ReoGrid.Core.SerialFill;
+using System.Collections.Generic;
+using System.Linq;
 using unvell.ReoGrid.Formula;
 
 namespace unvell.ReoGrid
@@ -100,26 +104,180 @@ namespace unvell.ReoGrid
 
             if (fromRange.Col == toRange.Col && fromRange.Cols == toRange.Cols)
             {
-                for (var c = toRange.Col; c <= toRange.EndCol; c++)
+                // for (var c = toRange.Col; c <= toRange.EndCol; c++)
+                // {
+                //     fromCells = GetColumnCellPositionsFromRange(fromRange, c);
+                //     toCells = GetColumnCellPositionsFromRange(toRange, c);
+                //     AutoFillSerialCells(fromCells, toCells);
+                // }
+                try
                 {
-                    fromCells = GetColumnCellPositionsFromRange(fromRange, c);
-                    toCells = GetColumnCellPositionsFromRange(toRange, c);
-                    AutoFillSerialCells(fromCells, toCells);
+                    BeforeSerialFill?.Invoke(this, new Events.RangeSerialFillEventArgs(fromRange, toRange));
+                }
+                catch
+                {
+                    // ignored
+                }
+                ExecuteFillByAction(fromRange, toRange, ExecuteVerticalFill);
+                try
+                {
+                    AfterSerialFill?.Invoke(this, new Events.RangeSerialFillEventArgs(fromRange, toRange));
+                }
+                catch
+                {
+                    // ignored
                 }
             }
             else if (fromRange.Row == toRange.Row && fromRange.Rows == toRange.Rows)
             {
-                for (var r = toRange.Row; r <= toRange.EndRow; r++)
+                //for (var r = toRange.Row; r <= toRange.EndRow; r++)
+                //{
+                //    fromCells = GetRowCellPositionsFromRange(fromRange, r);
+                //    toCells = GetRowCellPositionsFromRange(toRange, r);
+                //    AutoFillSerialCells(fromCells, toCells);
+                //}
+                try
                 {
-                    fromCells = GetRowCellPositionsFromRange(fromRange, r);
-                    toCells = GetRowCellPositionsFromRange(toRange, r);
-                    AutoFillSerialCells(fromCells, toCells);
+                    BeforeSerialFill?.Invoke(this, new Events.RangeSerialFillEventArgs(fromRange, toRange));
+                }
+                catch
+                {
+                    // ignored
+                }
+                ExecuteFillByAction(fromRange, toRange, ExecuteHorizontalFill);
+                try
+                {
+                    AfterSerialFill?.Invoke(this, new Events.RangeSerialFillEventArgs(fromRange, toRange));
+                }
+                catch
+                {
+                    // ignored
                 }
             }
             else
                 throw new InvalidOperationException("The fromRange and toRange must be having same number of rows or same number of columns.");
         }
 
+        private void ExecuteFillByAction(RangePosition fromRange, RangePosition toRange, Action<RangePosition, RangePosition> fillExecutor)
+        {
+            var before = GetPartialGrid(toRange);                     // старые значения
+            fillExecutor?.Invoke(fromRange, toRange);                 // выполняем действи
+            var after = GetPartialGrid(toRange);                      // новые значения
+            SetPartialGrid(toRange, before);                          // говорим что так и было
+            DoAction(new SetPartialGridAction(toRange, after)); // и делаем действие
+        }
+        
+        private void ExecuteVerticalFill(RangePosition fromRange, RangePosition toRange)
+        {
+            for (int c = toRange.Col; c <= toRange.EndCol; c++)
+            {
+                List<object> fromData = new List<object>();
+                for (int r = fromRange.Row; r <= fromRange.EndRow; r++)
+                {
+                    fromData.Add(cells[r, c]?.Data);
+                }
+                var filler = SerialFillerBase.GetSerialFiller(fromData.ToArray());
+
+
+                    #region Up to Down
+                for (int toRow = toRange.Row, index = 0; toRow < toRange.EndRow + 1; index++)
+                {
+                    Cell toCell = cells[toRow, c];
+
+                    if (toCell != null && toCell.Rowspan < 0)
+                    {
+                        toRow++;
+                        continue;
+                    }
+
+                    CellPosition fromPos = new CellPosition(fromRange.Row + (index % fromRange.Rows), c);
+
+                    Cell fromCell = cells[fromPos.Row, fromPos.Col];
+
+                    if (fromCell == null || fromCell.Rowspan <= 0)
+                    {
+                        this[toRow, c] = null;
+                        toRow++;
+                        continue;
+                    }
+
+                    if (fromCell != null && !string.IsNullOrEmpty(fromCell.InnerFormula))
+                    {
+                        #region Fill Formula
+                        FormulaRefactor.Reuse(this, fromPos, new RangePosition(toRow, c, 1, 1));
+                        #endregion // Fill Formula
+                    }
+                    else
+                    {
+                        #region Fill Number
+                        this[toRow, c] = filler.GetSerialValue(toRow - fromRange.Row);
+                        #endregion // Fill Number
+                    }
+
+                    toRow += Math.Max(fromCell.Rowspan, toCell?.Rowspan ?? 1);
+                }
+                #endregion // Up to Down
+            }
+        }
+            
+        /// <summary>
+        /// Метод заполнения большего диапазона значений на основе меньшего диапазона
+        /// </summary>
+        /// <param name="fromRange"></param>
+        /// <param name="toRange"></param>
+        private void ExecuteHorizontalFill(RangePosition fromRange, RangePosition toRange)
+        {
+            for (int r = toRange.Row; r <= toRange.EndRow; r++)
+            {
+                List<object> fromData = new List<object>();
+                for (int c = fromRange.Col; c<= fromRange.EndCol; c++)
+                {
+                    fromData.Add(cells[r, c]?.Data);
+                }
+                var filler = SerialFillerBase.GetSerialFiller(fromData.ToArray());
+
+
+                #region Left to Right
+                for (int toCol = toRange.Col, index = 0; toCol < toRange.EndCol + 1; index++)
+                {
+                    Cell toCell = cells[r, toCol];
+
+                    if (toCell != null && toCell.Colspan < 0)
+                    {
+                        toCol++;
+                        continue;
+                    }
+
+                    CellPosition fromPos = new CellPosition(r, fromRange.Col + (index % fromRange.Cols));
+
+                    Cell fromCell = cells[fromPos.Row, fromPos.Col];
+
+                    if (fromCell == null || fromCell.Colspan <= 0)
+                    {
+                        this[r, toCol] = null;
+                        toCol++;
+                        continue;
+                    }
+
+                    if (fromCell != null && !string.IsNullOrEmpty(fromCell.InnerFormula))
+                    {
+                        #region Fill Formula
+                        FormulaRefactor.Reuse(this, fromPos, new RangePosition(r, toCol, 1, 1));
+                        #endregion // Fill Formula
+                    }
+                    else
+                    {
+                        #region Fill Number
+                        this[r, toCol] = filler.GetSerialValue(toCol - fromRange.Col);
+                        #endregion // Fill Number
+                    }
+
+                    toCol += Math.Max(fromCell.Colspan, toCell?.Colspan ?? 1);
+                }
+                #endregion // Left to Right
+            }
+        }
+        
         private List<CellPosition> GetColumnCellPositionsFromRange(RangePosition fromRange, int columnIndex)
         {
             var result = new List<CellPosition>();

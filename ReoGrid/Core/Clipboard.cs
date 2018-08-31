@@ -633,8 +633,17 @@ namespace unvell.ReoGrid
 		/// </summary>
 		public event EventHandler<RangeEventArgs> AfterCut;
 
-		#endregion // Events
-	}
+        /// <summary>
+        /// Возникает до последовательного заполнения диапазона ячеек на основе другого диапазона
+        /// </summary>
+        public event EventHandler<RangeSerialFillEventArgs> BeforeSerialFill;
+
+        /// <summary>
+        /// Возникает до последовательного заполнения диапазона ячеек на основе другого диапазона
+        /// </summary>
+        public event EventHandler<RangeSerialFillEventArgs> AfterSerialFill;
+        #endregion // Events
+    }
 }
 
 #if WINFORM || WPF
