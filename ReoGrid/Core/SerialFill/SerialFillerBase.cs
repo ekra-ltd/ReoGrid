@@ -30,21 +30,40 @@ namespace unvell.ReoGrid.Core.SerialFill
         }
 
         protected Position GetPosition(int index)
-            => new Position
+        {
+            if (index >= 0)
             {
-                SequenceNumber = index / Data.Length ,
-                ElementNumber = index % Data.Length
-            };
+                return new Position
+                {
+                    SequenceNumber = index / Data.Length,
+                    ElementNumber = index % Data.Length
+                };
+            }
+            else
+            {
+                var el = GetPositiveElementIndex(index, Data.Length);
+                var seq = (index - (Data.Length - 1));
+                seq = seq / Data.Length;
 
-        public static ISerialFiller GetSerialFiller(object[] data)
-            => new MultiSerialFiller(
-                new Type[] {
-                    typeof(NumberSerialFiller),
-                    typeof(CopySerialFiller),
-                    typeof(IncrementNumberFiller),
-                    typeof(NullSerialFiller) },
-                data);
+                return new Position
+                {
+                    SequenceNumber = seq,
+                    ElementNumber = el,
+                };
+            }
+        }
 
+        public static ISerialFiller GetSerialFiller(object[] data) => new MultiSerialFiller(data);
+
+        protected int GetPositiveElementIndex(int index, int length)
+        {
+            var result = (index % length);
+            if (result < 0)
+            {
+                result += length;
+            }
+            return result;
+        }
        //  /// <summary>
        //  /// Указывает что такой объект может ввходить в данный Filler
        //  /// </summary>

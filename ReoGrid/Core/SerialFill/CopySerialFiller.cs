@@ -11,7 +11,7 @@
         protected override object GetSerialValueInternal(int toIndex)
         {
             if (Data.Length > 0)
-                return Data[toIndex % Data.Length];
+                return Data[GetPositiveElementIndex(toIndex, Data.Length)];
             return null;
         }
     }

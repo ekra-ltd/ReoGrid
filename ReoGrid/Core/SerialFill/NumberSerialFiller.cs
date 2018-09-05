@@ -70,16 +70,16 @@ namespace unvell.ReoGrid.Core.SerialFill
         {
             try
             {
-                if (Data.Length > 0)
-                {
-                    double d;
-                    var data = Data[toIndex % Data.Length];
-                    if (CellUtility.TryGetNumberData(data, out d))
-                    {
+                // if (Data.Length > 0)
+                // {
+                //     double d;
+                //     // var data = Data[toIndex % Data.Length];
+                //     // if (CellUtility.TryGetNumberData(data, out d))
+                //     // {
                         return k * toIndex + c;
-                    }
-                    return data;
-                }
+                 //   // }
+                 //   // return data;
+                //}
             }
             catch
             {
@@ -91,7 +91,7 @@ namespace unvell.ReoGrid.Core.SerialFill
         protected override bool CanGetValueInternal(int toIndex)
         {
             double d;
-            var data = Data[toIndex % Data.Length];
+            var data = Data[GetPositiveElementIndex(toIndex, Data.Length)];
             return CellUtility.TryGetNumberData(data, out d);
         }
     }

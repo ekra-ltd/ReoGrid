@@ -106,8 +106,8 @@ namespace unvell.ReoGrid.Views
 
 			for (int r = visibleRegion.startRow; r < toRow; r++)
 			{
-				if(sheet.rows.Count <= r)
-					continue;
+                if(sheet.rows.Count <= r)
+                    continue;
 				RowHeader rowHead = sheet.rows[r];
 				if (rowHead.InnerHeight <= 0) continue;
 
@@ -263,7 +263,7 @@ namespace unvell.ReoGrid.Views
 
 			#region Vertical Borders
 			int rightColBoundary = visibleRegion.endCol + (dc.FullCellClip ? 0 : 1);
-			if (rightColBoundary > sheet.cols.Count) rightColBoundary = sheet.cols.Count;
+		    if (rightColBoundary > sheet.cols.Count) rightColBoundary = sheet.cols.Count;
 
 			for (int c = visibleRegion.startCol; c <= rightColBoundary; c++)
 			{
@@ -311,7 +311,7 @@ namespace unvell.ReoGrid.Views
 					var rowHeader = sheet.rows[r];
 					if (!rowHeader.IsVisible) continue;
 				}
-				else continue;
+                else continue;
 
 				int y = r == sheet.rows.Count ? sheet.rows[r - 1].Bottom : sheet.rows[r].Top;
 
@@ -746,7 +746,7 @@ namespace unvell.ReoGrid.Views
 			var g = dc.Graphics;
 
 #if FORMULA && DRAWING
-			var rt = cell.Data as Drawing.RichText;
+            var rt = cell.Data as Drawing.RichText;
 
 			if (rt != null)
 			{
@@ -1796,40 +1796,79 @@ namespace unvell.ReoGrid.Views
 
 #if FORMULA
 				case OperationStatus.DragSelectionFillSerial:
-					#region Submit Selection Drag
-					sheet.operationStatus = OperationStatus.Default;
+				#region Submit Selection Drag
+				sheet.operationStatus = OperationStatus.Default;
 
-					if (sheet.draggingSelectionRange.Rows > sheet.selectionRange.Rows
-						|| sheet.draggingSelectionRange.Cols > sheet.selectionRange.Cols)
+				bool performed = false;
+				
+				if (sheet.draggingSelectionRange.Rows > sheet.selectionRange.Rows
+				    || sheet.draggingSelectionRange.Cols > sheet.selectionRange.Cols)
+				{
+					RangePosition targetRange = RangePosition.Empty;
+
+					if (sheet.draggingSelectionRange.Rows == sheet.selectionRange.Rows)
 					{
-						RangePosition targetRange = RangePosition.Empty;
-
-						if (sheet.draggingSelectionRange.Rows == sheet.selectionRange.Rows)
+						targetRange = new RangePosition(
+							sheet.draggingSelectionRange.Row,
+							sheet.draggingSelectionRange.Col + sheet.selectionRange.Cols,
+							sheet.draggingSelectionRange.Rows,
+							sheet.draggingSelectionRange.Cols - sheet.selectionRange.Cols);
+						if (sheet.selectionRange.Col > sheet.draggingSelectionRange.Col)
 						{
+							// перемещение было в другую сторону
 							targetRange = new RangePosition(
 								sheet.draggingSelectionRange.Row,
-								sheet.draggingSelectionRange.Col + sheet.selectionRange.Cols,
+								sheet.draggingSelectionRange.Col /*- sheet.selectionRange.Cols*/,
 								sheet.draggingSelectionRange.Rows,
 								sheet.draggingSelectionRange.Cols - sheet.selectionRange.Cols);
 						}
-						else if (sheet.draggingSelectionRange.Cols == sheet.selectionRange.Cols)
+
+						try
 						{
+							sheet.AutoFillSerial(sheet.selectionRange, targetRange);
+							performed = true;
+						}
+						catch (Exception ex)
+						{
+							this.sheet.NotifyExceptionHappen(ex);
+						}
+					}
+					else if (sheet.draggingSelectionRange.Cols == sheet.selectionRange.Cols)
+					{
+						targetRange = new RangePosition(
+							sheet.draggingSelectionRange.Row + sheet.selectionRange.Rows,
+							sheet.draggingSelectionRange.Col,
+							sheet.draggingSelectionRange.Rows - sheet.selectionRange.Rows,
+							sheet.draggingSelectionRange.Cols);
+						if (sheet.selectionRange.Row > sheet.draggingSelectionRange.Row)
+						{
+							// перемещение было в другую сторону
 							targetRange = new RangePosition(
-								sheet.draggingSelectionRange.Row + sheet.selectionRange.Rows,
+								sheet.draggingSelectionRange.Row /* + sheet.selectionRange.Rows*/,
 								sheet.draggingSelectionRange.Col,
 								sheet.draggingSelectionRange.Rows - sheet.selectionRange.Rows,
 								sheet.draggingSelectionRange.Cols);
 						}
 
-						if (targetRange != RangePosition.Empty)
+						try
 						{
-							sheet.DoAction(new AutoFillSerialAction(sheet.SelectionRange, targetRange));
+							sheet.AutoFillSerial(sheet.selectionRange, targetRange);
+							performed = true;
+						}
+						catch (Exception ex)
+						{
+							this.sheet.NotifyExceptionHappen(ex);
 						}
 					}
+				}
+				if (performed)
+				{
+					sheet.selectionRange = sheet.draggingSelectionRange;
+				}
 
-					sheet.RequestInvalidate();
-					isProcessed = true;
-					#endregion // Submit Selection Drag
+				sheet.RequestInvalidate();
+				isProcessed = true;
+				#endregion // Submit Selection Drag
 					break;
 #endif // FORMULA
 
@@ -2163,9 +2202,9 @@ namespace unvell.ReoGrid.Views
 		}
 
 		public override string ToString()
-		{
+	{
 			return string.Format("CellsViewport[{0}]", this.ViewBounds);
 		}
 		#endregion // Utility
-	}
-}
+					}
+					}

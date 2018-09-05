@@ -4,20 +4,35 @@ using System.Linq;
 
 namespace unvell.ReoGrid.Core.SerialFill
 {
+    /// <summary>
+    /// Заполнитель, содержащий в себе другие заполнители и использующий их по мере необходимости
+    /// </summary>
     class MultiSerialFiller: SerialFillerBase
     {
         private List<SerialFillerBase> _fillers = new List<SerialFillerBase>();
         private List<FillerListDescription> _extendedFillers = null;
 
-        public MultiSerialFiller(Type[] fillerTypes, object[] data) : base(data)
+        public MultiSerialFiller( object[] data) : base(data)
         {
+            Type[] fillerTypes = new Type[] { typeof(NumberSerialFiller), typeof(CopySerialFiller), typeof(IncrementNumberFiller), typeof(NullSerialFiller) };
+            Type[] justCopy = new Type[] { typeof(CopySerialFiller) };
+
             for (int i = 0; i < fillerTypes.Length; i++)
             {
                 _fillers.Add(Activator.CreateInstance(fillerTypes[i], new object[] { data }) as SerialFillerBase);
             }
             try
             {
-                _extendedFillers = TrimToFillers(fillerTypes, data);
+                if (data.Length == 1)
+                {
+                    // Пользователи просят чтобы при растяжении области с одним элементом копировался этот один элемент
+                    // даже если это число. Ранее число инкрементировалось
+                    _extendedFillers = TrimToFillers(justCopy, data);
+                }
+                else
+                {
+                    _extendedFillers = TrimToFillers(fillerTypes, data);
+                }
             }
             catch
             {
@@ -44,6 +59,12 @@ namespace unvell.ReoGrid.Core.SerialFill
             public int Length { get; set; }
         }
 
+        /// <summary>
+        /// Функция на основе входной области создает списк заполнителей для каждого участка области
+        /// </summary>
+        /// <param name="fillerTypes"></param>
+        /// <param name="data"></param>
+        /// <returns></returns>
         private static List<FillerListDescription> TrimToFillers(Type[] fillerTypes, object[] data)
         {
             var fillers = new List<SerialFillerBase>();
@@ -102,13 +123,12 @@ namespace unvell.ReoGrid.Core.SerialFill
                 #endregion
             }
             if (lastAllowed != null)
-                result.Add(
-                    new FillerListDescription
-                    {
-                        Filler = Activator.CreateInstance(lastAllowed.Item2, new object[] { list.ToArray() }) as SerialFillerBase,
-                        Start = data.Length - list.Count,
-                        Length = list.Count,
-                    });
+                result.Add(new FillerListDescription
+                {
+                    Filler = Activator.CreateInstance(lastAllowed.Item2, new object[] { list.ToArray() }) as SerialFillerBase,
+                    Start = data.Length - list.Count,
+                    Length = list.Count,
+                });
             else
             {
                 // что то сломалось
