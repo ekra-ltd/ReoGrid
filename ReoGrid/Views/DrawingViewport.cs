@@ -23,7 +23,7 @@ using unvell.ReoGrid.Rendering;
 
 namespace unvell.ReoGrid.Views
 {
-	internal class DrawingViewport : Viewport
+	internal sealed class DrawingViewport : Viewport
 	{
 		public DrawingViewport(IViewportController vc)
 			: base(vc)

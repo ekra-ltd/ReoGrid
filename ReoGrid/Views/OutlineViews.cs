@@ -39,7 +39,7 @@ using unvell.ReoGrid.Main;
 
 namespace unvell.ReoGrid.Views
 {
-	class OutlineLeftTopSpace : View
+	sealed class OutlineLeftTopSpace : View
 	{
 		public OutlineLeftTopSpace(IViewportController vc) : base(vc) { }
 
@@ -178,7 +178,7 @@ namespace unvell.ReoGrid.Views
 		}
 	}
 
-	class RowOutlineHeaderView : OutlineHeaderPart
+	sealed class RowOutlineHeaderView : OutlineHeaderPart
 	{
 		public RowOutlineHeaderView(IViewportController vc) : base(vc, RowOrColumn.Row) { }
 
@@ -205,7 +205,7 @@ namespace unvell.ReoGrid.Views
 		}
 	}
 
-	class ColumnOutlineHeadPart : OutlineHeaderPart
+	sealed class ColumnOutlineHeadPart : OutlineHeaderPart
 	{
 		public ColumnOutlineHeadPart(IViewportController vc) : base(vc, RowOrColumn.Column) { }
 
@@ -328,7 +328,7 @@ namespace unvell.ReoGrid.Views
 		protected abstract Rectangle CreateToggleButtonRect(int loc, int pos, int buttonSize);
 	}
 
-	class RowOutlineView : OutlineView
+	sealed class RowOutlineView : OutlineView
 	{
 		public RowOutlineView(IViewportController vc)
 			: base(vc, RowOrColumn.Row)
@@ -476,7 +476,7 @@ namespace unvell.ReoGrid.Views
 		}
 	}
 
-	class ColumnOutlinePart : OutlineView
+	sealed class ColumnOutlinePart : OutlineView
 	{
 		public ColumnOutlinePart(IViewportController vc)
 			: base(vc, RowOrColumn.Column)

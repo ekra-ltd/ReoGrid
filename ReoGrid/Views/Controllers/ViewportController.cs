@@ -41,7 +41,7 @@ using unvell.ReoGrid.Main;
 
 namespace unvell.ReoGrid.Views
 {
-	internal class ViewportController : IViewportController
+	internal partial class ViewportController : IViewportController
 	{
 		#region Constructor
 
@@ -179,29 +179,35 @@ namespace unvell.ReoGrid.Views
 		#region UI Handle
 		public virtual bool OnMouseDown(Point location, MouseButtons buttons)
 		{
-			bool isProcessed = false;
-
-			if (!isProcessed)
-			{
-				var targetView = this.view.GetViewByPoint(location);
-
-				if (targetView != null)
-				{
-					isProcessed = targetView.OnMouseDown(targetView.PointToView(location), buttons);
-				}
-			}
-
-			return isProcessed;
+			// bool isProcessed = false;
+			//
+			// if (!isProcessed)
+			// {
+			// 	var targetView = this.view.GetViewByPoint(location);
+			//
+			// 	if (targetView != null)
+			// 	{
+			// 		isProcessed = targetView.OnMouseDown(targetView.PointToView(location), buttons);
+			// 	}
+			// }
+			//
+			// return isProcessed;
+			return ExecuteToView(
+				new[] { view.GetViewByPoint(location) },
+				item => item.OnMouseDown(item.PointToView(location), buttons));
 		}
 
 		public virtual bool OnMouseMove(Point location, MouseButtons buttons)
 		{
-			bool isProcessed = false;
-
-			if (this.FocusView != null)
-			{
-				this.FocusView.OnMouseMove(this.FocusView.PointToView(location), buttons);
-			}
+			// bool isProcessed = false;
+			//
+			// if (this.FocusView != null)
+			// {
+			// 	this.FocusView.OnMouseMove(this.FocusView.PointToView(location), buttons);
+			// }
+			var isProcessed = ExecuteToView(
+				new[] { FocusView },
+				item => item.OnMouseMove(item.PointToView(location), buttons));
 
 			if (!isProcessed)
 			{
@@ -218,29 +224,35 @@ namespace unvell.ReoGrid.Views
 
 		public virtual bool OnMouseUp(Point location, MouseButtons buttons)
 		{
-			bool isProcessed = false;
-
-			if (this.FocusView != null)
-			{
-				isProcessed = this.FocusView.OnMouseUp(this.FocusView.PointToView(location), buttons);
-			}
-
-			return isProcessed;
+			// bool isProcessed = false;
+			//
+			// if (this.FocusView != null)
+			// {
+			// 	isProcessed = this.FocusView.OnMouseUp(this.FocusView.PointToView(location), buttons);
+			// }
+			//
+			// return isProcessed;
+			return ExecuteToView(
+				new[] { FocusView },
+				item => item.OnMouseUp(item.PointToView(location), buttons));
 		}
 
 		public virtual bool OnMouseDoubleClick(Point location, MouseButtons buttons)
 		{
-			bool isProcessed = false;
-
-			var targetView = this.FocusView != null ? this.FocusView
-				: this.view.GetViewByPoint(location);
-
-			if (targetView != null)
-			{
-				isProcessed = targetView.OnMouseDoubleClick(targetView.PointToView(location), buttons);
-			}
-
-			return isProcessed;
+			// bool isProcessed = false;
+			// 
+			// var targetView = this.FocusView != null ? this.FocusView
+			// 	: this.view.GetViewByPoint(location);
+			// 
+			// if (targetView != null)
+			// {
+			// 	isProcessed = targetView.OnMouseDoubleClick(targetView.PointToView(location), buttons);
+			// }
+			// 
+			// return isProcessed;
+			return ExecuteToView(
+				new[] {FocusView, view.GetViewByPoint(location)},
+				item => item.OnMouseDoubleClick(item.PointToView(location), buttons));
 		}
 
 		public virtual bool OnKeyDown(KeyCode key) { return false; }
