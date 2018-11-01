@@ -90,7 +90,7 @@ namespace unvell.ReoGrid.Rendering
 
 		Size MeasureCellText(Cell cell, DrawMode drawMode, RGFloat scale);
 
-		void BeginDrawHeaderText(RGFloat scale);
+        void BeginDrawHeaderText(RGFloat scale);
 
 		void DrawHeaderText(string text, RGBrush brush, Rectangle rect);
 

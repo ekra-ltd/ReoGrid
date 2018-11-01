@@ -558,7 +558,7 @@ namespace unvell.ReoGrid.Rendering
 			{
 				System.Windows.Media.Matrix m = System.Windows.Media.Matrix.Identity;
 
-				double hw = cell.formattedText.Width * 0.5, hh = cell.formattedText.Height * 0.5;
+				double hw = cell.formattedText.WidthIncludingTrailingWhitespace * 0.5, hh = cell.formattedText.Height * 0.5;
 				WPFPoint p1 = new WPFPoint(-hw, -hh), p2 = new WPFPoint(hw, hh);
 				m.Rotate(cell.InnerStyle.RotationAngle);
 				p1 *= m; p2 *= m;
@@ -566,7 +566,7 @@ namespace unvell.ReoGrid.Rendering
 			}
 			else
 			{
-				return new Graphics.Size(cell.formattedText.Width, cell.formattedText.Height);
+				return new Graphics.Size(cell.formattedText.WidthIncludingTrailingWhitespace, cell.formattedText.Height);
 			}
 		}
 

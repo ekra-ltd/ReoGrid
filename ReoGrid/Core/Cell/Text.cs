@@ -33,50 +33,73 @@ using RGFloat = System.Double;
 
 namespace unvell.ReoGrid
 {
-	partial class Worksheet
-	{
-	}
+    partial class Worksheet
+    {
+    }
 
-	partial class Cell
-	{
-		internal bool FontDirty { get; set; }
+    partial class Cell
+    {
+        internal bool FontDirty { get; set; }
 
-		private Rectangle textBounds;
+        private Rectangle _textBounds;
 
-		/// <summary>
-		/// text boundary for display
-		/// </summary>
-		internal Rectangle TextBounds { get { return this.textBounds; } set { this.textBounds = value; } }
+        /// <summary>
+        /// Text boundary for display
+        /// </summary>
+        internal Rectangle TextBounds
+        {
+            get => _textBounds;
+            set => _textBounds = value;
+        }
 
-		internal RGFloat TextBoundsTop { get { return textBounds.Y; } set { this.textBounds.Y = value; } }
-		internal RGFloat TextBoundsLeft { get { return textBounds.X; } set { this.textBounds.X = value; } }
-		internal RGFloat TextBoundsWidth { get { return textBounds.Width; } set { this.textBounds.Width = value; } }
-		internal RGFloat TextBoundsHeight { get { return textBounds.Height; } set { this.textBounds.Height = value; } }
+        internal RGFloat TextBoundsTop
+        {
+            get => _textBounds.Y;
+            set => _textBounds.Y = value;
+        }
 
-		internal Rectangle PrintTextBounds { get; set; }
+        internal RGFloat TextBoundsLeft
+        {
+            get => _textBounds.X;
+            set => _textBounds.X = value;
+        }
 
-		/// <summary>
-		/// Horizontal alignement for display
-		/// </summary>
-		internal ReoGridRenderHorAlign RenderHorAlign { get; set; }
+        internal RGFloat TextBoundsWidth
+        {
+            get => _textBounds.Width;
+            set => _textBounds.Width = value;
+        }
 
-		/// <summary>
-		/// Column span if text larger than the cell it inside
-		/// </summary>
-		internal short RenderTextColumnSpan { get; set; }
+        internal RGFloat TextBoundsHeight
+        {
+            get => _textBounds.Height;
+            set => _textBounds.Height = value;
+        }
 
-		//private SolidColor renderColor = null;
-		/// <summary>
-		/// Get the render color of cell text. Render color is the final color that used to render the text on the worksheet.
-		/// Whatever cell style with text color is specified, negative numbers may displayed as red.
-		/// This property cannot be changed directly. 
-		/// To change text color, set cell style with text color by call SetRangeStyles method, or change the Cell.Style.TextColor property.
-		/// </summary>
-		public SolidColor RenderColor { get; internal set; }
+        internal Rectangle PrintTextBounds { get; set; }
 
-		//public SolidColor? GetRenderColor() { return renderColor; }
+        /// <summary>
+        /// Horizontal alignement for display
+        /// </summary>
+        internal ReoGridRenderHorAlign RenderHorAlign { get; set; }
 
-		internal RGFloat RenderScaleFactor { get; set; }
+        /// <summary>
+        /// Column span if text larger than the cell it inside
+        /// </summary>
+        internal short RenderTextColumnSpan { get; set; }
 
-	}
+        //private SolidColor renderColor = null;
+        /// <summary>
+        /// Get the render color of cell text. Render color is the final color that used to render the text on the worksheet.
+        /// Whatever cell style with text color is specified, negative numbers may displayed as red.
+        /// This property cannot be changed directly. 
+        /// To change text color, set cell style with text color by call SetRangeStyles method, or change the Cell.Style.TextColor property.
+        /// </summary>
+        public SolidColor RenderColor { get; internal set; }
+
+        //public SolidColor? GetRenderColor() { return renderColor; }
+
+        internal RGFloat RenderScaleFactor { get; set; }
+
+    }
 }
