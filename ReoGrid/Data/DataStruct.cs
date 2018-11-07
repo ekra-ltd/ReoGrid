@@ -565,13 +565,21 @@ namespace unvell.ReoGrid.Data
 		}
 
 		private int maxRow = -1, maxCol = -1;
-		public int MaxRow { get { return maxRow; } set { maxRow = value; } }
-		public int MaxCol { get { return maxCol; } set { maxCol = value; } }
 
-		public int RowCapacity { get { return 1048576; } }
-		public int ColCapacity { get { return 32768; } }
+	    public int MaxRow
+	    {
+	        get => maxRow;
+	        set => maxRow = value;
+	    }
 
-		public T this[int row, int col]
+	    public int MaxCol { get => maxCol;
+	        set => maxCol = value;
+	    }
+
+		public int RowCapacity => 1048576;
+	    public int ColCapacity => 32768;
+
+	    public T this[int row, int col]
 		{
 			get
 			{

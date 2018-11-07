@@ -50,6 +50,8 @@ namespace unvell.ReoGrid.Actions
 		{
 			backupData = Worksheet.GetPartialGrid(base.Range, PartialGridCopyFlag.All, ExPartialGridCopyFlag.BorderOutsideOwner);
 			Debug.Assert(backupData != null);
+			//#5439-43 Сбрасываем Merge всех ячеек
+			Worksheet.UnmergeRange(base.Range);
 			base.Range = base.Worksheet.SetPartialGridRepeatly(base.Range, data);
 			Worksheet.SelectRange(base.Range);
 		}
@@ -60,6 +62,8 @@ namespace unvell.ReoGrid.Actions
 		public override void Undo()
 		{
 			Debug.Assert(backupData != null);
+			//#5439-43 Сбрасываем Merge всех ячеек
+			Worksheet.UnmergeRange(base.Range);
 			base.Worksheet.SetPartialGrid(base.Range, backupData, PartialGridCopyFlag.All, ExPartialGridCopyFlag.BorderOutsideOwner);
 		}
 
