@@ -16,9 +16,9 @@ namespace unvell.ReoGrid
 {
 	public partial class Worksheet
 	{
-		public List<Core.Worksheet.Additional.ConditionalFormat> ConditionalFormats { get; set; }
+		public List<ConditionalFormat> ConditionalFormats { get; set; }
 
-		private Dictionary<ConditionalFormat, List<ReferenceRange>> cfFormulaRanges =
+		private readonly Dictionary<ConditionalFormat, List<ReferenceRange>> cfFormulaRanges =
 			new Dictionary<ConditionalFormat, List<ReferenceRange>>();
 
 		public void TryAddConditionalFormats()
@@ -32,68 +32,34 @@ namespace unvell.ReoGrid
 					}
 					catch
 					{
-						// ignore
+						// молчим
 					}
 				}
 		}
 
-		private void TryAddConditionalFormat(unvell.ReoGrid.Core.Worksheet.Additional.ConditionalFormat format)
+		private static readonly List<ConditionalFormatAdder> ConditionalFormatAdders = new List<ConditionalFormatAdder>(
+			new ConditionalFormatAdder[]
+			{
+				new ConditionalFormatExpressionAdder(),
+				new ConditionalFormatCellIsAdder(),
+			});
+
+		private void TryAddConditionalFormat(ConditionalFormat format)
 		{
 			var position = new RangePosition(format.Sqref.Text).StartPos;
 
 			foreach (var rule in format.Rules)
 			{
 				if (rule.DifferentialFormat == null) continue;
-				if (rule.Type == unvell.ReoGrid.Core.Worksheet.Additional.ConditionalFormatType.Expression)
+				ConditionalFormatAdders.FirstOrDefault(a => a.ExpressionType == rule.Type)?.Add(new AddConditionalFormatInfo
 				{
-					if (rule.Formula.Count > 0)
-					{
-						Formula.STNode node = null;
-						try
-						{
-							node = Formula.Parser.Parse(this.Workbook, this.Cells[position], rule.Formula[0].Value);
-
-							List<ReferenceRange> referencesRanges;
-							if (cfFormulaRanges.TryGetValue(format, out referencesRanges))
-							{
-								referencesRanges.Clear();
-							}
-							else
-							{
-								referencesRanges = cfFormulaRanges[format] = new List<ReferenceRange>();
-							}
-
-							if (node != null)
-							{
-								try
-								{
-									// cell тут нужен для определения циклических зависимостей. 
-									// у меня таких зависимостей не может быть, но интерефейс надо использовать(
-									IterateToAddReference(Cells[position], node, referencesRanges, true);
-									rule.Formula[0].FormulaTree = node;
-								}
-								catch (CircularReferenceException)
-								{
-									rule.Formula[0].FormulaTree = null;
-									throw;
-								}
-							}
-						}
-						catch (Exception e)
-						{
-#if DEBUG
-							MessageBox.Show(
-								$"При разборе формулы условного форматирования диапазона '{format.Sqref.Text}' '{rule.Formula[0].Value}' выдано исключение: '{e.Message}'");
-#endif
-							Debug.WriteLine(e);
-							throw;
-						}
-					}
-				}
+					Worksheet = this,
+					Rule = rule,
+					Format = format,
+					Position = position
+				});
 			}
 		}
-
-
 
 		internal void RecalcConditionalFormats()
 		{
@@ -136,11 +102,16 @@ namespace unvell.ReoGrid
 			{
 				var applyFormat = rule.DifferentialFormat;
 				if (applyFormat == null) continue;
-				var value = Evaluator.Evaluate(cell, rule.Formula[0].FormulaTree);
-				var apply = value.type == FormulaValueType.Boolean && value.value as bool? == true;
-				ApplyDifferencialFormat(pos, applyFormat, apply);
+
+				var item = ConditionalFormatAdders.FirstOrDefault(a => a.ExpressionType == rule.Type);
+				if (item != null)
+				{
+					var apply = item.CanApplyFormat(cell, rule);
+					ApplyDifferencialFormat(pos, applyFormat, apply);
+				}
 			}
 		}
+
 
 		private void ApplyDifferencialFormat(RangePosition position, DifferentialFormat format, bool apply)
 		{
@@ -167,6 +138,295 @@ namespace unvell.ReoGrid
 		}
 
 		private  List<Cell> CfCells = new List<Cell>();
+
+		#region Вспомогательные методы
+
+		private class AddConditionalFormatInfo
+		{
+			public Worksheet Worksheet { get; set; }
+			public ConditionalFormatRule Rule { get; set; }
+			public CellPosition Position { get; set; }
+			public ConditionalFormat Format { get; set; }
+		}
+
+		private abstract class ConditionalFormatAdder
+		{
+			public abstract ConditionalFormatType ExpressionType { get; }
+			public abstract void Add(AddConditionalFormatInfo info);
+
+			public abstract bool CanApplyFormat(Cell cell, ConditionalFormatRule rule);
+		}
+
+		private class ConditionalFormatExpressionAdder : ConditionalFormatAdder
+		{
+			public override ConditionalFormatType ExpressionType => ConditionalFormatType.Expression;
+
+			public override void Add(AddConditionalFormatInfo info)
+			{
+				if (info.Rule.Formula.Count > 0)
+				{
+					try
+					{
+						var node = Parser.Parse(info.Worksheet.Workbook, info.Worksheet.Cells[info.Position], info.Rule.Formula[0].Value);
+						if (info.Worksheet.cfFormulaRanges.TryGetValue(info.Format, out var referencesRanges))
+						{
+							referencesRanges.Clear();
+						}
+						else
+						{
+							referencesRanges = info.Worksheet.cfFormulaRanges[info.Format] = new List<ReferenceRange>();
+						}
+
+						if (node != null)
+						{
+							try
+							{
+								// cell тут нужен для определения циклических зависимостей. 
+								// у меня таких зависимостей не может быть, но интерефейс надо использовать(
+								IterateToAddReference(info.Worksheet.Cells[info.Position], node, referencesRanges, true);
+								info.Rule.Formula[0].FormulaTree = node;
+							}
+							catch (CircularReferenceException)
+							{
+								info.Rule.Formula[0].FormulaTree = null;
+								throw;
+							}
+						}
+					}
+					catch (Exception e)
+					{
+#if DEBUG
+						MessageBox.Show($"При разборе формулы условного форматирования диапазона '{info.Format.Sqref.Text}' '{info.Rule.Formula[0].Value}' выдано исключение: '{e.Message}'");
+#endif
+						Debug.WriteLine(e);
+						throw;
+					}
+				}
+			}
+
+			public override bool CanApplyFormat(Cell cell, ConditionalFormatRule rule)
+			{
+				var evaluatedValue = Evaluator.Evaluate(cell, rule.Formula[0].FormulaTree);
+				return evaluatedValue.type == FormulaValueType.Boolean && evaluatedValue.value as bool? == true;
+			}
+		}
+
+		private class ConditionalFormatCellIsAdder : ConditionalFormatAdder
+		{
+			public override ConditionalFormatType ExpressionType => ConditionalFormatType.CellIs;
+
+			public override void Add(AddConditionalFormatInfo info)
+			{
+				foreach (var formulaItem in info.Rule.Formula )
+				{
+					try
+					{
+						var node = Parser.Parse(info.Worksheet.Workbook, info.Worksheet.Cells[info.Position], formulaItem.Value);
+						if (info.Worksheet.cfFormulaRanges.TryGetValue(info.Format, out var referencesRanges))
+						{
+							referencesRanges.Clear();
+						}
+						else
+						{
+							referencesRanges = info.Worksheet.cfFormulaRanges[info.Format] = new List<ReferenceRange>();
+						}
+
+						if (node != null)
+						{
+							try
+							{
+								// cell тут нужен для определения циклических зависимостей. 
+								// у меня таких зависимостей не может быть, но интерефейс надо использовать(
+								IterateToAddReference(info.Worksheet.Cells[info.Position], node, referencesRanges, true);
+								referencesRanges.Add(new ReferenceRange(info.Worksheet, info.Position));
+								formulaItem.FormulaTree = node;
+							}
+							catch (CircularReferenceException)
+							{
+								formulaItem.FormulaTree = null;
+								throw;
+							}
+						}
+					}
+					catch (Exception e)
+					{
+#if DEBUG
+						MessageBox.Show($"При разборе формулы условного форматирования диапазона '{info.Format.Sqref.Text}' '{formulaItem.Value}' выдано исключение: '{e.Message}'");
+#endif
+						Debug.WriteLine(e);
+						throw;
+					}
+				}
+			}
+
+			public override bool CanApplyFormat(Cell cell, ConditionalFormatRule rule)
+			{
+				List<FormulaValue> values = new List<FormulaValue>();
+				foreach (var formulaItem in rule.Formula)
+				{
+					values.Add(Evaluator.Evaluate(cell, formulaItem.FormulaTree));
+				}
+				// var evaluatedValue = Evaluator.Evaluate(cell, rule.Formula[0].FormulaTree);
+				return CheckCondition(rule.Operator, cell?.Data, values);
+			}
+
+			private static bool CheckCondition(ConditionalFormattingOperator? op, object cellvalue, List<FormulaValue> evaluatedValues)
+			{
+				if (op is null) return false;
+				if (cellvalue is null) return false;
+				if (evaluatedValues is null) return false;
+				if (!evaluatedValues.Any()) return false;
+				if (evaluatedValues.Any(i => i.value is null)) return false;
+
+				switch (op)
+				{
+					case ConditionalFormattingOperator.LessThan: return IsLessThenAsDouble(cellvalue, evaluatedValues[0].value);
+					case ConditionalFormattingOperator.LessThanOrEqual: return IsLessThanOrEqualAsDouble(cellvalue, evaluatedValues[0].value);
+					case ConditionalFormattingOperator.Equal: return IsEqualAsDouble(cellvalue, evaluatedValues[0].value);
+					case ConditionalFormattingOperator.NotEqual: return IsNotEqualAsDouble(cellvalue, evaluatedValues[0].value);
+					case ConditionalFormattingOperator.GreaterThanOrEqual: return IsGreaterThanOrEqualAsDouble(cellvalue, evaluatedValues[0].value);
+					case ConditionalFormattingOperator.GreaterThan: return IsGreaterThanAsDouble(cellvalue, evaluatedValues[0].value);
+					case ConditionalFormattingOperator.Between:
+						if (evaluatedValues.Count >= 2)
+						{
+							return IsBetweenAsDouble(cellvalue, evaluatedValues[0].value, evaluatedValues[1].value);
+						}
+						break;
+					case ConditionalFormattingOperator.NotBetween:
+						if (evaluatedValues.Count >= 2)
+						{
+							return IsNotBetweenAsDouble(cellvalue, evaluatedValues[0].value, evaluatedValues[1].value);
+						}
+						break;
+					case ConditionalFormattingOperator.ContainsText:
+						return ContainsTextAsString(cellvalue, evaluatedValues[0].value);
+					case ConditionalFormattingOperator.NotContains:
+						return NotContainsTextAsString(cellvalue, evaluatedValues[0].value);
+					case ConditionalFormattingOperator.BeginsWith:
+						return BeginWithAsString(cellvalue, evaluatedValues[0].value);
+					case ConditionalFormattingOperator.EndsWith:
+						return EndWithAsString(cellvalue, evaluatedValues[0].value);
+				}
+				return false;
+			}
+
+			private static bool IsLessThenAsDouble(object a, object b)
+			{
+				if (AsDouble(a, out var dA) && AsDouble(b, out var dB))
+				{
+					return dA < dB;
+				}
+				return false;
+			}
+
+			private static bool IsLessThanOrEqualAsDouble(object a, object b)
+			{
+				if (AsDouble(a, out var dA) && AsDouble(b, out var dB))
+				{
+					return dA <= dB;
+				}
+				return false;
+			}
+
+			private static bool IsGreaterThanOrEqualAsDouble(object a, object b)
+			{
+				if (AsDouble(a, out var dA) && AsDouble(b, out var dB))
+				{
+					return dA >= dB;
+				}
+				return false;
+			}
+
+			private static bool IsGreaterThanAsDouble(object a, object b)
+			{
+				if (AsDouble(a, out var dA) && AsDouble(b, out var dB))
+				{
+					return dA > dB;
+				}
+				return false;
+			}
+
+			private static double Epsilon => 0.00001;
+
+			private static bool IsEqualAsDouble(object a, object b)
+			{
+				if (AsDouble(a, out var dA) && AsDouble(b, out var dB))
+				{
+					return dA - dB < Epsilon;
+				}
+				return false;
+			}
+
+			private static bool IsNotEqualAsDouble(object a, object b)
+			{
+				if (AsDouble(a, out var dA) && AsDouble(b, out var dB))
+				{
+					return !(dA - dB < Epsilon);
+				}
+				return false;
+			}
+
+			private static bool IsBetweenAsDouble(object a, object b, object c)
+			{
+				return IsGreaterThanOrEqualAsDouble(a, b) && IsLessThanOrEqualAsDouble(a, c);
+			}
+
+			private static bool IsNotBetweenAsDouble(object a, object b, object c)
+			{
+				return IsLessThenAsDouble(a, b) && IsGreaterThanAsDouble(a, c);
+			}
+
+			private static bool ContainsTextAsString(object a, object b)
+			{
+				if (a is string sA && b is string sB)
+				{
+					return sA.IndexOf(sB, StringComparison.Ordinal) >= 0;
+				}
+				return false;
+			}
+
+			private static bool NotContainsTextAsString(object a, object b)
+			{
+				if (a is string sA && b is string sB)
+				{
+					return sA.IndexOf(sB, StringComparison.Ordinal) < 0;
+				}
+				return false;
+			}
+
+			private static bool BeginWithAsString(object a, object b)
+			{
+				if (a is string sA && b is string sB)
+				{
+					return sA.StartsWith(sB);
+				}
+				return false;
+			}
+
+			private static bool EndWithAsString(object a, object b)
+			{
+				if (a is string sA && b is string sB)
+				{
+					return sA.EndsWith(sB);
+				}
+				return false;
+			}
+
+
+			private static bool AsDouble(object o, out double d)
+			{
+				if (o is double doubleValue)
+				{
+					d = doubleValue;
+					return true;
+				}
+				d = double.NaN;
+				return false;
+			}
+
+		}
+
+		#endregion
 	}
 
 	public partial class Cell
@@ -189,6 +449,7 @@ namespace unvell.ReoGrid
 		{
 			Worksheet?.MarkAsCfCell(this);
 
+			//_useCfStyle = false;
 			if (_cfSaveStyle == null)
 				_cfSaveStyle = new CfSaveStyle
 				{
@@ -233,23 +494,24 @@ namespace unvell.ReoGrid
 				else
 					Style.TextColor = _cfSaveStyle.TextColor;
 			}
+			//_useCfStyle = apply;
 		}
 
-        [Serializable]
-        private class CfSaveStyle
-        {
-            public SolidColor BackColor { get; set; }
-            public SolidColor TextColor { get; set; }
-        }
+		[Serializable]
+		private class CfSaveStyle
+		{
+			public SolidColor BackColor { get; set; }
+			public SolidColor TextColor { get; set; }
+		}
 
-        [Serializable]
-        private class CfApplyStyle
-        {
-            public SolidColor? BackColor { get; set; }
-            public SolidColor? TextColor { get; set; }
-        }
+		[Serializable]
+		private class CfApplyStyle
+		{
+			public SolidColor? BackColor { get; set; }
+			public SolidColor? TextColor { get; set; }
+		}
 
-    }
+	}
 
 }
 
@@ -268,7 +530,7 @@ namespace unvell.ReoGrid.Core.Worksheet.Additional
 				}
 				catch 
 				{
-					// ignore
+					//skip
 				}
 			}
 			return result;
@@ -276,6 +538,7 @@ namespace unvell.ReoGrid.Core.Worksheet.Additional
 
 		public static List<ConditionalFormat> From2009(E2009.CT_ConditionalFormattings formattings)
 		{
+			//throw new NotImplementedException();
 			List<ConditionalFormat> result = new List<ConditionalFormat>();
 			foreach (var formatting in formattings.conditionalFormatting)
 			{
@@ -402,7 +665,7 @@ namespace unvell.ReoGrid.Core.Worksheet.Additional
 			{
 				result = new IconSet
 				{
-					Custom = null,
+					Custom = null, //TODO перепроверить
 					Percent = value.percent,
 					IconSetType = From2006(value.iconSet),
 					Reverse = value.reverse,
@@ -412,6 +675,7 @@ namespace unvell.ReoGrid.Core.Worksheet.Additional
 				{
 					result.CondittionalFormatValue.Add(From2006(cfvo));
 				}
+				//TODO перепроверить result.Cficon
 			}
 			return result;
 			throw new NotImplementedException();
@@ -501,6 +765,7 @@ namespace unvell.ReoGrid.Core.Worksheet.Additional
 		private static ConditionalFormattingOperator? From2006(E2006.ST_ConditionalFormattingOperator value, bool specified)
 		{
 			if (!specified) return null;
+			//TODO на входе может и не быть значения
 			if (value != null)
 			{
 				switch (value)
@@ -540,6 +805,7 @@ namespace unvell.ReoGrid.Core.Worksheet.Additional
 		{
 			if (!specified)
 				return null;
+			//TODO на входе может и не быть значения
 			if (value != null)
 			{
 				switch (value)
@@ -574,6 +840,7 @@ namespace unvell.ReoGrid.Core.Worksheet.Additional
 		private static ConditionalFormatType? From2006(E2006.ST_CfType value, bool specified)
 		{
 			if (!specified) return null;
+			//TODO на входе может и не быть значения
 			if (value != null)
 			{
 				switch (value)
@@ -623,6 +890,8 @@ namespace unvell.ReoGrid.Core.Worksheet.Additional
 
 		private static IconSetType From2006(E2006.ST_IconSetType value)
 		{
+			// TODO Проверить может ли тип быть пустым
+			//throw new NotImplementedException();
 			switch (value)
 			{
 				case E2006.ST_IconSetType.Item3Arrows:
@@ -675,6 +944,7 @@ namespace unvell.ReoGrid.Core.Worksheet.Additional
 					Gte = value.gte,
 					Type = From2006(value.type)
 				};
+				// TODO extList - проигнорирован
 			}
 			return result;
 		}
@@ -705,7 +975,7 @@ namespace unvell.ReoGrid.Core.Worksheet.Additional
 				{
 					Bottom = From2006(value.bottom),
 					Diagonal = From2006(value.diagonal),
-					DiagonalDown = null,
+					DiagonalDown = null,        // TODO несовпадение имен наверное
 					DiagonalUp = null,
 					End = null,
 					Horizontal = null,
@@ -773,33 +1043,33 @@ namespace unvell.ReoGrid.Core.Worksheet.Additional
 			return result;
 		}
 
-        private static Font From2006(E2006.Font value)
-        {
-            Font result = null;
-            if (value != null)
-            {
-                bool strike = value?.strikethrough?.val != null && value?.strikethrough?.val != "0";
-                result = new Font
-                {
-                    Bold = ToBooleanProperty(value.bold),
-                    Color = From2006(value.color),
-                    Outline = ToBooleanProperty(null),
-                    Charset = null,
-                    Condense = ToBooleanProperty(null),
-                    Extend = ToBooleanProperty(null),
-                    Family = From2006FontFamily(value.family),
-                    FontScheme = null,
-                    FontSize = From2006FontSize(value.size),
-                    Italic = ToBooleanProperty(value.italic),
-                    Name = From2006FontName(value.name),
-                    Shadow = ToBooleanProperty(null),
-                    Strike = strike ? new BooleanProperty {Value = true} : null,
-                    Underline = From2006(value.underline),
-                    VerticalAlign = null,
-                };
-            }
-            return result;
-        }
+		private static Font From2006(E2006.Font value)
+		{
+			Font result = null;
+			if (value != null)
+			{
+				bool strike = value?.strikethrough?.val != null && value?.strikethrough?.val != "0";
+				result = new Font
+				{
+					Bold = ToBooleanProperty(value.bold),
+					Color = From2006(value.color),
+					Outline = ToBooleanProperty(null),
+					Charset = null,
+					Condense = ToBooleanProperty(null),
+					Extend = ToBooleanProperty(null),
+					Family = From2006FontFamily(value.family),
+					FontScheme = null,
+					FontSize = From2006FontSize(value.size),
+					Italic = ToBooleanProperty(value.italic),
+					Name = From2006FontName(value.name),
+					Shadow = ToBooleanProperty(null),
+					Strike = strike ? new BooleanProperty {Value = true} : null,
+					Underline = From2006(value.underline),
+					VerticalAlign = null,
+				};
+			}
+			return result;
+		}
 
 		private static NumberFormat From2006(E2006.NumberFormat value)
 		{
@@ -809,7 +1079,7 @@ namespace unvell.ReoGrid.Core.Worksheet.Additional
 				result = new NumberFormat
 				{
 					FormatCode = value.formatCode,
-					NumberFormatId = (uint)value.formatId,
+					NumberFormatId = (uint)value.formatId,  // TODO что за formatId
 				};
 			}
 			return result;
@@ -817,27 +1087,31 @@ namespace unvell.ReoGrid.Core.Worksheet.Additional
 
 		private static ConditionalFormatValueObjectType From2006(E2006.ST_CfvoType value)
 		{
-			switch (value)
+			//if (value != null)
 			{
-				case E2006.ST_CfvoType.num:
-					return ConditionalFormatValueObjectType.Num;
-				case E2006.ST_CfvoType.percent:
-					return ConditionalFormatValueObjectType.Percent;
-				case E2006.ST_CfvoType.max:
-					return ConditionalFormatValueObjectType.Max;
-				case E2006.ST_CfvoType.min:
-					return ConditionalFormatValueObjectType.Min;
-				case E2006.ST_CfvoType.formula:
-					return ConditionalFormatValueObjectType.Formula;
-				case E2006.ST_CfvoType.percentile:
-					return ConditionalFormatValueObjectType.Percentile;
-				default:
-					throw new ArgumentOutOfRangeException(nameof(value), value, null);
+				switch (value)
+				{
+					case E2006.ST_CfvoType.num:
+						return ConditionalFormatValueObjectType.Num;
+					case E2006.ST_CfvoType.percent:
+						return ConditionalFormatValueObjectType.Percent;
+					case E2006.ST_CfvoType.max:
+						return ConditionalFormatValueObjectType.Max;
+					case E2006.ST_CfvoType.min:
+						return ConditionalFormatValueObjectType.Min;
+					case E2006.ST_CfvoType.formula:
+						return ConditionalFormatValueObjectType.Formula;
+					case E2006.ST_CfvoType.percentile:
+						return ConditionalFormatValueObjectType.Percentile;
+					default:
+						throw new ArgumentOutOfRangeException(nameof(value), value, null);
+				}
 			}
 		}
 
 		private static Argb From2006(byte[] rgb)
 		{
+			//TODO а я в не в курсе как выполнять преобразование
 			Argb result = new Argb();
 			if (rgb != null)
 			{
@@ -868,7 +1142,7 @@ namespace unvell.ReoGrid.Core.Worksheet.Additional
 				result = new BorderPr
 				{
 					Color = From2006(value.color),
-					Style = From2006BorderStyle(value.style),
+					Style = From2006BorderStyle(value.style),   //TODO непонятно какая строка должна быть
 				};
 			}
 			return result;
@@ -894,17 +1168,19 @@ namespace unvell.ReoGrid.Core.Worksheet.Additional
 						throw new ArgumentOutOfRangeException(nameof(value), value, null);
 				}
 			}
+			// TODO Проверить может ли быть значение null
 			throw new ArgumentNullException(nameof(value));
 		}
 
 		private static VerticalAlignment From2006(ReoGridVerAlign value)
 		{
 			if (value != null)
+
 			{
 				switch (value)
 				{
 					case ReoGridVerAlign.General:
-						return VerticalAlignment.Distributed;
+						return VerticalAlignment.Distributed; //TODO нет general - может быть другой тип
 					case ReoGridVerAlign.Top:
 						return VerticalAlignment.Top;
 					case ReoGridVerAlign.Middle:
@@ -915,6 +1191,7 @@ namespace unvell.ReoGrid.Core.Worksheet.Additional
 						throw new ArgumentOutOfRangeException(nameof(value), value, null);
 				}
 			}
+			// TODO Проверить может ли быть значение null
 			throw new ArgumentNullException(nameof(value));
 		}
 
@@ -1045,7 +1322,7 @@ namespace unvell.ReoGrid.Core.Worksheet.Additional
 					case BorderLineStyle.None:
 						return BorderStyle.None;
 					case BorderLineStyle.Solid:
-						return BorderStyle.Thin;
+						return BorderStyle.Thin;    // TODO мне не известно соответствие
 					case BorderLineStyle.Dotted:
 						return BorderStyle.Dotted;
 					case BorderLineStyle.Dashed:
@@ -1144,6 +1421,7 @@ namespace unvell.ReoGrid.Core.Worksheet.Additional
 				}
 			}
 			return null;
+			//throw new ArgumentNullException(nameof(value));
 		}
 
 		private static Argb From2006Argb(string value)
@@ -1367,6 +1645,12 @@ namespace unvell.ReoGrid.Core.Worksheet.Additional
 			return result;
 		}
 
+		//private static ConditionalFormatValueObject From2009(E2009.CT_Cfvo value)
+		//{
+		//    throw new NotImplementedException();
+		//}
+
+		//
 		private static DatabarAxisPosition From2009(E2009.ST_DataBarAxisPosition value)
 		{
 			if (value != null)
@@ -1511,6 +1795,7 @@ namespace unvell.ReoGrid.Core.Worksheet.Additional
 		private static NumberFormat From2009(E2009.CT_NumFmt value)
 		{
 			NumberFormat result = null;
+			// так как мне не удалось понять как работает NumFmt - его импорт и экспорт игнорируются
 			if (false && value != null)
 			{
 				result = new NumberFormat
@@ -2078,7 +2363,7 @@ namespace unvell.ReoGrid.Core.Worksheet.Additional
 				{
 					pivot = value.Pivot,
 					sqref = ToExcel2009(value.Sqref),
-					extLst = null,
+					extLst = null, // WARNING: расширения игнорируются!
 				};
 				if (value.Rules != null && value.Rules.Count > 0)
 				{
@@ -2134,7 +2419,7 @@ namespace unvell.ReoGrid.Core.Worksheet.Additional
 					@operator = @operator,
 					operatorSpecified = operatorSpecified,
 					dxf = ToExcel2009(value.DifferentialFormat),
-					extLst = null,
+					extLst = null,                          // WARNING расширения теряются
 					stopIfTrue = value.StopIfTrue ?? false,
 					stdDev = value.StdDev??0,
 					stdDevSpecified = value.StdDev != null,
@@ -2148,7 +2433,7 @@ namespace unvell.ReoGrid.Core.Worksheet.Additional
 					typeSpecified = typSpecified,
 					rank = value.Rank??0,
 					rankSpecified =  value.Rank != null,
-					priority = value.Priority ?? 0,
+					priority = value.Priority ?? 0,         //TODO тут у меня разные xsd и документация не сходится вроде он должен быть required
 					prioritySpecified = value.Priority != null,
 					timePeriod = timePeriod,
 					timePeriodSpecified = timePeriodSpecified,
@@ -2214,7 +2499,7 @@ namespace unvell.ReoGrid.Core.Worksheet.Additional
 			{
 				result = new E2009.CT_Dxf
 				{
-					extLst = null,
+					extLst = null,                          // WARNING расширения теряются
 					font = ToExcel2009(value.Font),
 					border = ToExcel2009(value.Border),
 					fill = ToExcel2009(value.Fill),
@@ -2565,11 +2850,12 @@ namespace unvell.ReoGrid.Core.Worksheet.Additional
 		private static E2009.CT_NumFmt ToExcel2009(NumberFormat value)
 		{
 			E2009.CT_NumFmt result = null;
+			// так как мне не удалось понять как работает NumFmt - его импорт и экспорт игнорируются
 			if (false && value != null)
 			{
 				result = new E2009.CT_NumFmt
 				{
-					numFmtId = value.NumberFormatId,
+					numFmtId = value.NumberFormatId,        // TODO проврить что за формат
 					formatCode = value.FormatCode,
 				};
 			}
@@ -2953,6 +3239,8 @@ namespace unvell.ReoGrid.Core.Worksheet.Additional
 				Array.Copy(value.Value, result, value.Value.Length);
 				return result;
 			}
+			//TODO ! WARNING ! такой ситуациине должно быть разобраться как она получается
+			// файл qwe.xlsx
 			return new byte[4];
 		}
 
