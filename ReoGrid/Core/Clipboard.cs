@@ -19,7 +19,7 @@
 using System;
 using System.Linq;
 using System.Text;
-
+using System.Threading;
 using unvell.ReoGrid.Events;
 using unvell.ReoGrid.Actions;
 using unvell.ReoGrid.Main;
@@ -252,6 +252,12 @@ namespace unvell.ReoGrid
 
         #region Paste
 
+        private class PasteValues
+        {
+            public PartialGrid PartialGrid { get; set; }= null;
+            public string ClipboardText { get; set; }= null;
+        }
+        
         /// <summary>
         /// Copy data from Clipboard and put on grid.
         /// 
@@ -274,145 +280,269 @@ namespace unvell.ReoGrid
             }
             else
             {
-                // Paste method will always perform action to do paste
-
-                // do nothing if in readonly mode
-                if (this.HasSettings(WorksheetSettings.Edit_Readonly)
-                    // or selection is empty
-                    || this.selectionRange.IsEmpty)
-                {
-                    return false;
-                }
-
+                if (!IsPateActionCanExecute()) return false;
                 try
                 {
-                    this.controlAdapter.ChangeCursor(CursorStyle.Busy);
-
-                    PartialGrid partialGrid = null;
-                    string clipboardText = null;
-
-#if WINFORM || WPF
-                    DataObject data = Clipboard.GetDataObject() as DataObject;
-                    if (data != null)
-                    {
-                        partialGrid = data.GetData(ClipBoardDataFormatIdentify) as PartialGrid;
-
-                        if (data.ContainsText())
-                        {
-                            clipboardText = data.GetText();
-                        }
-                    }
-
-#elif ANDROID
-
-#endif // WINFORM || WPF
-
-                    if (partialGrid != null)
-                    {
-                        #region Partial Grid Pasting
-                        int startRow = selectionRange.Row;
-                        int startCol = selectionRange.Col;
-
-                        int rows = partialGrid.Rows;
-                        int cols = partialGrid.Columns;
-
-                        int rowRepeat = 1;
-                        int colRepeat = 1;
-
-                        if (selectionRange.Rows % partialGrid.Rows == 0)
-                        {
-                            rows = selectionRange.Rows;
-                            rowRepeat = selectionRange.Rows / partialGrid.Rows;
-                        }
-                        if (selectionRange.Cols % partialGrid.Columns == 0)
-                        {
-                            cols = selectionRange.Cols;
-                            colRepeat = selectionRange.Cols / partialGrid.Columns;
-                        }
-
-                        var targetRange = new RangePosition(startRow, startCol, rows, cols);
-
-                        if (!RaiseBeforePasteEvent(targetRange))
-                        {
-                            return false;
-                        }
-
-                        if (targetRange.EndRow >= this.rows.Count
-                            || targetRange.EndCol >= this.cols.Count)
-                        {
-                            // TODO: paste range overflow
-                            // need to notify user-code to handle this 
-                            return false;
-                        }
-
-                        // check whether the range to be pasted contains readonly cell
-                        if (this.CheckRangeReadonly(targetRange))
-                        {
-                            this.NotifyExceptionHappen(new OperationOnReadonlyCellException("specified range contains readonly cell"));
-                            return false;
-                        }
-
-                        // check any intersected merge-range in partial grid 
-                        // 
-                        // #5439-48 пункт 10 - убираем проверку пересечения
-                        // var cancelPerformPaste = CheckIntersectedMergeRangeInPartialGridError(partialGrid, rowRepeat, colRepeat, startRow, startCol);
-
-                        if (/*!cancelPerformPaste*/true)
-                        {
-                            var range = new RangePosition(startRow, startCol, rows, cols);
-                            DoAction(new SetPartialGridAction(range, partialGrid));
-                        }
-
-                        #endregion // Partial Grid Pasting
-                    }
-                    else if (!string.IsNullOrEmpty(clipboardText))
-                    {
-                        #region Plain Text Pasting
-                        var arrayData = RGUtility.ParseTabbedString(clipboardText);
-
-                        int rows = Math.Max(selectionRange.Rows, arrayData.GetLength(0));
-                        int cols = Math.Max(selectionRange.Cols, arrayData.GetLength(1));
-
-                        var targetRange = new RangePosition(selectionRange.Row, selectionRange.Col, rows, cols);
-                        if (!RaiseBeforePasteEvent(targetRange))
-                        {
-                            return false;
-                        }
-
-                        if (this.controlAdapter != null)
-                        {
-                            var actionSupportedControl = this.controlAdapter.ControlInstance as IActionControl;
-
-                            if (actionSupportedControl != null)
-                            {
-                                actionSupportedControl.DoAction(this, new SetRangeDataAction(targetRange, arrayData));
-                            }
-                        }
-                        #endregion // Plain Text Pasting
-                    }
+                    PreparePasteAction();
+                    if (!PasteAction(GetPasteValues())) return false;
                 }
                 catch (Exception ex)
                 {
-                    // raise event to notify user-code there is error happened during paste operation
-                    //if (OnPasteError != null)
-                    //{
-                    //	OnPasteError(this, new RangeOperationErrorEventArgs(selectionRange, ex));
-                    //}
-                    this.NotifyExceptionHappen(ex);
+                    NotifyExceptionHappen(ex);
                 }
                 finally
                 {
-                    this.controlAdapter.ChangeCursor(CursorStyle.Selection);
-
-                    RequestInvalidate();
+                    FinallyPasteAction();
                 }
-
-                AfterPaste?.Invoke(this, new RangeEventArgs(this.selectionRange));
+                NotifyPasteAction();
             }
 
             return true;
         }
 
+        private bool IsPateActionCanExecute()
+        {
+            if (HasSettings(WorksheetSettings.Edit_Readonly) || selectionRange.IsEmpty)
+            {
+                return false;
+            }
+            return true;
+        }
+
+        private void PreparePasteAction()
+        {
+            controlAdapter.ChangeCursor(CursorStyle.Busy);
+        }
+
+        private bool PasteAction(PasteValues pasteValues)
+        {
+            if (pasteValues.PartialGrid != null)
+            {
+                if (!PastlePartialGrid(pasteValues.PartialGrid))
+                {
+                    return false;
+                }
+            }
+            else if (!string.IsNullOrEmpty(pasteValues.ClipboardText))
+            {
+                if (!PastePlainText(pasteValues.ClipboardText) )
+                {
+                    return false;
+                }
+            }
+            return true;
+        }
+        
+        private bool PastlePartialGrid(PartialGrid partialGrid)
+        {
+            var pastleData =  CreatePastlePartialGridTargetRange(this, partialGrid);
+            if (IsSomethingWrongInPastlePartialGrid(pastleData.DstRangePosition)) return false;
+            DoAction(new SetPartialGridAction(pastleData.DstRangePosition, pastleData.SourcePartialGrid, pastleData.ForceUnmerge));
+            return true;
+        }
+
+        private void FinallyPasteAction()
+        {
+            controlAdapter.ChangeCursor(CursorStyle.Selection);
+            RequestInvalidate();
+        }
+
+        private void NotifyPasteAction()
+        {
+            AfterPaste?.Invoke(this, new RangeEventArgs(selectionRange));
+        }
+        
+        private class PastleRangesData
+        {
+            public RangePosition DstRangePosition { get; set; }
+
+            public PartialGrid SourcePartialGrid { get; set; }
+
+            public bool ForceUnmerge { get; set; }
+        }
+
+        private static PastleRangesData CreatePastlePartialGridTargetRange(Worksheet dstWorksheet, PartialGrid sourcePartialGrid)
+        {
+            var dstPosition = dstWorksheet.selectionRange;
+            bool forceUnmerge = true;
+
+            var startRow = dstPosition.Row;
+            var startCol = dstPosition.Col;
+
+            var rows = sourcePartialGrid.Rows;
+            var cols = sourcePartialGrid.Columns;
+
+            // Если источник кратно (несколько раз целиком) помещается в диапазон - то используется весь диапазон
+            if (dstPosition.Rows % sourcePartialGrid.Rows == 0)
+            {
+                rows = dstPosition.Rows;
+            }
+            if (dstPosition.Cols % sourcePartialGrid.Columns == 0)
+            {
+                cols = dstPosition.Cols;
+            }
+            
+            // Если источник это одна ячейка *(возможно объединенная) и диапазон вставки - это тоже одна ячейка*(возможно объединенная)
+            // то копируем только одну ячейку
+            // GetPartialGrid(currentCopingRange, PartialGridCopyFlag.All, ExPartialGridCopyFlag.None, true)
+            var dstPartialgrid = dstWorksheet.GetPartialGrid(dstPosition);
+            if (
+                IsSingleMergedCell(dstPartialgrid) &&
+                (IsSingleCell(sourcePartialGrid) || IsSingleMergedCell(sourcePartialGrid)))
+            {
+                rows = 1;
+                cols = 1;
+                forceUnmerge = false;
+            }
+            return new PastleRangesData
+            {
+                DstRangePosition = new RangePosition(startRow, startCol, rows, cols),
+                SourcePartialGrid = sourcePartialGrid,
+                ForceUnmerge = forceUnmerge
+            };
+        
+            // return new RangePosition(startRow, startCol, rows, cols);
+        }
+
+        private static bool IsSingleCell(PartialGrid partialGrid)
+        {
+            var result = false;
+            var cell = partialGrid?.Cells[0, 0];
+            if (cell != null)
+            {
+                if (!cell.IsMergedCell)
+                {
+                    if (partialGrid.Rows == 1 && partialGrid.Columns == 1)
+                    {
+                        result = true;
+                    }
+                }
+            }
+            return result;
+        }
+
+        private static bool IsSingleMergedCell(PartialGrid partialGrid)
+        {
+            var result = false;
+            var cell = partialGrid?.Cells[0, 0];
+            if (cell != null)
+            {
+                
+                if (cell.IsMergedCell)
+                {
+                    var cols = cell.MergeEndPos.Col - cell.MergeStartPos.Col + 1;
+                    var rows = cell.MergeEndPos.Row - cell.MergeStartPos.Row + 1;
+
+                    if (rows == partialGrid.Rows && cols == partialGrid.Columns)
+                        result = true;
+                }
+            }
+            return result;
+        }
+
+        private bool IsSomethingWrongInPastlePartialGrid(RangePosition targetRange)
+        {
+            if (IsPastePartialGridExternCodeCanceled(targetRange)) return true;
+            if (IsPateTargetoutOfrange(targetRange)) return true;
+            if (IsPastePartialGridCheckReadOnly(targetRange)) return true;
+            return false;
+        }
+        
+         private static PasteValues GetPasteValues()
+        {
+            int tryings = 1;
+
+            do
+            {
+                try
+                {
+                    var result = new PasteValues
+                    {
+                        PartialGrid = null,
+                        ClipboardText = null,
+                    };
+
+#if WINFORM || WPF
+                    if (Clipboard.GetDataObject() is DataObject data)
+                    {
+                        result.PartialGrid = data.GetData(ClipBoardDataFormatIdentify) as PartialGrid;
+                        if (data.ContainsText())
+                        {
+                            result.ClipboardText = data.GetText();
+                        }
+                    }
+#elif ANDROID
+
+#endif // WINFORM || WPF
+                    return result;
+                }
+                catch
+                {
+                    if (--tryings <= 0) throw;
+                    Thread.Sleep(100);
+                }
+            } while (true);
+
+        }
+
+        private bool PastePlainText(string clipboardText)
+        {
+            var arrayData = RGUtility.ParseTabbedString(clipboardText);
+            var targetRange = CreatePastePlaintTextTargteRange(arrayData);
+            if (!RaiseBeforePasteEvent(targetRange))
+            {
+                return false;
+            }
+
+            var actionSupportedControl = controlAdapter?.ControlInstance as IActionControl;
+            actionSupportedControl?.DoAction(this, new SetRangeDataAction(targetRange, arrayData));
+            return true;
+        }
+
+        private RangePosition CreatePastePlaintTextTargteRange(object[,] arrayData)
+        {
+            var maxRows = Math.Max(selectionRange.Rows, arrayData.GetLength(0));
+            var maxCols = Math.Max(selectionRange.Cols, arrayData.GetLength(1));
+
+            var targetRange = new RangePosition(selectionRange.Row, selectionRange.Col, maxRows, maxCols);
+            return targetRange;
+        }
+
+
+
+
+
+        private bool IsPastePartialGridExternCodeCanceled(RangePosition targetRange)
+        {
+            if (!RaiseBeforePasteEvent(targetRange))
+            {
+                return true;
+            }
+            return false;
+        }
+
+        private bool IsPateTargetoutOfrange(RangePosition targetRange)
+        {
+            if (targetRange.EndRow >= rows.Count || targetRange.EndCol >= cols.Count)
+            {
+                // TODO: paste range overflow
+                // need to notify user-code to handle this 
+                return true;
+            }
+            return false;
+        }
+
+        private bool IsPastePartialGridCheckReadOnly(RangePosition targetRange)
+        {
+            // check whether the range to be pasted contains readonly cell
+            if (CheckRangeReadonly(targetRange))
+            {
+                NotifyExceptionHappen(new OperationOnReadonlyCellException("specified range contains readonly cell"));
+                return true;
+            }
+            return false;
+        }
+        
         private bool CheckIntersectedMergeRangeInPartialGridError(
             PartialGrid partialGrid, 
             int rowRepeat, 

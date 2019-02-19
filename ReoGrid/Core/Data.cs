@@ -164,7 +164,7 @@ namespace unvell.ReoGrid
             fillExecutor?.Invoke(fromRange, toRange);                 // выполняем действи
             var after = GetPartialGrid(toRange);                      // новые значения
             SetPartialGrid(toRange, before);                          // говорим что так и было
-            DoAction(new SetPartialGridAction(toRange, after)); // и делаем действие
+            DoAction(new SetPartialGridAction(toRange, after, true)); // и делаем действие
         }
         
         private void ExecuteVerticalFill(RangePosition fromRange, RangePosition toRange)

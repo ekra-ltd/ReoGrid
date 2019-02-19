@@ -873,6 +873,9 @@ namespace unvell.ReoGrid
                                 else if (toCell.Rowspan == 1 && toCell.Colspan == 1)
                                 {
                                     UpdateCellFont(toCell);
+                                }else if (toCell.IsMergedCell)
+                                {
+                                    UpdateCellFont(toCell);
                                 }
                             }
                             else

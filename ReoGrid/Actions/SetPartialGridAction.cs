@@ -26,21 +26,25 @@ namespace unvell.ReoGrid.Actions
 	{
 		private PartialGrid data;
 		private PartialGrid backupData;
+		private readonly bool _forceUnmerge;
 
 		/// <summary>
 		/// Create action to set partial grid.
 		/// </summary>
 		/// <param name="range">target range to set partial grid.</param>
 		/// <param name="data">partial grid to be set.</param>
-		public SetPartialGridAction(RangePosition range, PartialGrid data)
+		/// <param name="forceUnmerge">Указывает, что для диапазона <see cref="range"/>нужно принудительно вызвать
+		/// <seealso cref="Worksheet.UnmergeRange(int,int,int,int)"/></param>
+		public SetPartialGridAction(RangePosition range, PartialGrid data, bool forceUnmerge)
 			: base(range)
 		{
 			this.data = data;
+			_forceUnmerge = forceUnmerge;
 		}
 
 		public override WorksheetReusableAction Clone(RangePosition range)
 		{
-			return new SetPartialGridAction(range, data);
+			return new SetPartialGridAction(range, data, _forceUnmerge);
 		}
 
 		/// <summary>
@@ -51,8 +55,15 @@ namespace unvell.ReoGrid.Actions
 			backupData = Worksheet.GetPartialGrid(base.Range, PartialGridCopyFlag.All, ExPartialGridCopyFlag.BorderOutsideOwner);
 			Debug.Assert(backupData != null);
 			//#5439-43 Сбрасываем Merge всех ячеек
-			Worksheet.UnmergeRange(base.Range);
-			base.Range = base.Worksheet.SetPartialGridRepeatly(base.Range, data);
+			if (_forceUnmerge)
+			{
+				Worksheet.UnmergeRange(Range);
+				Range = Worksheet.SetPartialGridRepeatly(Range, data);
+			}
+			else
+			{
+				Worksheet.SetPartialGrid(Range, data, PartialGridCopyFlag.CellData, ExPartialGridCopyFlag.BorderOutsideOwner);
+			}
 			Worksheet.SelectRange(base.Range);
 		}
 
@@ -63,8 +74,9 @@ namespace unvell.ReoGrid.Actions
 		{
 			Debug.Assert(backupData != null);
 			//#5439-43 Сбрасываем Merge всех ячеек
-			Worksheet.UnmergeRange(base.Range);
-			base.Worksheet.SetPartialGrid(base.Range, backupData, PartialGridCopyFlag.All, ExPartialGridCopyFlag.BorderOutsideOwner);
+			if (_forceUnmerge)
+				Worksheet.UnmergeRange(Range);
+			base.Worksheet.SetPartialGrid(Range, backupData, PartialGridCopyFlag.All, ExPartialGridCopyFlag.BorderOutsideOwner);
 		}
 
 		/// <summary>
