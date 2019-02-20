@@ -36,6 +36,17 @@ using unvell.Common;
 
 #if WINFORM || WPF
 #endif // WINFORM || WPF
+// RGPen
+#if WINFORM
+using RGPen = System.Drawing.Pen;
+#elif ANDROID
+using RGPen = Android.Graphics.Paint;
+#elif WPF
+using RGPen = System.Windows.Media.Pen;
+using RGBrushes = System.Windows.Media.Brushes;
+#elif iOS
+using RGPen = CoreGraphics.CGContext;
+#endif // WPF
 
 using unvell.ReoGrid.Core;
 using unvell.ReoGrid.Utility;
@@ -578,25 +589,107 @@ namespace unvell.ReoGrid.Views
 		#endregion // Clip Utility
 
 		#region Draw Highlight Range
+
 		private void DrawHighlightRange(CellDrawingContext dc, HighlightRange range)
 		{
+			if (range.HighlightColor.A <= 0) return;
+
 			var g = dc.Graphics;
-
-			SolidColor color = range.HighlightColor;
 			float weight = range.Hover ? 2f : 1f;
+			if (visibleRegion.IsOverlay(range))
+			{
+				SolidColor color = range.HighlightColor;
+				// convert to view rectangle
+				Rectangle scaledRange = sheet.GetScaledRangeBounds(range);
+				Rectangle clippedRange = GetClippedRangeRect(this, scaledRange, weight);
 
-			// convert to view rectangle
-			Rectangle scaledRange = sheet.GetScaledRangeBounds(range);
-			Rectangle clippedRange = GetClippedRangeRect(this, scaledRange, weight);
+				g.DrawRectangle(clippedRange, color, weight * sheet.renderScaleFactor, LineStyles.Solid);
 
-			g.DrawRectangle(clippedRange, color, weight, LineStyles.Solid);
+				var scale = sheet.renderScaleFactor;
+				g.FillRectangle(scaledRange.X - 1 * scale, scaledRange.Y - 1 * scale, 5 * scale, 5 * scale, color);
+				g.FillRectangle(scaledRange.Right - 3 * scale, scaledRange.Y - 1 * scale, 5 * scale, 5 * scale, color);
+				g.FillRectangle(scaledRange.X - 1 * scale, scaledRange.Bottom - 3 * scale, 5 * scale, 5 * scale, color);
+				g.FillRectangle(scaledRange.Right - 3 * scale, scaledRange.Bottom - 3 * scale, 5 * scale, 5 * scale, color);
+			}
 
-			g.FillRectangle(scaledRange.X - 1, scaledRange.Y - 1, 5, 5, color);
-			g.FillRectangle(scaledRange.Right - 3, scaledRange.Y - 1, 5, 5, color);
-			g.FillRectangle(scaledRange.X - 1, scaledRange.Bottom - 3, 5, 5, color);
-			g.FillRectangle(scaledRange.Right - 3, scaledRange.Bottom - 3, 5, 5, color);
+			if (range.ShadeRows)
+			{
+				RangePosition leftRange = new RangePosition(range.Row, 0, range.Rows, range.Col);
+				if (visibleRegion.IsOverlay(leftRange))
+				{
+					Rectangle leftScaledRange = sheet.GetScaledRangeBounds(leftRange);
+					Rectangle leftClippedRange = GetClippedRangeRect(this, leftScaledRange, weight);
+					ShadeHelper.Shade(g, leftClippedRange, sheet.renderScaleFactor);
+				}
 
+				RangePosition rRange = new RangePosition(range.Row, range.Col + range.Cols, range.Rows, Worksheet.ColumnCount - range.Col - range.Cols);
+				if (visibleRegion.IsOverlay(rRange))
+				{
+					Rectangle rScaledRange = sheet.GetScaledRangeBounds(rRange);
+					Rectangle rClippedRange = GetClippedRangeRect(this, rScaledRange, weight);
+					ShadeHelper.Shade(g, rClippedRange, sheet.renderScaleFactor);
+				}
+			}
+
+			if (range.ShadeColumns)
+			{
+				RangePosition topRange = new RangePosition(0, range.Col, range.Row, range.Cols);
+				if (visibleRegion.IsOverlay(topRange))
+				{
+					Rectangle topScaledRange = sheet.GetScaledRangeBounds(topRange);
+					Rectangle topClippedRange = GetClippedRangeRect(this, topScaledRange, weight);
+					ShadeHelper.Shade(g, topClippedRange, sheet.renderScaleFactor);
+				}
+
+				RangePosition bRange = new RangePosition(
+					range.Row + range.Rows,
+					range.Col,
+					/*range.Rows*/ Worksheet.RowCount - range.Row - range.Rows,
+					/*Worksheet.ColumnCount - range.Column - range.Cols*/ range.Cols);
+				if (visibleRegion.IsOverlay(bRange))
+				{
+					Rectangle bScaledRange = sheet.GetScaledRangeBounds(bRange);
+					Rectangle bClippedRange = GetClippedRangeRect(this, bScaledRange, weight);
+					ShadeHelper.Shade(g, bClippedRange, sheet.renderScaleFactor);
+				}
+			}
 		}
+
+		private static class ShadeHelper
+		{
+			public static void Shade(IGraphics graphics, Rectangle rectangle, RGFloat scaleFactor)
+			{
+				ShadePen.Thickness = 1 * scaleFactor;
+				double step = Step * scaleFactor;
+				double tanAngle = Math.Tan(Math.PI / 180 * 30);
+				double maxW = rectangle.Width + rectangle.Height * tanAngle;
+				for (double x = 0.5 * step; x < maxW; x += step)
+				{
+					double x1 = x + rectangle.X;
+					double y1 = rectangle.Y;
+					double dX1 = rectangle.X + rectangle.Width - x1;
+					if (dX1 < 0)
+					{
+						x1 = rectangle.X + rectangle.Width;
+						y1 = y1 - dX1 / tanAngle;
+					}
+					double x2 = x + rectangle.X - rectangle.Height * tanAngle;
+					double y2 = rectangle.Y + rectangle.Height;
+					double dX2 = rectangle.X - x2;
+					if (dX2 > 0)
+					{
+						x2 = rectangle.X;
+						y2 = y2 - dX2 / tanAngle;
+					}
+					graphics.DrawLine(ShadePen, x1, y1, x2, y2);
+				}
+			}
+
+			private static readonly RGPen ShadePen = new RGPen(RGBrushes.Gray, 1);
+
+			private static double Step = 10;
+		}
+		
 		#endregion // Draw Highlight Range
 
 		#region Draw Guide Lines

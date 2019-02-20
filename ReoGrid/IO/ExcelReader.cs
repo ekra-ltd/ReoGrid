@@ -806,9 +806,9 @@ namespace unvell.ReoGrid.IO.OpenXML
                     {
                         int numFormatId = 0;
 
-                        if (rgCell.DataFormat == CellDataFormatFlag.General
+                        if (/* rgCell.DataFormat == CellDataFormatFlag.General */ // Не совсем понимаю почему есть проверка General. Ведь если формат установлен пользователем - его надо применить
                             //&& style.applyNumberFormat == "1" 
-                            && !string.IsNullOrEmpty(style.numberFormatId)
+                            !string.IsNullOrEmpty(style.numberFormatId)
                             && int.TryParse(style.numberFormatId, out numFormatId))
                         {
                             rgCell.DataFormat = SetRGSheetDataFormat(rgSheet, rgCell, numFormatId, styles);

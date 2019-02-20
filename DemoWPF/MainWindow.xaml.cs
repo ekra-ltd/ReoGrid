@@ -8,6 +8,8 @@ using unvell.ReoGrid.CellTypes;
 using unvell.ReoGrid.Chart;
 using unvell.ReoGrid.DataFormat;
 using unvell.ReoGrid.Drawing.Shapes;
+using unvell.ReoGrid.Graphics;
+using Point = System.Windows.Point;
 
 namespace unvell.ReoGrid.WPFDemo
 {
@@ -80,6 +82,12 @@ namespace unvell.ReoGrid.WPFDemo
 
 			// auto fill other subtotals
 			worksheet.AutoFillSerial("G21", "G22:G35");
+
+            var hightlight = worksheet.AddHighlightRange("C4:D5");
+            hightlight.ShadeColumns = true;
+            hightlight.ShadeRows = true;
+            hightlight.HighlightColor = SolidColor.DeepSkyBlue;
+
 		}
 		#endregion // Demo Sheet 1 : Document Template
 

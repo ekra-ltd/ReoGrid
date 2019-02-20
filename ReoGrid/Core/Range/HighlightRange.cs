@@ -136,7 +136,7 @@ namespace unvell.ReoGrid
 		{
 			return new HighlightRange(this, range) { HighlightColor = color };
 		}
-
+		
 		/// <summary>
 		/// Crearte and display a highlighted range at specified position on worksheet
 		/// </summary>
@@ -363,7 +363,8 @@ namespace unvell.ReoGrid
 	public class HighlightRange : ReferenceRange
 	{
 		private SolidColor highlightColor;
-
+		private bool _shadeRows = false;
+		private bool _shadeColumns = false;
 		/// <summary>
 		/// Highlight color to display range on spreadsheet
 		/// </summary>
@@ -375,6 +376,32 @@ namespace unvell.ReoGrid
 				this.highlightColor = value;
 
 				this.Worksheet.RequestInvalidate();
+			}
+		}
+
+		public bool ShadeRows
+		{
+			get => _shadeRows;
+			set
+			{
+				if (_shadeRows != value)
+				{
+					_shadeRows = value;
+					Worksheet.RequestInvalidate();
+				}
+			}
+		}
+
+		public bool ShadeColumns
+		{
+			get => _shadeColumns;
+			set
+			{
+				if (_shadeColumns != value)
+				{
+					_shadeColumns = value;
+					Worksheet.RequestInvalidate();
+				}
 			}
 		}
 

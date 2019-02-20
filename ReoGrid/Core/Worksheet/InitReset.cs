@@ -42,126 +42,126 @@ using unvell.ReoGrid.Main;
 
 namespace unvell.ReoGrid
 {
-	partial class Worksheet
-	{
+    partial class Worksheet
+    {
 
-		private void InitGrid()
-		{
-			InitGrid(DefaultRows, DefaultCols);
-		}
+        private void InitGrid()
+        {
+            InitGrid(DefaultRows, DefaultCols);
+        }
 
-		private void InitGrid(int rows, int cols)
-		{
+        private void InitGrid(int rows, int cols)
+        {
 #if DEBUG
-			Stopwatch sw = Stopwatch.StartNew();
-			Debug.WriteLine("start creating worksheet...");
+            Stopwatch sw = Stopwatch.StartNew();
+            Debug.WriteLine("start creating worksheet...");
 #endif // DEBUG
 
 			this.SuspendUIUpdates();
 
-			// resize spreadsheet to specified size
+            // resize spreadsheet to specified size
 			this.Resize(rows, cols);
 
 			if (this.controlAdapter != null)
-			{
+            {
 				this.renderScaleFactor = this._scaleFactor + this.controlAdapter.BaseScale;
 
 				var scv = this.viewportController as Views.IScalableViewportController;
 
-				if (scv != null)
-				{
+                if (scv != null)
+                {
 					scv.ScaleFactor = this.renderScaleFactor;
-				}
-			}
+                }
+            }
 
-			// restore root style
+            // restore root style
 			this.RootStyle = new WorksheetRangeStyle(DefaultStyle);
 
-			// initialize default settings
+            // initialize default settings
 			this.settings = WorksheetSettings.Default;
 
-			// reset selection 
+            // reset selection 
 			this.selectionRange = new RangePosition(0, 0, 1, 1);
 
 #if PRINT
-			// clear print settings
+            // clear print settings
 			if (this.printSettings != null) this.printSettings = null;
 #endif // PRINT
 
 #if DRAWING
-			// drawing object
+            // drawing object
 			this.drawingCanvas = new Drawing.WorksheetDrawingCanvas(this);
 #endif // DRAWING
 
 			this.ResumeUIUpdates();
 
 			if (this.viewportController != null)
-			{
-				// reste viewport controller
+            {
+                // reste viewport controller
 				this.viewportController.Reset();
-			}
+            }
 
 #if EX_SCRIPT
-			//settings |=
-			//	// auto run script if loaded from file
-			//		WorkbookSettings.Script_AutoRunOnload
-			//	// confirm to user whether allow to run script after loaded from file
-			//	| WorkbookSettings.Script_PromptBeforeAutoRun;
+            //settings |=
+            //	// auto run script if loaded from file
+            //		WorkbookSettings.Script_AutoRunOnload
+            //	// confirm to user whether allow to run script after loaded from file
+            //	| WorkbookSettings.Script_PromptBeforeAutoRun;
 
-			//InitSRM();
-			//this.worksheetObj = null;
+            //InitSRM();
+            //this.worksheetObj = null;
 
-			RaiseScriptEvent("onload");
+            RaiseScriptEvent("onload");
 #endif // EX_SCRIPT
 
 #if DEBUG
-			sw.Stop();
-			long ms = sw.ElapsedMilliseconds;
-			if (ms > 10)
-			{
-				Debug.WriteLine("creating worksheet done: " + ms + " ms.");
-			}
+            sw.Stop();
+            long ms = sw.ElapsedMilliseconds;
+            if (ms > 10)
+            {
+                Debug.WriteLine("creating worksheet done: " + ms + " ms.");
+            }
 #endif // DEBUG
-		}
+        }
 
-		internal void Clear()
-		{
-			// hidden edit textbox
-			EndEdit(EndEditReason.Cancel);
+        internal void Clear()
+        {
+            // hidden edit textbox
+            EndEdit(EndEditReason.Cancel);
 
-			// clear editing flag 
-			endEditProcessing = false;
+            // clear editing flag 
+            endEditProcessing = false;
 
-			// reset ActionManager
-			if (controlAdapter != null)
-			{
-				var actionSupportedControl = controlAdapter.ControlInstance as IActionControl;
+            // reset ActionManager
+            if (controlAdapter != null)
+            {
+                var actionSupportedControl = controlAdapter.ControlInstance as IActionControl;
 
         if (actionSupportedControl != null)
-				{
-					actionSupportedControl.ClearActionHistoryForWorksheet(this);
-				}
-			}
+                {
+                    actionSupportedControl.ClearActionHistoryForWorksheet(this);
+                }
+            }
 
 #if OUTLINE
-			// clear row outlines
+            // clear row outlines
 			if (this.outlines != null)
-			{
-				ClearOutlines(RowOrColumn.Row | RowOrColumn.Column);
-			}
+            {
+                ClearOutlines(RowOrColumn.Row | RowOrColumn.Column);
+            }
 #endif // OUTLINE
 
-			// clear named ranges
-			registeredNamedRanges.Clear();
+            // clear named ranges
+            registeredNamedRanges.Clear();
 
-			// clear highlight ranges
-			if (highlightRanges != null)
-			{
-				highlightRanges.Clear();
-			}
+            // clear highlight ranges
+            if (highlightRanges != null)
+            {
+                highlightRanges.Clear();
+            }
 
 #if PRINT
-			// clear page breaks
+            // clear page breaks
 			if (this.pageBreakRows != null) this.pageBreakRows.Clear();
 			if (this.pageBreakCols != null) this.pageBreakCols.Clear();
 
@@ -173,136 +173,136 @@ namespace unvell.ReoGrid
 #endif // PRINT
 
 #if DRAWING
-			// drawing objects
+            // drawing objects
 			if (this.drawingCanvas != null)
-			{
+            {
 				this.drawingCanvas.Children.Clear();
-			}
+            }
 #endif // DRAWING
 
-			// reset default width and height 
+            // reset default width and height 
 			this.defaultColumnWidth = InitDefaultColumnWidth;
 			this.defaultRowHeight = InitDefaultRowHeight;
 
-			// clear root style
+            // clear root style
 			this.RootStyle = new WorksheetRangeStyle(DefaultStyle);
 
-			// clear focus highlight ranges
+            // clear focus highlight ranges
 			this.FocusHighlightRange = null;
 
-			// restore to default operation mode
+            // restore to default operation mode
 			this.operationStatus = OperationStatus.Default;
 
-			// restore settings
+            // restore settings
 			this.settings = WorksheetSettings.Default;
 
 			if (this.SettingsChanged != null)
-			{
+            {
 				this.SettingsChanged(this, null);
-			}
+            }
 
 #if FORMULA
-			// clear formula referenced cells and ranges
-			formulaRanges.Clear();
+            // clear formula referenced cells and ranges
+            formulaRanges.Clear();
 
-			// clear trace lines
+            // clear trace lines
 			if (this.traceDependentArrows != null)
-			{
+            {
 				this.traceDependentArrows.Clear();
-			}
+            }
 #endif // FORMULA
 
 #if EX_SCRIPT
-			if (Srm != null)
-			{
-				RaiseScriptEvent("unload");
-			}
+            if (Srm != null)
+            {
+                RaiseScriptEvent("unload");
+            }
 #endif // EX_SCRIPT
 
-			// unfreeze rows and columns
+            // unfreeze rows and columns
 			CellPosition pos = this.FreezePos;
-			if (pos.Row > 0 || pos.Col > 0)
-			{
-				Unfreeze();
-			}
+            if (pos.Row > 0 || pos.Col > 0)
+            {
+                Unfreeze();
+            }
 
 			if (this.viewportController != null)
-			{
-				// reset viewport controller
-				viewportController.Reset();
-			}
+            {
+                // reset viewport controller
+                viewportController.Reset();
+            }
 
-			// TODO: release objects inside cells and borders
-			cells = new CellArray();
-			hBorders = new HBorderArray();
-			vBorders = new VBorderArray();
+            // TODO: release objects inside cells and borders
+            cells = new CellArray();
+            hBorders = new HBorderArray();
+            vBorders = new VBorderArray();
 
-			// clear header & index
+            // clear header & index
 			this.rows.Clear();
 			this.cols.Clear();
 
-			// reset max row and column indexes
+            // reset max row and column indexes
 			this.maxRowHeader = -1;
 			this.maxColumnHeader = -1;
 
-			// reset highlight range color counter
+            // reset highlight range color counter
 			this.rangeHighlightColorCounter = 0;
-		}
+        }
 
-		/// <summary>
-		/// Reset control to default status.
-		/// </summary>
-		public void Reset()
-		{
-			Reset(DefaultRows, DefaultCols);
-		}
+        /// <summary>
+        /// Reset control to default status.
+        /// </summary>
+        public void Reset()
+        {
+            Reset(DefaultRows, DefaultCols);
+        }
 
-		/// <summary>
-		/// Reset control and initialize to specified size
-		/// </summary>
-		/// <param name="rows">number of rows to be set after resting</param>
-		/// <param name="cols">number of columns to be set after reseting</param>
-		public void Reset(int rows, int cols)
-		{
-			// cancel editing mode
+        /// <summary>
+        /// Reset control and initialize to specified size
+        /// </summary>
+        /// <param name="rows">number of rows to be set after resting</param>
+        /// <param name="cols">number of columns to be set after reseting</param>
+        public void Reset(int rows, int cols)
+        {
+            // cancel editing mode
 			this.EndEdit(EndEditReason.Cancel);
 
-			// reset scale factor, need this?
+            // reset scale factor, need this?
 			this._scaleFactor = 1f;
 
-			// clear grid
+            // clear grid
 			this.Clear();
 
-			// clear all actions belongs to this worksheet
+            // clear all actions belongs to this worksheet
 			if (this.controlAdapter != null)
-			{
+            {
 				var actionSupportedControl = this.controlAdapter.ControlInstance as IActionControl;
 
-				if (actionSupportedControl != null)
-				{
-					actionSupportedControl.ClearActionHistoryForWorksheet(this);
-				}
-			}
+                if (actionSupportedControl != null)
+                {
+                    actionSupportedControl.ClearActionHistoryForWorksheet(this);
+                }
+            }
 
-			// restore default cell size
+            // restore default cell size
 			this.defaultRowHeight = Worksheet.InitDefaultRowHeight;
 			this.defaultColumnWidth = Worksheet.InitDefaultColumnWidth;
 
-			// restore row header panel width
+            // restore row header panel width
 			this.userRowHeaderWidth = false;
 
-			// restore UI
+            // restore UI
 			this.settings = WorksheetSettings.View_Default;
 
-			// init grid
+            // init grid
 			this.InitGrid(rows, cols);
 
-			// repaint
+            // repaint
 			this.RequestInvalidate();
 
-			// raise reseting event
+            // raise reseting event
 			if (this.Resetted != null) this.Resetted(this, null);
-		}
+        }
 
-	}
+    }
 }
