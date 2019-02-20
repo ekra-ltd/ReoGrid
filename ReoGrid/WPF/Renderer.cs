@@ -597,9 +597,11 @@ namespace unvell.ReoGrid.Rendering
 			}
 		}
 
-		private static Color DecideTextColor(Cell cell) {
+		private static Color DecideTextColor(Cell cell)
+		{
 			var sheet = cell.Worksheet;
 			var controlStyle = sheet.controlAdapter.ControlStyle;
+
 			SolidColor textColor;
 
 			if (!cell.RenderColor.IsTransparent)
@@ -628,7 +630,7 @@ namespace unvell.ReoGrid.Rendering
 			double dpi = PlatformUtility.GetDPI();
 			double fontSize = cell.InnerStyle.FontSize * sheet.renderScaleFactor * dpi / 72.0;
 
-			if (cell.formattedText == null || cell.formattedText.Text != cell.InnerDisplay)
+			if (cell.formattedText == null || cell.formattedText.Text != cell.InnerDisplay || reason == UpdateFontReason.TextColorChanged)
 			{
 				SolidColor textColor = DecideTextColor(cell);
 
@@ -654,13 +656,13 @@ namespace unvell.ReoGrid.Rendering
 			if (reason == Core.UpdateFontReason.FontChanged || reason == Core.UpdateFontReason.ScaleChanged)
 			{
 				ft.SetFontWeight(
-					cell.InnerStyle.Bold ? System.Windows.FontWeights.Bold : System.Windows.FontWeights.Normal);
+				cell.InnerStyle.Bold ? System.Windows.FontWeights.Bold : System.Windows.FontWeights.Normal);
 
 				ft.SetFontStyle(PlatformUtility.ToWPFFontStyle(cell.InnerStyle.fontStyles));
 
 				ft.SetTextDecorations(PlatformUtility.ToWPFFontDecorations(cell.InnerStyle.fontStyles));
-			}
 		}
+			}
 
 		public void DrawRunningFocusRect(double x, double y, double w, double h, SolidColor color, int runningOffset)
 		{
