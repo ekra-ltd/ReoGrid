@@ -238,8 +238,9 @@ namespace unvell.ReoGrid
                             {
                                 // cell тут нужен для определения циклических зависимостей. 
                                 // у меня таких зависимостей не может быть, но интерефейс надо использовать(
-                                IterateToAddReference(info.Worksheet.Cells[info.Position], node, referencesRanges, true);
-                                referencesRanges.Add(new ReferenceRange(info.Worksheet, info.Position));
+                                IterateToAddReference(info.Worksheet.Cells[info.Position], node, referencesRanges, false);
+                                if(!referencesRanges.Any(r =>  r.Contains(info.Position)))
+                                    referencesRanges.Add(new ReferenceRange(info.Worksheet, info.Position));
                                 formulaItem.FormulaTree = node;
                             }
                             catch (CircularReferenceException)
@@ -299,14 +300,6 @@ namespace unvell.ReoGrid
                             return IsNotBetweenAsDouble(cellvalue, evaluatedValues[0].value, evaluatedValues[1].value);
                         }
                         break;
-                    case ConditionalFormattingOperator.ContainsText:
-                        return ContainsTextAsString(cellvalue, evaluatedValues[0].value);
-                    case ConditionalFormattingOperator.NotContains:
-                        return NotContainsTextAsString(cellvalue, evaluatedValues[0].value);
-                    case ConditionalFormattingOperator.BeginsWith:
-                        return BeginWithAsString(cellvalue, evaluatedValues[0].value);
-                    case ConditionalFormattingOperator.EndsWith:
-                        return EndWithAsString(cellvalue, evaluatedValues[0].value);
                 }
                 return false;
             }
@@ -374,45 +367,8 @@ namespace unvell.ReoGrid
 
             private static bool IsNotBetweenAsDouble(object a, object b, object c)
             {
-                return IsLessThenAsDouble(a, b) && IsGreaterThanAsDouble(a, c);
+                return IsLessThenAsDouble(a, b) || IsGreaterThanAsDouble(a, c);
             }
-
-            private static bool ContainsTextAsString(object a, object b)
-            {
-                if (a is string sA && b is string sB)
-                {
-                    return sA.IndexOf(sB, StringComparison.Ordinal) >= 0;
-                }
-                return false;
-            }
-
-            private static bool NotContainsTextAsString(object a, object b)
-            {
-                if (a is string sA && b is string sB)
-                {
-                    return sA.IndexOf(sB, StringComparison.Ordinal) < 0;
-                }
-                return false;
-            }
-
-            private static bool BeginWithAsString(object a, object b)
-            {
-                if (a is string sA && b is string sB)
-                {
-                    return sA.StartsWith(sB);
-                }
-                return false;
-            }
-
-            private static bool EndWithAsString(object a, object b)
-            {
-                if (a is string sA && b is string sB)
-                {
-                    return sA.EndsWith(sB);
-                }
-                return false;
-            }
-
 
             private static bool AsDouble(object o, out double d)
             {
@@ -462,13 +418,13 @@ namespace unvell.ReoGrid
                 var bkColor = format?.Fill?.PatternFill?.BackgroundColor;
                 var txtColor = format?.Font?.Color;
 
-                SolidColor? sBackColor = bkColor != null ? (SolidColor?) new SolidColor(
+                SolidColor? sBackColor = bkColor?.RgbColorValue != null ? (SolidColor?) new SolidColor(
                         bkColor.RgbColorValue.Value[0]
                         , bkColor.RgbColorValue.Value[1]
                         , bkColor.RgbColorValue.Value[2]
                         , bkColor.RgbColorValue.Value[3])
                     : null;
-                SolidColor? sTextColor = txtColor != null
+                SolidColor? sTextColor = txtColor?.RgbColorValue != null
                     ? (SolidColor?) new SolidColor(
                         txtColor.RgbColorValue.Value[0]
                         , txtColor.RgbColorValue.Value[1]
