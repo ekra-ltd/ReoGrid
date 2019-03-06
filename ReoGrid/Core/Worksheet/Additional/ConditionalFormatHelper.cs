@@ -2754,7 +2754,7 @@ namespace unvell.ReoGrid.Core.Worksheet.Additional
         private static E2009.CT_Fill ToExcel2009(Fill value)
         {
             E2009.CT_Fill result = null;
-            if (value != null)
+            if (CanExportExcel(value) )
             {
                 result = new E2009.CT_Fill
                 {
@@ -2762,6 +2762,14 @@ namespace unvell.ReoGrid.Core.Worksheet.Additional
                 };
             }
             return result;
+        }
+
+        private static bool CanExportExcel(Fill value)
+        {
+            if (value == null) return false;
+            if (value.PatternFill?.BackgroundColor?.RgbColorValue != null) return true;
+            if (value.GradientFill != null) return true;
+            return false;
         }
 
         private static E2009.CT_CellProtection ToExcel2009(CellProtection value)
