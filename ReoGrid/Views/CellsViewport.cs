@@ -615,7 +615,7 @@ namespace unvell.ReoGrid.Views
 			if (range.ShadeRows)
 			{
 				RangePosition leftRange = new RangePosition(range.Row, 0, range.Rows, range.Col);
-				if (visibleRegion.IsOverlay(leftRange))
+				if (range.Col > 0 && visibleRegion.IsOverlay(leftRange))
 				{
 					Rectangle leftScaledRange = sheet.GetScaledRangeBounds(leftRange);
 					Rectangle leftClippedRange = GetClippedRangeRect(this, leftScaledRange, weight);
@@ -623,7 +623,7 @@ namespace unvell.ReoGrid.Views
 				}
 
 				RangePosition rRange = new RangePosition(range.Row, range.Col + range.Cols, range.Rows, Worksheet.ColumnCount - range.Col - range.Cols);
-				if (visibleRegion.IsOverlay(rRange))
+				if (Worksheet.ColumnCount - range.Col - range.Cols > 0 && visibleRegion.IsOverlay(rRange))
 				{
 					Rectangle rScaledRange = sheet.GetScaledRangeBounds(rRange);
 					Rectangle rClippedRange = GetClippedRangeRect(this, rScaledRange, weight);
@@ -634,7 +634,7 @@ namespace unvell.ReoGrid.Views
 			if (range.ShadeColumns)
 			{
 				RangePosition topRange = new RangePosition(0, range.Col, range.Row, range.Cols);
-				if (visibleRegion.IsOverlay(topRange))
+				if (range.Row > 0 && visibleRegion.IsOverlay(topRange))
 				{
 					Rectangle topScaledRange = sheet.GetScaledRangeBounds(topRange);
 					Rectangle topClippedRange = GetClippedRangeRect(this, topScaledRange, weight);
@@ -646,7 +646,7 @@ namespace unvell.ReoGrid.Views
 					range.Col,
 					/*range.Rows*/ Worksheet.RowCount - range.Row - range.Rows,
 					/*Worksheet.ColumnCount - range.Column - range.Cols*/ range.Cols);
-				if (visibleRegion.IsOverlay(bRange))
+				if (Worksheet.RowCount - range.Row - range.Rows > 0 && visibleRegion.IsOverlay(bRange))
 				{
 					Rectangle bScaledRange = sheet.GetScaledRangeBounds(bRange);
 					Rectangle bClippedRange = GetClippedRangeRect(this, bScaledRange, weight);

@@ -39,7 +39,7 @@ namespace unvell.ReoGrid.WPFDemo
 			// add demo sheet 3: cell types
 			AddDemoSheet3();
 
-            ChangeColumnsRowsCount(grid, ColumnsCount, RowsCount);
+            // ChangeColumnsRowsCount(grid, ColumnsCount, RowsCount);
 
         }
 
@@ -83,10 +83,15 @@ namespace unvell.ReoGrid.WPFDemo
 			// auto fill other subtotals
 			worksheet.AutoFillSerial("G21", "G22:G35");
 
-            var hightlight = worksheet.AddHighlightRange("C4:D5");
+            var hightlight = worksheet.AddHighlightRange("AW99:AX100");
             hightlight.ShadeColumns = true;
             hightlight.ShadeRows = true;
             hightlight.HighlightColor = SolidColor.DeepSkyBlue;
+            
+            var hightlight2 = worksheet.AddHighlightRange("AT92:AT92");
+            hightlight2.ShadeColumns = true;
+            hightlight2.ShadeRows = true;
+            hightlight2.HighlightColor = SolidColor.DeepSkyBlue;
 
 		}
 		#endregion // Demo Sheet 1 : Document Template

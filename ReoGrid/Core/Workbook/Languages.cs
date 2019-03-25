@@ -16,121 +16,170 @@
  * 
  ****************************************************************************/
 
+using System;
+using System.Collections.Generic;
 using System.Globalization;
 using System.Threading;
 
 namespace unvell.ReoGrid
 {
-	#region Multi-Languages
-	/// <summary>
-	/// Static language resources
-	/// </summary>
-	public static class LanguageResource
-	{
-		public static CultureInfo Culture;
+    #region Multi-Languages
+    /// <summary>
+    /// Static language resources
+    /// </summary>
+    public static class LanguageResource
+    {
+        public static CultureInfo Culture;
 
-		#region Public 
-		static LanguageResource()
-		{
-			Culture = Thread.CurrentThread.CurrentUICulture;
+        #region Public 
+        static LanguageResource()
+        {
+            Culture = Thread.CurrentThread.CurrentUICulture;
 
-			switch (Culture.Name)
-			{
-				case "ja-JP":
-					Filter_SortAtoZ = "昇順(&S)";
-					Filter_SortZtoA = "降順(&O)";
-					Filter_SelectAll = "(すべて選択)";
-					Filter_Blanks = "(空白セル)";
+            switch (Culture.Name)
+            {
+                case "ja-JP":
+                    Filter_SortAtoZ = "昇順(&S)";
+                    Filter_SortZtoA = "降順(&O)";
+                    Filter_SelectAll = "(すべて選択)";
+                    Filter_Blanks = "(空白セル)";
 
-					Menu_InsertSheet = "挿入(&I)";
-					Menu_DeleteSheet = "削除(&D)";
-					Menu_RenameSheet = "名前変更(&R)...";
+                    Menu_InsertSheet = "挿入(&I)";
+                    Menu_DeleteSheet = "削除(&D)";
+                    Menu_RenameSheet = "名前変更(&R)...";
 
-					//Sheet = "シート";
-					Sheet_RenameDialog_Title = "シートの名前変更";
-					Sheet_RenameDialog_NameLabel = "名前(&N): ";
+                    //Sheet = "シート";
+                    Sheet_RenameDialog_Title = "シートの名前変更";
+                    Sheet_RenameDialog_NameLabel = "名前(&N): ";
 
-					Button_Cancel = "キャンセル";
-					break;
+                    Button_Cancel = "キャンセル";
+                    break;
 
-				case "ru-RU":
-					Filter_SortAtoZ = "Сортировка от А до Я";
-					Filter_SortZtoA = "Сортировка от Я до А";
-					Filter_SelectAll = "(Выделить все)";
-					Filter_Blanks = "(Пустые)";
+                case "ru-RU":
+                    Filter_SortAtoZ = "Сортировка от А до Я";
+                    Filter_SortZtoA = "Сортировка от Я до А";
+                    Filter_SelectAll = "(Выделить все)";
+                    Filter_Blanks = "(Пустые)";
 
-					Menu_InsertSheet = "&Вставить";
-					Menu_DeleteSheet = "&Удалить";
-					Menu_RenameSheet = "&Переименовать…";
+                    Menu_InsertSheet = "&Вставить";
+                    Menu_DeleteSheet = "&Удалить";
+                    Menu_RenameSheet = "&Переименовать…";
 
-					Sheet_RenameDialog_Title = "Переименование листа";
-					Sheet_RenameDialog_NameLabel = "&Имя: ";
+                    Sheet_RenameDialog_Title = "Переименование листа";
+                    Sheet_RenameDialog_NameLabel = "&Имя: ";
 
-					Button_Cancel = "Отмена";
+                    Button_Cancel = "Отмена";
 
-					break;
-			}
-		}
+                    break;
+            }
+        }
 
-		#region Filter
-		/// <summary>
-		/// Text displayed on column filter. (Sort A to Z)
-		/// </summary>
-		public static string Filter_SortAtoZ = "Sort A to Z";
+        #region Filter
+        /// <summary>
+        /// Text displayed on column filter. (Sort A to Z)
+        /// </summary>
+        public static string Filter_SortAtoZ = "Sort A to Z";
 
-		/// <summary>
-		/// Text displayed on column filter (Sort Z to A)
-		/// </summary>
-		public static string Filter_SortZtoA = "Sort Z to A";
-		/// <summary>
-		/// Text displayed on column filter (Select All)
-		/// </summary>
-		public static string Filter_SelectAll = "(Select All)";
-		/// <summary>
-		/// Text of blank option in filter list. (Blanks)
-		/// </summary>
-		public static string Filter_Blanks = "(Blanks)";
-		#endregion // Filter
+        /// <summary>
+        /// Text displayed on column filter (Sort Z to A)
+        /// </summary>
+        public static string Filter_SortZtoA = "Sort Z to A";
+        /// <summary>
+        /// Text displayed on column filter (Select All)
+        /// </summary>
+        public static string Filter_SelectAll = "(Select All)";
+        /// <summary>
+        /// Text of blank option in filter list. (Blanks)
+        /// </summary>
+        public static string Filter_Blanks = "(Blanks)";
+        #endregion // Filter
 
-		#region Sheet Menu
-		/// <summary>
-		/// Text displayed on sheet tab control (Insert)
-		/// </summary>
-		public static string Menu_InsertSheet = "Insert";
-		/// <summary>
-		/// Text displayed on sheet tab control (Delete)
-		/// </summary>
-		public static string Menu_DeleteSheet = "Delete";
-		/// <summary>
-		/// Text displayed on sheet tab control (Rename...)
-		/// </summary>
-		public static string Menu_RenameSheet = "Rename...";
-		#endregion // Sheet Menu
+        #region Sheet Menu
+        /// <summary>
+        /// Text displayed on sheet tab control (Insert)
+        /// </summary>
+        public static string Menu_InsertSheet = "Insert";
+        /// <summary>
+        /// Text displayed on sheet tab control (Delete)
+        /// </summary>
+        public static string Menu_DeleteSheet = "Delete";
+        /// <summary>
+        /// Text displayed on sheet tab control (Rename...)
+        /// </summary>
+        public static string Menu_RenameSheet = "Rename...";
+        #endregion // Sheet Menu
 
-		/// <summary>
-		/// Text displayed on sheet renaming dialog (Rename sheet)
-		/// </summary>
-		public static string Sheet_RenameDialog_Title = "Rename sheet";
-		/// <summary>
-		/// Label text displayed on sheet renaming dialog (Name: )
-		/// </summary>
-		public static string Sheet_RenameDialog_NameLabel = "&Name: ";
+        /// <summary>
+        /// Text displayed on sheet renaming dialog (Rename sheet)
+        /// </summary>
+        public static string Sheet_RenameDialog_Title = "Rename sheet";
+        /// <summary>
+        /// Label text displayed on sheet renaming dialog (Name: )
+        /// </summary>
+        public static string Sheet_RenameDialog_NameLabel = "&Name: ";
 
-		/// <summary>
-		/// Common text displayed as label of OK button (OK)
-		/// </summary>
-		public static string Button_OK = "OK";
-		/// <summary>
-		/// Common text displayed as label of Cancel button (Cancel)
-		/// </summary>
-		public static string Button_Cancel = "Cancel";
+        /// <summary>
+        /// Common text displayed as label of OK button (OK)
+        /// </summary>
+        public static string Button_OK = "OK";
+        /// <summary>
+        /// Common text displayed as label of Cancel button (Cancel)
+        /// </summary>
+        public static string Button_Cancel = "Cancel";
 
-		/// <summary>
-		/// Text of word sheet (Sheet)
-		/// </summary>
-		public static string Sheet = "Sheet";
-		#endregion // Public
+        /// <summary>
+        /// Text of word sheet (Sheet)
+        /// </summary>
+        public static string Sheet => GetOverride(nameof(Sheet)) ?? "Sheet";
 
-	}
-	#endregion // Multi-Languages
+        #endregion // Public
+
+        public static void OverrideValue(string name, Func<string> getOverride)
+        {
+            lock (_overridesLock)
+            {
+                if (!string.IsNullOrEmpty(name))
+                {
+                    if (getOverride is null)
+                    {
+                        if (_overrides.ContainsKey(name))
+                            _overrides.Remove(name);
+                    }
+                    else
+                    {
+                        _overrides[name] = getOverride;
+                    }
+                }
+            }
+        }
+
+        private static string GetOverride(string name)
+        {
+            string result = null;
+            lock (_overridesLock)
+            {
+                if (!string.IsNullOrEmpty(name))
+                {
+                    if (_overrides.ContainsKey(name))
+                    {
+                        try
+                        {
+                            result = _overrides[name]?.Invoke();
+                        }
+                        catch
+                        {
+                            // ignored
+                        }
+                    }
+                }
+            }
+            return result;
+        }
+
+        private static Dictionary<string, Func<string>> _overrides = new Dictionary<string, Func<string>>();
+
+        private static object _overridesLock = new object();
+
+    }
+    #endregion // Multi-Languages
 }
