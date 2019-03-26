@@ -136,6 +136,8 @@ namespace unvell.ReoGrid.Formula
 		public const string ISERROR_RU = "ЕСЛИОШИБКА";
 		public const string ISNUMBER_EN = "ISNUMBER";
 		public const string ISNUMBER_RU = "ЕЧИСЛО";
+		public const string ISBLANK_EN = "ISBLANK";
+		public const string ISBLANK_RU = "ЕПУСТО";
 
 		public const string SUMIF_EN = "SUMIF";
 		public const string SUMIF_RU = "СУММЕСЛИ";

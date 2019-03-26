@@ -945,6 +945,23 @@ namespace unvell.ReoGrid.Formula
 						//return CellUtility.IsNumberData(funNode.Children[0]);
 					}
 				#endregion // ISNUMBER
+
+				#region ISBLANK
+				case BuiltinFunctionNames.ISBLANK_EN:
+				case BuiltinFunctionNames.ISBLANK_RU:
+					if (funNode.Children == null || funNode.Children.Count != 1)
+						throw new FormulaParameterMismatchException(cell);
+
+					else if (funNode.Children[0].Type == STNodeType.CELL)
+					{
+						var arg = GetFunctionArgs(cell, funNode.Children, 1);
+						if (arg[0].type == FormulaValueType.Nil)
+							return true;
+					}
+					return false;
+
+				#endregion // ISBLANK
+
 				#endregion System
 
 				default:
