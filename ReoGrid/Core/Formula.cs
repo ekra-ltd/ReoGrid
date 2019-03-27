@@ -572,6 +572,18 @@ namespace unvell.ReoGrid
 			}
 		}
 
+		public IEnumerable<Cell> GetFormulaDirectDependeceCell(CellPosition pos)
+		{
+			var cell = cells[pos.Row, pos.Col];
+			if (cell is null) return Enumerable.Empty<Cell>();
+			return GetFormulaDirectDependeceCell(cell);
+		}
+
+		public IEnumerable<Cell> GetFormulaDirectDependeceCell(Cell cell)
+		{
+			return formulaRanges.Where(pair => pair.Value.Any(range => range.Contains(cell.Position))).Select(pair => pair.Key);
+		}
+
 #endregion // Formula Reference List
 
 #region Get Formula
