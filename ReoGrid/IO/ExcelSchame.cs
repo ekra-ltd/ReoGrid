@@ -376,6 +376,8 @@ namespace unvell.ReoGrid.IO.OpenXML.Schema
 		public string sheetId;
 		[XmlAttribute("id", Namespace = OpenXMLNamespaces.R____________)]
 		public string resId;
+		[XmlAttribute("state")]
+		public string state;
 
 		[XmlIgnore]
 		internal Worksheet _instance;

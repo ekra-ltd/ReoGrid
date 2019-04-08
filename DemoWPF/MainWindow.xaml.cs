@@ -1,5 +1,6 @@
 ﻿using System;
 using System.IO;
+using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
@@ -9,6 +10,7 @@ using unvell.ReoGrid.Chart;
 using unvell.ReoGrid.DataFormat;
 using unvell.ReoGrid.Drawing.Shapes;
 using unvell.ReoGrid.Graphics;
+using unvell.ReoGrid.Utility;
 using Point = System.Windows.Point;
 
 namespace unvell.ReoGrid.WPFDemo
@@ -29,6 +31,39 @@ namespace unvell.ReoGrid.WPFDemo
 			// handles event to update menu check status.
 			grid.SettingsChanged += (s, e) => UpdateMenuChecks();
 			grid.CurrentWorksheetChanged += (s, e) => UpdateMenuChecks();
+
+
+            //var result = FormulaUtility.EnumerateR1C1("RC").ToArray();
+            //result = FormulaUtility.EnumerateR1C1("R1C").ToArray();
+            //result = FormulaUtility.EnumerateR1C1("RC1").ToArray();
+            //result = FormulaUtility.EnumerateR1C1("R1C1").ToArray();
+
+            //result = FormulaUtility.EnumerateR1C1("R[1]C").ToArray();
+            //result = FormulaUtility.EnumerateR1C1("RC[1]").ToArray();
+            //result = FormulaUtility.EnumerateR1C1("R[1]C[1]").ToArray();
+
+            //result = FormulaUtility.EnumerateR1C1("R[-1]C").ToArray();
+            //result = FormulaUtility.EnumerateR1C1("RC[-1]").ToArray();
+            //result = FormulaUtility.EnumerateR1C1("R[-1]C[-1]").ToArray();
+
+            // var result = FormulaUtility.EnumerateR1C1("SQRT({1,2,3})").ToArray();
+
+            //var result = FormulaUtility.EnumerateA1("SUM(Worksheet!R1)").ToArray();
+            //result = FormulaUtility.EnumerateA1("SUM('Worksheet1'!R58)").ToArray();
+            // result = FormulaUtility.EnumerateR1C1("SUM('Worksheet\"1'!R[-1]C)").ToArray();
+            // result = FormulaUtility.EnumerateR1C1("SUM('Worksheet''1'!R1C)").ToArray();
+            // 
+            // result = FormulaUtility.EnumerateR1C1("SUM(RC1)").ToArray();
+            // result = FormulaUtility.EnumerateR1C1("SUM(R1C1)").ToArray();
+            // 
+            // result = FormulaUtility.EnumerateR1C1("SUM(R[1]C)").ToArray();
+            // result = FormulaUtility.EnumerateR1C1("SUM(RC[1])").ToArray();
+            // result = FormulaUtility.EnumerateR1C1("SUM(R[1]C[1])").ToArray();
+            // 
+            // result = FormulaUtility.EnumerateR1C1("SUM(R[-1]C)").ToArray();
+            // result = FormulaUtility.EnumerateR1C1("SUM(RC[-1])").ToArray();
+            // result = FormulaUtility.EnumerateR1C1("SUM(R[-1]C[-1])").ToArray();
+
 
 			// add demo sheet 1: document template
 			AddDemoSheet1();
@@ -58,6 +93,9 @@ namespace unvell.ReoGrid.WPFDemo
 		#region Demo Sheet 1 : Document Template
 		private void AddDemoSheet1()
 		{
+
+            // var t = FormulaUtility.EnumerateIdentifiers(@"SUM(RC[1], R1C)").ToList();
+
 			/****************** Sheet1 : Document Template ********************/
 			var worksheet = grid.NewWorksheet("Document");
 
