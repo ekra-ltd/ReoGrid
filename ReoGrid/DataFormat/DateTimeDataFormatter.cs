@@ -66,7 +66,10 @@ namespace unvell.ReoGrid.DataFormat
 					// Excel/Lotus 2/29/1900 bug   
 					// original post: http://stackoverflow.com/questions/4538321/reading-datetime-value-from-excel-sheet
 					value = DateTime.FromOADate(number);
-
+					if (value < baseStartDate)
+					{
+						value = baseStartDate + value.TimeOfDay;
+					}
 					isFormat = true;
 				}
 				catch { }
@@ -127,7 +130,18 @@ namespace unvell.ReoGrid.DataFormat
 					culture = new CultureInfo("ja-JP", true);
 					culture.DateTimeFormat.Calendar = new JapaneseCalendar();
 				}
-
+				if (pattern.Contains(@"AM/PM"))
+				{
+					if (culture.Name.StartsWith("ru"))
+					{
+						pattern = pattern.Replace(@"AM/PM", string.Empty);
+						pattern = pattern.Replace(@"h", @"HH");
+					}
+					else
+					{
+						pattern = pattern.Replace(@"AM/PM", @"tt");
+					}
+				}
 				try
 				{
 					switch (pattern)
