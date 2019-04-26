@@ -615,7 +615,16 @@ namespace unvell.ReoGrid
 
 		internal bool CheckWorksheetName(string name)
 		{
-			return this.worksheets.All(s => string.Compare(s.Name, name, true) != 0);
+			return this.worksheets.All(s => string.Compare(s.Name, name, true) != 0) &&
+					!string.IsNullOrEmpty(name) &&
+					!name.Contains('\'') &&
+					!name.Contains('[') &&
+					!name.Contains(']') &&
+					!name.Contains('\\') &&
+					!name.Contains('/') &&
+					!name.Contains('?') &&
+					!name.Contains('*') &&
+					!name.Contains(':');
 		}
 
 		internal void ValidateWorksheetName(string name)
@@ -623,6 +632,14 @@ namespace unvell.ReoGrid
 			if (!CheckWorksheetName(name))
 			{
 				throw new Exception("Specified name is already used by another worksheet.");
+			}
+		}
+
+		internal void PutFormulasInOrderAfterWorkseetNameChanged(Worksheet sheet, string oldWorksheetName, string newWorksheetName)
+		{
+			foreach (var worksheet in Worksheets)
+			{
+				worksheet.PutFormulasInOrderAfterWorksheetNameChanged(sheet, oldWorksheetName, newWorksheetName);
 			}
 		}
 

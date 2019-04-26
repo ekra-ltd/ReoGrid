@@ -22,6 +22,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Text.RegularExpressions;
 
 using unvell.Common;
 
@@ -172,9 +173,9 @@ namespace unvell.ReoGrid
 					this.workbook.ValidateWorksheetName(value);
 					value = this.workbook.NotifyWorksheetNameChange(this, value);
 				}
-
+				var oldName = name;
 				this.name = value;
-
+				workbook?.PutFormulasInOrderAfterWorkseetNameChanged(this, NormalizeWorksheetName(oldName), NormalizeWorksheetName(name));
 				if (this.NameChanged != null)
 				{
 					this.NameChanged(this, null);
@@ -191,6 +192,56 @@ namespace unvell.ReoGrid
 		/// Event raised when name of worksheet is changed
 		/// </summary>
 		public event EventHandler NameChanged;
+		
+		/// <summary>
+        /// Нормализация имени листа
+        /// </summary>
+        /// <param name="name">Имя листа</param>
+        /// <returns>
+        /// Нормализованное имя листа
+        /// </returns>
+        public static string NormalizeWorksheetName(string name)
+        {
+            if (IsWorksheetNameMustNormalized(name))
+                return $@"'{name}'";
+            return name;
+        }
+
+        private static bool IsWorksheetNameNormalized(string name) =>
+            Regex.IsMatch(name, FormulaUtility.QuotedIdentifierPattern);
+
+        private static bool IsWorksheetNameStartDigit(string name) =>
+            name.Length > 0 && char.IsDigit(name[0]);
+
+        private static bool IsWorksheetNameLikeA1CellAddress(string name) =>
+            Regex.IsMatch(name, FormulaUtility.A1RegexPattern);
+
+        private static bool IsWorksheetNameLikeR1C1CellAddress(string name) =>
+            Regex.IsMatch(name, FormulaUtility.R1C1RegexPattern);
+
+        private static bool IsWorksheetNameContainesChar(string name, string escapedList) =>
+            name.IndexOfAny(escapedList.ToCharArray()) >= 0;
+
+        /// <summary>
+        /// Проверка условий необходимости нормализации имени листа (добавления к имени одинарных кавычек)
+        /// </summary>
+        /// <param name="name">Имя листа</param>
+        /// <returns>
+        /// true - если требуется нормализация
+        /// false - если нормализация не требуется
+        /// </returns>
+        private static bool IsWorksheetNameMustNormalized(string name)
+        {
+            if(IsWorksheetNameNormalized(name)) return false;
+            if (IsWorksheetNameStartDigit(name)) return true;
+            if (IsWorksheetNameLikeA1CellAddress(name)) return true;
+            if (IsWorksheetNameLikeR1C1CellAddress(name)) return true;
+            if (IsWorksheetNameContainesChar(name, ListOfEscapesCharacters)) return true;
+            return false;
+        }
+
+        private static string ListOfEscapesCharacters = "~`!@#$%^&*()-=/*-+[]{}|,.<> \t";
+        
 		#endregion // Name
 
 		#region Name Text Color & Back Color

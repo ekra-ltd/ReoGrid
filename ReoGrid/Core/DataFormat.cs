@@ -93,7 +93,8 @@ namespace unvell.ReoGrid
 			}
 
 #if FORMULA
-			RecalcConditionalFormats();
+			foreach (var sheet in Workbook.Worksheets)
+				sheet.RecalcConditionalFormats();
 			foreach (var cell in formulaDirtyCells)
 			{
 				RecalcCell(cell);
@@ -123,7 +124,8 @@ namespace unvell.ReoGrid
             UpdateCellFont(cell);
 
 #if FORMULA
-			RecalcConditionalFormats();
+			foreach (var sheet in Workbook.Worksheets)
+				sheet.RecalcConditionalFormats();
 
 			if (formulaDirtyCells != null)
 			{

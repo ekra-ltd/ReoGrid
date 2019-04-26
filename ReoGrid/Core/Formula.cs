@@ -24,6 +24,7 @@ using System.Linq;
 using System.Text;
 
 using unvell.ReoGrid.Formula;
+using unvell.ReoGrid.Utility;
 
 namespace unvell.ReoGrid
 {
@@ -79,6 +80,8 @@ namespace unvell.ReoGrid
 
 		internal void SetCellFormula(Cell cell, string formula)
 		{
+			formula = NormalizeWorksheetNamesInFormula(formula);
+			
 			cell.InnerFormula = formula;
 
 			this.ClearCellReferenceList(cell);
@@ -103,6 +106,43 @@ namespace unvell.ReoGrid
 			{
 				this.SetCellFormula(cell, rootNode);
 			}
+		}
+
+		private string NormalizeWorksheetNamesInFormula(string formula)
+		{
+			try
+			{
+				foreach (var sheet in workbook.Worksheets)
+				{
+					if (IsWorksheetNameLikeA1CellAddress(sheet.Name))
+					{
+						var normalizedName = NormalizeWorksheetName(sheet.Name);
+						// Пытаемся подменить имена листов в формате A1
+						foreach (var address in FormulaUtility.EnumerateA1(formula).Reverse().ToList())
+						{
+							// Если адрес равен имени листа и потом мы встерчаем спец. символ '!'
+							// то подменяем
+							if (address.Value == sheet.Name)
+							{
+								var nextIndex = address.Start + address.Length;
+								if (formula.Length > nextIndex)
+								{
+									if (formula[nextIndex] == '!')
+									{
+										formula = formula.Remove(address.Start, address.Length);
+										formula = formula.Insert(address.Start, normalizedName);
+									}
+								}
+							}
+						}
+					}
+				}
+			}
+			catch
+			{
+				// ignore
+			}
+			return formula;
 		}
 
 		internal void SetCellFormula(Cell cell, STNode node)
@@ -217,7 +257,7 @@ namespace unvell.ReoGrid
 					}
 
 					var refCell = worksheet.CreateAndGetCell(pos);
-					AddCellReferenceIntoList(referencedRanges, new ReferenceRange(worksheet, refCell, refCell));
+					AddCellReferenceIntoList(referencedRanges, new FormulaReferenceRange(worksheet, refCell, refCell, pos));
 					break;
 
 				case STNodeType.RANGE:
@@ -1029,6 +1069,78 @@ namespace unvell.ReoGrid
 		///// </summary>
 		//public event EventHandler Recalculated;
 #endregion // Recalculate
+#region Поддержка переименования листов
+
+            /// <summary>
+            /// Подменяет в формулах ячеек и формулах условного форматирования имя листа
+            /// </summary>
+            /// <param name="sheet">Лист для которого выполняется переименование</param>
+            /// <param name="oldWorksheetName">Старое имя листа</param>
+            /// <param name="newWorksheetName">Новое имя листа</param>
+        internal void PutFormulasInOrderAfterWorksheetNameChanged(Worksheet sheet, string oldWorksheetName, string newWorksheetName)
+        {
+            var entireRange = new RangePosition(0, 0, MaxContentRow + 1, MaxContentCol + 1);
+            IterateCells(entireRange, (row, col, cell) =>
+            {
+                if (cell.HasFormula)
+                {
+                    if (TrySubstituteWorksheetName(cell.Formula, oldWorksheetName, newWorksheetName, out var result))
+                    {
+                        cell.Formula = result;
+                    }
+                }
+                return true;
+            });
+
+            if (ConditionalFormats != null)
+            {
+                foreach (var format in ConditionalFormats)
+                {
+                    foreach (var rule in format.Rules)
+                    {
+                        foreach (var formuaItem in rule.Formula)
+                        {
+                            if (TrySubstituteWorksheetName(formuaItem.Value, oldWorksheetName, newWorksheetName, out var result))
+                            {
+                                formuaItem.Value = result;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        /// <summary>
+        /// Выполняет попытку подменить имя листа в формуле
+        /// </summary>
+        /// <param name="formula">Формула в которой выполняется попытка подменить имя листа</param>
+        /// <param name="oldWorksheetName">Старое имя листа</param>
+        /// <param name="newWorksheetName">Новое имя листа</param>
+        /// <param name="newFormula">Новая фомула, в случае если подмена выполнена успешно</param>
+        /// <returns>
+        /// true, если в формуле были ссылки на лист
+        /// false, ссылок не было
+        /// </returns>
+        private static bool TrySubstituteWorksheetName(string formula, string oldWorksheetName, string newWorksheetName, out string newFormula)
+        {
+            var result = false;
+            newFormula = formula;
+            if (!string.IsNullOrEmpty(formula))
+            {
+                foreach (var id in FormulaUtility.EnumerateIdentifiers(formula).Reverse().ToList())
+                {
+                    if (id.Identifier == oldWorksheetName)
+                    {
+                        result = true;
+                        newFormula = newFormula.Remove(id.Start, id.Length);
+                        newFormula = newFormula.Insert(id.Start, newWorksheetName);
+                    }
+                }
+            }
+            return result;
+        }
+
+        #endregion
 	}
 
 	partial class Cell
@@ -1085,6 +1197,36 @@ namespace unvell.ReoGrid
 				}
 			}
 		}
+	}
+
+	internal class FormulaReferenceRange : ReferenceRange
+	{
+		internal FormulaReferenceRange(Worksheet worksheet, Cell startCell, Cell endCell, CellPosition formulaCellPosition) : base(worksheet, startCell, endCell)
+		{
+			FormulaCellPosition = formulaCellPosition;
+		}
+
+		internal FormulaReferenceRange(Worksheet worksheet, CellPosition startPos, CellPosition endPos, CellPosition formulaCellPosition) : base(worksheet, startPos, endPos)
+		{
+			FormulaCellPosition = formulaCellPosition;
+		}
+
+		internal FormulaReferenceRange(Worksheet worksheet, string address, CellPosition formulaCellPosition) : base(worksheet, address)
+		{
+			FormulaCellPosition = formulaCellPosition;
+		}
+
+		internal FormulaReferenceRange(Worksheet worksheet, RangePosition range, CellPosition formulaCellPosition) : base(worksheet, range)
+		{
+			FormulaCellPosition = formulaCellPosition;
+		}
+
+		internal FormulaReferenceRange(Worksheet worksheet, CellPosition pos, CellPosition formulaCellPosition) : base(worksheet, pos)
+		{
+			FormulaCellPosition = formulaCellPosition;
+		}
+
+		public CellPosition FormulaCellPosition { get; }
 	}
 }
 

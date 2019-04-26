@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;
@@ -6,6 +7,7 @@ using System.Globalization;
 using System.Linq;
 using System.Windows;
 using System.Xml;
+using unvell.Common;
 using unvell.ReoGrid.Core;
 using unvell.ReoGrid.Core.Worksheet.Additional;
 using unvell.ReoGrid.Formula;
@@ -64,7 +66,7 @@ namespace unvell.ReoGrid
 
         internal void RecalcConditionalFormats()
         {
-            if(ConditionalFormats!=null)
+            if (ConditionalFormats != null)
                 foreach (var format in ConditionalFormats)
                 {
                     RecalcConditionalFormat(format);
@@ -99,29 +101,42 @@ namespace unvell.ReoGrid
         {
             var pos = new RangePosition(format.Sqref.Text);
             var cell = Cells[pos.StartPos];
-            foreach (var rule in format.Rules)
-            {
-                var applyFormat = rule.DifferentialFormat;
-                if (applyFormat == null) continue;
 
-                var item = ConditionalFormatAdders.FirstOrDefault(a => a.ExpressionType == rule.Type);
-                if (item != null)
+            for (int r = 0; r < pos.Rows; r++)
+            for (int c = 0; c < pos.Cols; c++)
+            {
+                RestoredefaultDifferencialFormat(pos, c, r);
+            }
+
+            foreach (var rule in format.Rules.OrderByDescending(r => r.Priority))
+            {
+                var dxFormat = rule.DifferentialFormat;
+                if (dxFormat == null) continue;
+
+                var cfAdder = ConditionalFormatAdders.FirstOrDefault(a => a.ExpressionType == rule.Type);
+                if (cfAdder != null)
                 {
-                    var apply = item.CanApplyFormat(cell, rule);
-                    ApplyDifferencialFormat(pos, applyFormat, apply);
+                    for (int r = 0; r < pos.Rows; r++)
+                    for (int c = 0; c < pos.Cols; c++)
+                    {
+                        if (cfAdder.CanApplyFormat(cell, c, r, rule))
+                        {
+                            ApplyDifferencialFormat(pos, c, r, dxFormat);
+                        }
+                    }
                 }
             }
         }
 
-
-        private void ApplyDifferencialFormat(RangePosition position, DifferentialFormat format, bool apply)
+        private void RestoredefaultDifferencialFormat(RangePosition position, int columnOffset, int rowOffset)
         {
-            for (int r = 0; r < position.Rows; r++)
-                for (int c = 0; c < position.Cols; c++)
-                {
-                    var cell = Cells[position.Row + r, position.Col + c];
-                    cell.ApplyDifferencialFormat(format, apply);
-                }
+            ApplyDifferencialFormat(position, columnOffset, rowOffset, null);
+        }
+
+        private void ApplyDifferencialFormat(RangePosition position, int columnOffset, int rowOffset, DifferentialFormat format)
+        {
+            var cell = Cells[position.Row + rowOffset, position.Col + columnOffset];
+            cell.ApplyDifferencialFormat(format);
         }
 
         public void ResetConditionalFormatting()
@@ -155,7 +170,98 @@ namespace unvell.ReoGrid
             public abstract ConditionalFormatType ExpressionType { get; }
             public abstract void Add(AddConditionalFormatInfo info);
 
-            public abstract bool CanApplyFormat(Cell cell, ConditionalFormatRule rule);
+            /// <summary>
+            /// Проверку условия срабатвания условного форматирования
+            /// </summary>
+            /// <param name="cell">правый верхний угол области условного форматирования (SqRef)</param>
+            /// <param name="columnOffset">Смещение вправо относитильно правого верхнего угла</param>
+            /// <param name="rowOffset">Смещение вниз относитильно правого верхнего угла</param>
+            /// <param name="rule">Правило условного форматирования</param>
+            /// <returns>true, если необходимо применить правило для ячейки, иначе - false</returns>
+            public abstract bool CanApplyFormat(Cell cell, int columnOffset, int rowOffset, ConditionalFormatRule rule);
+
+            protected void ExpandReferenceRanges(AddConditionalFormatInfo info, List<ReferenceRange> referencesRanges)
+            {
+                if (string.IsNullOrEmpty(info?.Format?.Sqref?.Text))
+                    return;
+
+                var adder = RangePosition.Empty;
+                try
+                {
+                    adder = new RangePosition(info.Format.Sqref.Text);
+                }
+                catch
+                {
+                    return;
+                }
+
+                if(adder.Cols < 1) return;
+                if (adder.Rows < 1) return;
+
+                foreach (var range in referencesRanges.OfType<FormulaReferenceRange>())
+                {
+                    try
+                    {
+                        if (range?.FormulaCellPosition is null) continue;
+                        if (range.FormulaCellPosition.ColumnProperty == PositionProperty.Relative)
+                        {
+                            range.Cols = adder.Cols - 1;
+                        }
+                        if (range.FormulaCellPosition.RowProperty == PositionProperty.Relative)
+                        {
+                            range.Rows = adder.Rows - 1;
+                        }
+                    }
+                    catch
+                    {
+                        // ignore
+                    }
+                }
+            }
+
+            /// <summary>
+            /// Функция выполняет сдвиг ячеек, адрес которых задан относительным
+            /// </summary>
+            /// <param name="node">Исходное дерево формулы</param>
+            /// <param name="columnOffset">смещение вправо</param>
+            /// <param name="rowOffset">смещение влево</param>
+            /// <returns></returns>
+            protected static STNode ShiftNode(STNode node, int columnOffset, int rowOffset)
+            {
+                if (columnOffset == 0 && rowOffset == 0)
+                    return node;
+                else
+                {
+                    var clone = node.Clone() as STNode;
+                    if (clone != null)
+                    {
+                        STNode.RecursivelyIterate(clone, stNode => ShiftSingleNode(stNode, columnOffset, rowOffset));
+                    }
+                    return clone;
+                }
+            }
+
+            private static void ShiftSingleNode(STNode node, int columnOffset, int rowOffset)
+            {
+                if (node != null)
+                {
+                    if (node is STCellNode cellNode)
+                    {
+
+                        if (cellNode.Position != null)
+                        {
+                            var colShift = cellNode.Position.ColumnProperty == PositionProperty.Relative;
+                            var rowShift = cellNode.Position.RowProperty == PositionProperty.Relative;
+                            var newPosition = new CellPosition(cellNode.Position.Row + (rowShift ? rowOffset : 0), cellNode.Position.Col + (colShift ? columnOffset : 0));
+                            cellNode.Position = newPosition;
+                        }
+                    }
+                    else if (node is STRangeNode tangeNode)
+                    {
+                        
+                    }
+                }
+            }
         }
 
         private class ConditionalFormatExpressionAdder : ConditionalFormatAdder
@@ -182,9 +288,8 @@ namespace unvell.ReoGrid
                         {
                             try
                             {
-                                // cell тут нужен для определения циклических зависимостей. 
-                                // у меня таких зависимостей не может быть, но интерефейс надо использовать(
                                 IterateToAddReference(info.Worksheet.Cells[info.Position], node, referencesRanges, true);
+                                ExpandReferenceRanges(info, referencesRanges);
                                 info.Rule.Formula[0].FormulaTree = node;
                             }
                             catch (CircularReferenceException)
@@ -205,9 +310,9 @@ namespace unvell.ReoGrid
                 }
             }
 
-            public override bool CanApplyFormat(Cell cell, ConditionalFormatRule rule)
+            public override bool CanApplyFormat(Cell cell, int columnOffset, int rowOffset, ConditionalFormatRule rule)
             {
-                var evaluatedValue = Evaluator.Evaluate(cell, rule.Formula[0].FormulaTree);
+                var evaluatedValue = Evaluator.Evaluate(cell, ShiftNode(rule.Formula[0].FormulaTree, columnOffset, rowOffset));
                 return evaluatedValue.type == FormulaValueType.Boolean && evaluatedValue.value as bool? == true;
             }
         }
@@ -236,10 +341,9 @@ namespace unvell.ReoGrid
                         {
                             try
                             {
-                                // cell тут нужен для определения циклических зависимостей. 
-                                // у меня таких зависимостей не может быть, но интерефейс надо использовать(
                                 IterateToAddReference(info.Worksheet.Cells[info.Position], node, referencesRanges, false);
-                                if(!referencesRanges.Any(r =>  r.Contains(info.Position)))
+                                ExpandReferenceRanges(info, referencesRanges);
+                                if (!referencesRanges.Any(r =>  r.Contains(info.Position)))
                                     referencesRanges.Add(new ReferenceRange(info.Worksheet, info.Position));
                                 formulaItem.FormulaTree = node;
                             }
@@ -261,12 +365,12 @@ namespace unvell.ReoGrid
                 }
             }
 
-            public override bool CanApplyFormat(Cell cell, ConditionalFormatRule rule)
+            public override bool CanApplyFormat(Cell cell, int columnOffset, int rowOffset, ConditionalFormatRule rule)
             {
                 List<FormulaValue> values = new List<FormulaValue>();
                 foreach (var formulaItem in rule.Formula)
                 {
-                    values.Add(Evaluator.Evaluate(cell, formulaItem.FormulaTree));
+                    values.Add(Evaluator.Evaluate(cell, ShiftNode(formulaItem.FormulaTree, columnOffset, rowOffset)));
                 }
                 // var evaluatedValue = Evaluator.Evaluate(cell, rule.Formula[0].FormulaTree);
                 return CheckCondition(rule.Operator, cell?.Data, values);
@@ -390,7 +494,7 @@ namespace unvell.ReoGrid
     {
         private CfSaveStyle _cfSaveStyle { get; set; }
 
-        private CfApplyStyle _cfApplyStyle { get; set; }
+        private CfApplyStyle _cfOverrideStyle { get; set; }
 
         internal void ClearCfFormat()
         {
@@ -402,23 +506,28 @@ namespace unvell.ReoGrid
         }
 
 
-        internal void ApplyDifferencialFormat(DifferentialFormat format, bool apply)
+        internal void ApplyDifferencialFormat(DifferentialFormat format)
         {
             Worksheet?.MarkAsCfCell(this);
 
-            //_useCfStyle = false;
             if (_cfSaveStyle == null)
                 _cfSaveStyle = new CfSaveStyle
                 {
                     BackColor = Style.BackColor,
                     TextColor = Style.TextColor,
                 };
-            if (_cfApplyStyle == null)
+
+            if (format is null)
+            {
+                _cfOverrideStyle = null;
+            }
+            else
             {
                 var bkColor = format?.Fill?.PatternFill?.BackgroundColor;
                 var txtColor = format?.Font?.Color;
 
-                SolidColor? sBackColor = bkColor?.RgbColorValue != null ? (SolidColor?) new SolidColor(
+                SolidColor? sBackColor = bkColor?.RgbColorValue != null
+                    ? (SolidColor?) new SolidColor(
                         bkColor.RgbColorValue.Value[0]
                         , bkColor.RgbColorValue.Value[1]
                         , bkColor.RgbColorValue.Value[2]
@@ -432,33 +541,57 @@ namespace unvell.ReoGrid
                         , txtColor.RgbColorValue.Value[3])
                     : null;
 
-                _cfApplyStyle = new CfApplyStyle
+                _cfOverrideStyle = new CfApplyStyle
                 {
                     BackColor = sBackColor,
                     TextColor = sTextColor,
                 };
             }
 
-
-            if (_cfApplyStyle.BackColor != null)
+            if (_cfOverrideStyle is null)
             {
-                if (apply)
-                    Style.BackColor = _cfApplyStyle.BackColor.Value;
-                else
-                    Style.BackColor = _cfSaveStyle.BackColor;
-            }
-            if (_cfApplyStyle.TextColor != null)
-            {
-                if (apply)
-                    Style.TextColor = _cfApplyStyle.TextColor.Value;
-                else
-                    Style.TextColor = _cfSaveStyle.TextColor;
+                Style.BackColor = _cfSaveStyle.BackColor;
+                Style.TextColor = _cfSaveStyle.TextColor;
                 if (true == InnerStyle?.HasStyle(PlainStyleFlag.TextColor))
                 {
                     InnerStyle.TextColor = Style.TextColor;
                 }
                 Worksheet?.UpdateCellFont(this, UpdateFontReason.TextColorChanged);
             }
+            else
+            {
+                if(_cfOverrideStyle.BackColor.HasValue)
+                    Style.BackColor = _cfOverrideStyle.BackColor.Value;
+                if (_cfOverrideStyle.TextColor.HasValue)
+                {
+                    Style.TextColor = _cfOverrideStyle.TextColor.Value;
+                    if (true == InnerStyle?.HasStyle(PlainStyleFlag.TextColor))
+                    {
+                        InnerStyle.TextColor = Style.TextColor;
+                    }
+                    Worksheet?.UpdateCellFont(this, UpdateFontReason.TextColorChanged);
+                }
+            }
+
+            // if (_cfOverrideStyle.BackColor != null)
+            // {
+            //     if (_cfOverrideStyle is null)
+            //         Style.BackColor = _cfSaveStyle.BackColor;
+            //     else
+            //         Style.BackColor = _cfOverrideStyle.BackColor.Value;
+            // }
+            // if (_cfOverrideStyle.TextColor != null)
+            // {
+            //     if (_cfOverrideStyle is null)
+            //         Style.TextColor = _cfSaveStyle.TextColor;
+            //     else
+            //         Style.TextColor = _cfOverrideStyle.TextColor.Value;
+            //     if (true == InnerStyle?.HasStyle(PlainStyleFlag.TextColor))
+            //     {
+            //         InnerStyle.TextColor = Style.TextColor;
+            //     }
+            //     Worksheet?.UpdateCellFont(this, UpdateFontReason.TextColorChanged);
+            // }
         }
 
         [Serializable]
@@ -483,14 +616,14 @@ namespace unvell.ReoGrid.Core.Worksheet.Additional
 {
     internal static class ConditionalFormatHelper
     {
-        public static List<ConditionalFormat> From2006(E2006.CT_ConditionalFormatting[] formattings, E2006.Stylesheet stylesheet)
+        public static List<ConditionalFormat> From2006(E2006.CT_ConditionalFormatting[] formattings, E2006.Stylesheet stylesheet, IO.OpenXML.Document doc)
         {
             var result = new List<ConditionalFormat>();
             foreach (var formatting in formattings)
             {
                 try
                 {
-                    result.Add(From2006(formatting, stylesheet));
+                    result.Add(From2006(formatting, stylesheet, doc));
                 }
                 catch 
                 {
@@ -500,13 +633,13 @@ namespace unvell.ReoGrid.Core.Worksheet.Additional
             return result;
         }
 
-        public static List<ConditionalFormat> From2009(E2009.CT_ConditionalFormattings formattings)
+        public static List<ConditionalFormat> From2009(E2009.CT_ConditionalFormattings formattings, IO.OpenXML.Document doc)
         {
             //throw new NotImplementedException();
             List<ConditionalFormat> result = new List<ConditionalFormat>();
             foreach (var formatting in formattings.conditionalFormatting)
             {
-                result.Add(From2009(formatting));
+                result.Add(From2009(formatting, doc));
             }
             return result;
         }
@@ -534,13 +667,13 @@ namespace unvell.ReoGrid.Core.Worksheet.Additional
 
         #region 2006->RG
 
-        private static ConditionalFormat From2006(E2006.CT_ConditionalFormatting formatting, E2006.Stylesheet stylesheet)
+        private static ConditionalFormat From2006(E2006.CT_ConditionalFormatting formatting, E2006.Stylesheet stylesheet, IO.OpenXML.Document doc)
         {
             var result = new ConditionalFormat();
             result.Pivot = formatting.pivot;
             foreach (var cfRule in formatting.cfRule)
             {
-                result.Rules.Add(From2006(cfRule, stylesheet));
+                result.Rules.Add(From2006(cfRule, stylesheet, doc));
             }
             result.Sqref = From2006(formatting.sqref);
             return result;
@@ -563,7 +696,7 @@ namespace unvell.ReoGrid.Core.Worksheet.Additional
             return result;
         }
 
-        private static ConditionalFormatRule From2006(E2006.CT_CfRule rule, E2006.Stylesheet stylesheet)
+        private static ConditionalFormatRule From2006(E2006.CT_CfRule rule, E2006.Stylesheet stylesheet, IO.OpenXML.Document doc)
         {
             if (rule != null)
             {
@@ -594,8 +727,8 @@ namespace unvell.ReoGrid.Core.Worksheet.Additional
                     AboveAverage = rule.aboveAverage,
                     ActivePercent = null,
                     Bottom = rule.bottom,
-                    ColorScale = From2006(rule.colorScale),
-                    DataBar = From2006(rule.dataBar),
+                    ColorScale = From2006(rule.colorScale, doc),
+                    DataBar = From2006(rule.dataBar, doc),
                     DifferentialFormat = From2006(rule.dxfId, rule.dxfIdSpecified, stylesheet),
                     EqualAverage = rule.equalAverage,
                     Operator = From2006(rule.@operator, rule.operatorSpecified),
@@ -645,7 +778,7 @@ namespace unvell.ReoGrid.Core.Worksheet.Additional
             throw new NotImplementedException();
         }
 
-        private static ColorScale From2006(E2006.CT_ColorScale value)
+        private static ColorScale From2006(E2006.CT_ColorScale value, IO.OpenXML.Document doc)
         {
             ColorScale result = null;
             if (value != null)
@@ -657,13 +790,13 @@ namespace unvell.ReoGrid.Core.Worksheet.Additional
                 }
                 foreach (var color in value.color)
                 {
-                    result.Color.Add(From2006(color));
+                    result.Color.Add(From2006(color, doc));
                 }
             }
             return result;
         }
 
-        private static DataBar From2006(E2006.CT_DataBar value)
+        private static DataBar From2006(E2006.CT_DataBar value, IO.OpenXML.Document doc)
         {
             DataBar result = null;
             if (value != null)
@@ -675,7 +808,7 @@ namespace unvell.ReoGrid.Core.Worksheet.Additional
                     Border = null,
                     BorderColor = null,
                     Direction = null,
-                    FillColor = From2006(value.color),
+                    FillColor = From2006(value.color, doc),
                     Gradient = null,
                     MaxLength = value.maxLength,
                     MinLength = value.minLength,
@@ -913,17 +1046,30 @@ namespace unvell.ReoGrid.Core.Worksheet.Additional
             return result;
         }
 
-        private static Color From2006(E2006.CT_Color value)
+        private static Color From2006(E2006.CT_Color value, IO.OpenXML.Document doc)
         {
             Color result = null;
             if (value != null)
             {
+                byte[] rgb = value.rgb;
+                if (value.themeSpecified && doc?.Themesheet?.elements?.clrScheme != null)
+                {
+                    uint theme = value.theme;
+                    var s = doc.Themesheet?.elements?.clrScheme.GetElement(theme);
+                    if (s?.srgbColor != null)
+                    {
+                        if (TextFormatHelper.DecodeColor(s.srgbColor.val, out var color))
+                        {
+                            rgb = new[] {color.A, color.R, color.G, color.B};
+                        }
+                    }
+                }
                 result = new Color
                 {
                     Automatic = value.autoSpecified ? (bool?) value.auto : null,
                     Indexed = value.indexedSpecified ? (uint?) value.indexed : null,
                     ThemeColor = value.themeSpecified ? (uint?) value.theme : null,
-                    RgbColorValue = From2006(value.rgb),
+                    RgbColorValue = From2006(rgb),
                     TInt = value.tint,
                 };
             }
@@ -1195,6 +1341,7 @@ namespace unvell.ReoGrid.Core.Worksheet.Additional
 
                 double tint;
                 bool timtParsed = double.TryParse(value.tint, out tint);
+
                 result = new Color
                 {
                     Automatic = autoParsed ? (bool?) auto : null,
@@ -1425,7 +1572,7 @@ namespace unvell.ReoGrid.Core.Worksheet.Additional
 
         #region 2009-RG
 
-        public static ConditionalFormat From2009(E2009.CT_ConditionalFormatting value)
+        public static ConditionalFormat From2009(E2009.CT_ConditionalFormatting value, IO.OpenXML.Document doc)
         {
             ConditionalFormat result = null;
             if (value != null)
@@ -1437,7 +1584,7 @@ namespace unvell.ReoGrid.Core.Worksheet.Additional
                 };
                 foreach (var rule in value.cfRule)
                 {
-                    result.Rules.Add(From2009(rule));
+                    result.Rules.Add(From2009(rule, doc));
                 }
             }
             return result;
@@ -1460,7 +1607,7 @@ namespace unvell.ReoGrid.Core.Worksheet.Additional
             return result;
         }
 
-        private static ConditionalFormatRule From2009(E2009.CT_CfRule value)
+        private static ConditionalFormatRule From2009(E2009.CT_CfRule value, IO.OpenXML.Document doc)
         {
             ConditionalFormatRule result = null;
             if (value != null)
@@ -1470,10 +1617,10 @@ namespace unvell.ReoGrid.Core.Worksheet.Additional
                     AboveAverage = value.aboveAverage,
                     ActivePercent = value.activePresent,
                     Bottom = value.bottom,
-                    ColorScale = From2009(value.colorScale),
+                    ColorScale = From2009(value.colorScale, doc),
                     Text = value.text,
-                    DataBar = From2009(value.dataBar),
-                    DifferentialFormat = From2009(value.dxf),
+                    DataBar = From2009(value.dataBar, doc),
+                    DifferentialFormat = From2009(value.dxf, doc),
                     EqualAverage = value.equalAverage,
                     IconSet = From2009(value.iconSet),
                     Operator = From2006(value.@operator, value.operatorSpecified),
@@ -1495,7 +1642,7 @@ namespace unvell.ReoGrid.Core.Worksheet.Additional
             return result;
         }
 
-        private static ColorScale From2009(E2009.CT_ColorScale value)
+        private static ColorScale From2009(E2009.CT_ColorScale value, IO.OpenXML.Document doc)
         {
             ColorScale result = null;
             if (value != null)
@@ -1507,7 +1654,7 @@ namespace unvell.ReoGrid.Core.Worksheet.Additional
                 if (value.color != null)
                     foreach (var color in value.color)
                 {
-                    result.Color.Add(From2006(color));
+                    result.Color.Add(From2006(color, doc));
                 }
                 if (value.cfvo != null)
                     foreach (var cfvo in value.cfvo)
@@ -1518,7 +1665,7 @@ namespace unvell.ReoGrid.Core.Worksheet.Additional
             return result;
         }
 
-        private static DataBar From2009(E2009.CT_DataBar value)
+        private static DataBar From2009(E2009.CT_DataBar value, IO.OpenXML.Document doc)
         {
             DataBar result = null;
             if (value != null)
@@ -1526,18 +1673,18 @@ namespace unvell.ReoGrid.Core.Worksheet.Additional
                 result = new DataBar
                 {
                     Border = value.border,
-                    AxisColor = From2006(value.axisColor),
+                    AxisColor = From2006(value.axisColor, doc),
                     AxisPosition = From2009(value.axisPosition),
-                    BorderColor = From2006(value.borderColor),
+                    BorderColor = From2006(value.borderColor, doc),
                     Direction = From2009(value.direction),
-                    FillColor = From2006(value.fillColor),
+                    FillColor = From2006(value.fillColor, doc),
                     Gradient = value.gradient,
                     MaxLength = value.maxLength,
                     MinLength = value.minLength,
                     NegativeBarBorderColorSameAsPositive = value.negativeBarBorderColorSameAsPositive,
                     NegativeBarColorSameAsPositive = value.negativeBarColorSameAsPositive,
-                    NegativeBorderColor = From2006(value.negativeBorderColor),
-                    NegativeFillColor = From2006(value.negativeFillColor),
+                    NegativeBorderColor = From2006(value.negativeBorderColor, doc),
+                    NegativeFillColor = From2006(value.negativeFillColor, doc),
                     ShowValue = value.showValue,
                 };
                 if (value.cfvo != null)
@@ -1549,18 +1696,18 @@ namespace unvell.ReoGrid.Core.Worksheet.Additional
             return result;
         }
 
-        private static DifferentialFormat From2009(E2009.CT_Dxf value)
+        private static DifferentialFormat From2009(E2009.CT_Dxf value, IO.OpenXML.Document doc)
         {
             DifferentialFormat result = null;
             if (value != null)
             {
                 result = new DifferentialFormat
                 {
-                    Border = From2009(value.border),
-                    Font = From2009(value.font),
+                    Border = From2009(value.border, doc),
+                    Font = From2009(value.font, doc),
                     NumberFormat = From2009(value.numFmt),
                     CellAlignment = From2009(value.alignment),
-                    Fill = From2009(value.fill),
+                    Fill = From2009(value.fill, doc),
                     CellProtection = From2009(value.protection),
                 };
             }
@@ -1654,29 +1801,29 @@ namespace unvell.ReoGrid.Core.Worksheet.Additional
             throw new ArgumentNullException(nameof(value));
         }
 
-        private static Border From2009(E2009.CT_Border value)
+        private static Border From2009(E2009.CT_Border value, IO.OpenXML.Document doc)
         {
             Border result = new Border();
             if (value != null)
             {
                 result = new Border
                 {
-                    Bottom = From2009(value.bottom),
+                    Bottom = From2009(value.bottom, doc),
                     Outline = value.outline,
-                    Vertical = From2009(value.vertical),
-                    Horizontal = From2009(value.horizontal),
+                    Vertical = From2009(value.vertical, doc),
+                    Horizontal = From2009(value.horizontal, doc),
                     DiagonalDown = value.diagonalDownSpecified ? (bool?) value.diagonalDown : null,
-                    Start = From2009(value.start),
+                    Start = From2009(value.start, doc),
                     DiagonalUp = value.diagonalUpSpecified ? (bool?) value.diagonalUp : null,
-                    Top = From2009(value.top),
-                    End = From2009(value.end),
-                    Diagonal = From2009(value.diagonal),
+                    Top = From2009(value.top, doc),
+                    End = From2009(value.end, doc),
+                    Diagonal = From2009(value.diagonal, doc),
                 };
             }
             return result;
         }
 
-        private static Font From2009(E2009.CT_Font value)
+        private static Font From2009(E2009.CT_Font value, IO.OpenXML.Document doc)
         {
             Font result = null;
             if (value != null)
@@ -1697,7 +1844,7 @@ namespace unvell.ReoGrid.Core.Worksheet.Additional
                             result.Charset = From2009(value.Items[i] as E2009.CT_IntProperty);
                             break;
                         case E2009.ItemsChoiceType.color:
-                            result.Color = From2006(value.Items[i] as E2006.CT_Color);
+                            result.Color = From2006(value.Items[i] as E2006.CT_Color, doc);
                             break;
                         case E2009.ItemsChoiceType.condense:
                             b = value.Items[i] as E2009.CT_BooleanProperty;
@@ -1792,15 +1939,15 @@ namespace unvell.ReoGrid.Core.Worksheet.Additional
             return result;
         }
 
-        private static Fill From2009(E2009.CT_Fill value)
+        private static Fill From2009(E2009.CT_Fill value, IO.OpenXML.Document doc)
         {
             Fill result = null;
             if (value != null)
             {
                 result = new Fill
                 {
-                    GradientFill = From2009(value.Item as E2009.CT_GradientFill),
-                    PatternFill = From2009(value.Item as E2009.CT_PatternFill),
+                    GradientFill = From2009(value.Item as E2009.CT_GradientFill, doc),
+                    PatternFill = From2009(value.Item as E2009.CT_PatternFill, doc),
                 };
             }
             return result;
@@ -1919,14 +2066,14 @@ namespace unvell.ReoGrid.Core.Worksheet.Additional
             throw new ArgumentNullException(nameof(value));
         }
 
-        private static BorderPr From2009(E2009.CT_BorderPr value)
+        private static BorderPr From2009(E2009.CT_BorderPr value, IO.OpenXML.Document doc)
         {
             BorderPr result = null;
             if (value != null)
             {
                 result = new BorderPr
                 {
-                    Color = From2006(value.color),
+                    Color = From2006(value.color, doc),
                     Style = From2009(value.style),
                 };
             }
@@ -2090,7 +2237,7 @@ namespace unvell.ReoGrid.Core.Worksheet.Additional
             throw new ArgumentNullException(nameof(value));
         }
 
-        private static GradientFill From2009(E2009.CT_GradientFill value)
+        private static GradientFill From2009(E2009.CT_GradientFill value, IO.OpenXML.Document doc)
         {
             GradientFill result = null;
             if (value != null)
@@ -2107,13 +2254,13 @@ namespace unvell.ReoGrid.Core.Worksheet.Additional
                 if (value.stop != null)
                     foreach (var stop in value.stop)
                 {
-                    result.GradientStop.Add(From2009(stop));
+                    result.GradientStop.Add(From2009(stop, doc));
                 }
             }
             return result;
         }
 
-        private static PatternFill From2009(E2009.CT_PatternFill value)
+        private static PatternFill From2009(E2009.CT_PatternFill value, IO.OpenXML.Document doc)
         {
             PatternFill result = null;
             if (value != null)
@@ -2121,8 +2268,8 @@ namespace unvell.ReoGrid.Core.Worksheet.Additional
                 result = new PatternFill
                 {
                     PatternType = From2009(value.patternType, value.patternTypeSpecified),
-                    ForegroundColor = From2006(value.fgColor),
-                    BackgroundColor = From2006(value.bgColor),
+                    ForegroundColor = From2006(value.fgColor, doc),
+                    BackgroundColor = From2006(value.bgColor, doc),
                 };
             }
             return result;
@@ -2247,14 +2394,14 @@ namespace unvell.ReoGrid.Core.Worksheet.Additional
             throw new ArgumentNullException(nameof(value));
         }
 
-        private static GradientStop From2009(E2009.CT_GradientStop value)
+        private static GradientStop From2009(E2009.CT_GradientStop value, IO.OpenXML.Document doc)
         {
             GradientStop result = null;
             if (value != null)
             {
                 result = new GradientStop
                 {
-                    Color = From2006(value.color),
+                    Color = From2006(value.color, doc),
                     Position = value.position,
                 };
             }

@@ -276,6 +276,22 @@ namespace unvell.ReoGrid.Formula
 						FormulaValue v1 = Evaluate(workbook, cell, node[0]);
 						FormulaValue v2 = Evaluate(workbook, cell, node[1]);
 
+						if ((v1.type == FormulaValueType.Number || v1.type == FormulaValueType.Nil) &&
+						    (v2.type == FormulaValueType.Number || v2.type == FormulaValueType.Nil))
+						{
+							double d1 = 0;
+							if (v1.type == FormulaValueType.Number)
+							{
+								d1 = (double)v1.value;
+							}
+							double d2 = 0;
+							if (v2.type == FormulaValueType.Number)
+							{
+								d2 = (double)v2.value;
+							}
+							return d1 == d2;
+						}
+						
 						if (v1.type != v2.type) return false;
 
 						switch (v1.type)
@@ -301,6 +317,22 @@ namespace unvell.ReoGrid.Formula
 						FormulaValue v1 = Evaluate(workbook, cell, node[0]);
 						FormulaValue v2 = Evaluate(workbook, cell, node[1]);
 
+						if ((v1.type == FormulaValueType.Number || v1.type == FormulaValueType.Nil) &&
+						    (v2.type == FormulaValueType.Number || v2.type == FormulaValueType.Nil))
+						{
+							double d1 = 0;
+							if (v1.type == FormulaValueType.Number)
+							{
+								d1 = (double)v1.value;
+							}
+							double d2 = 0;
+							if (v2.type == FormulaValueType.Number)
+							{
+								d2 = (double)v2.value;
+							}
+							return d1 != d2;
+						}
+						
 						if (v1.type != v2.type) return true;
 
 						switch (v1.type)
@@ -327,11 +359,27 @@ namespace unvell.ReoGrid.Formula
 						FormulaValue v1 = Evaluate(workbook, cell, node[0]);
 						FormulaValue v2 = Evaluate(workbook, cell, node[1]);
 
-						if (v1.type == FormulaValueType.Number && v2.type == FormulaValueType.Number)
+						if ((v1.type == FormulaValueType.Number || v1.type == FormulaValueType.Nil) &&
+						    (v2.type == FormulaValueType.Number || v2.type == FormulaValueType.Nil))
 						{
-							return (node.Type == STNodeType.GREAT_EQUALS)
-								? (double)v1.value >= (double)v2.value
-								: (double)v1.value > (double)v2.value;
+							double d1 = 0;
+							if (v1.type == FormulaValueType.Number)
+							{
+								d1 = (double)v1.value;
+							}
+							double d2 = 0;
+							if (v2.type == FormulaValueType.Number)
+							{
+								d2 = (double)v2.value;
+							}
+							if (node.Type == STNodeType.GREAT_EQUALS)
+							{
+								return d1 >= d2;
+							}
+							if (node.Type == STNodeType.GREAT_THAN)
+							{
+								return d1 > d2;
+							}
 						}
 
 						if (v1.type == FormulaValueType.String || v2.type == FormulaValueType.String)
@@ -362,11 +410,27 @@ namespace unvell.ReoGrid.Formula
 						FormulaValue v1 = Evaluate(workbook, cell, node[0]);
 						FormulaValue v2 = Evaluate(workbook, cell, node[1]);
 
-						if (v1.type == FormulaValueType.Number && v2.type == FormulaValueType.Number)
+						if ((v1.type == FormulaValueType.Number || v1.type == FormulaValueType.Nil) &&
+						    (v2.type == FormulaValueType.Number || v2.type == FormulaValueType.Nil))
 						{
-							return (node.Type == STNodeType.LESS_EQUALS)
-								? (double)v1.value <= (double)v2.value
-								: (double)v1.value < (double)v2.value;
+							double d1 = 0;
+							if (v1.type == FormulaValueType.Number)
+							{
+								d1 = (double) v1.value;
+							}
+							double d2 = 0;
+							if (v2.type == FormulaValueType.Number)
+							{
+								d2 = (double)v2.value;
+							}
+							if (node.Type == STNodeType.LESS_EQUALS)
+							{
+								return d1 <= d2;
+							}
+							if (node.Type == STNodeType.LESS_THAN)
+							{
+								return d1 < d2;
+							}
 						}
 
 						if (v1.type == FormulaValueType.String || v2.type == FormulaValueType.String)

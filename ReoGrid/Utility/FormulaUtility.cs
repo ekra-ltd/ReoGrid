@@ -79,6 +79,22 @@ namespace unvell.ReoGrid.Utility
             public CellPosition Position { get; }
         }
 
+        /// <inheritdoc />
+        /// <summary>
+        /// Состояние разбора идентификатора
+        /// </summary>
+        public class IdentifierState : State
+        {
+            public IdentifierState(string value, int start, int length, string identifier) : base(value, start, length)
+            {
+                Identifier = identifier;
+            }
+
+            /// <summary>
+            /// Идентификатор (имя листа, имя функции, прочее)
+            /// </summary>
+            public string Identifier { get; }
+        }
         /// <summary>
         /// Адрес в формате R1C1
         /// </summary>
@@ -165,6 +181,25 @@ namespace unvell.ReoGrid.Utility
             //    .Where(s => s != null);
         }
 
+        /// <summary>
+        /// Перечиесление идентификаторов листов, функций, прочего в формуле
+        /// </summary>
+        /// <param name="formula">формула</param>
+        /// <returns>Список идентификаторов</returns>
+        internal static IEnumerable<IdentifierState> EnumerateIdentifiers(string formula)
+        {
+            if (_a1Lexer is null)
+            {
+                _a1Lexer = new A1Lexer();
+            }
+            return Enumerate(formula, _a1Lexer)
+                .Where(t => t.TokenType == TokenType.Identifier)
+                .Select(t => t.State as IdentifierState)
+                .Where(s => s != null);
+        }
+
+
+
         #region Вспомогательные методы
 
         private static IEnumerable<Token> Enumerate(string formula, LexerBase lexer)
@@ -197,6 +232,22 @@ namespace unvell.ReoGrid.Utility
 
         private static LexerBase _r1c1Lexer;
         private static LexerBase _a1Lexer;
+
+        #endregion
+
+        #region Константы
+
+        private const string RelativeRowGroupName = @"r1c1_RelativeRow";
+        private const string AbsoluteRowGroupName = @"r1c1_AbsoluteRow";
+        private const string RelativeColumnGroupName = @"r1c1_RelativeColumn";
+        private const string AbsoluteColumnGroupName = @"r1c1_AbsoluteColumn";
+
+        private const string MinusTokenPattern = "-";
+        private const string TokenPattern = "\\=\\=|\\<\\>|\\<\\=|\\>\\=|\\<\\>|\\=|\\!|[\\=\\.\\,\\+\\-\\*\\/\\%\\<\\>\\(\\)\\&\\^]";// скопированы в том числе повторяющиеся токены
+        public const string A1RegexPattern = "\\$?[A-Z]+\\$?[0-9]+";
+        public const string R1C1RegexPattern = "R((\\[(?<" + RelativeRowGroupName + ">-?\\d+)\\])|(?<" + AbsoluteRowGroupName + ">\\d+)|())C((\\[(?<" + RelativeColumnGroupName + ">-?\\d+)\\])|(?<" + AbsoluteColumnGroupName + ">\\d+)|())";
+        private const string SimpleIdentifierPattern = "\\w+";
+        public const string QuotedIdentifierPattern = "'([^']|(''))+'";
 
         #endregion
 
@@ -321,13 +372,13 @@ namespace unvell.ReoGrid.Utility
                         new TokenParser(TokenType.Range, "range", "\\$?[A-Z]+\\$?[0-9]*:\\$?[A-Z]+\\$?[0-9]*"),
                         new R1C1TokenParser(),
                         // new TokenParser(TokenType.Cell, "cell", "\\$?[A-Z]+\\$?[0-9]+"),
-                        new TokenParser(TokenType.Token, "token", "-"),
+                        new TokenParser(TokenType.Token, "token", MinusTokenPattern),
                         new TokenParser(TokenType.Number, "number", "\\-?\\d*\\" + decimalSeparator + "?\\d+"),
                         new TokenParser(TokenType.True, "true", "(?i)TRUE"),
                         new TokenParser(TokenType.False, "false", "(?i)FALSE"),
-                        new TokenParser(TokenType.Identifier, "identifier", "\\w+"), // Обычный идентификатор
-                        new TokenParser(TokenType.Identifier, "identifier", "'([^']|(''))+'"), // Идентификатор, содержащий спецсимволы (", !, ', @, ...)  в имени или начинающиеся с цифры и прочее
-                        new TokenParser(TokenType.Token, "token", "\\=\\=|\\<\\>|\\<\\=|\\>\\=|\\<\\>|\\=|\\!|[\\=\\.\\,\\+\\-\\*\\/\\%\\<\\>\\(\\)\\&\\^]"), // скопированы в том числе повторяющиеся токены
+                        new SimpleIdentifierParser(),
+                        new QuotedIdentifierParser(),
+                        new TokenParser(TokenType.Token, "token", TokenPattern), // скопированы в том числе повторяющиеся токены
                         new TokenParser(TokenType.Error, "error", "."),
                     });
             }
@@ -347,17 +398,18 @@ namespace unvell.ReoGrid.Utility
                         new TokenParser(TokenType.UnionRanges, "union_ranges", "[A-Z]+[0-9]+:[A-Z]+[0-9]+(\\s[A-Z]+[0-9]+:[A-Z]+[0-9]+)+"),
                         new TokenParser(TokenType.Range, "range", "\\$?[A-Z]+\\$?[0-9]*:\\$?[A-Z]+\\$?[0-9]*"),
                         new A1TokenParser(),
-                        new TokenParser(TokenType.Token, "token", "-"),
+                        new TokenParser(TokenType.Token, "token", MinusTokenPattern),
                         new TokenParser(TokenType.Number, "number", "\\-?\\d*\\" + decimalSeparator + "?\\d+"),
                         new TokenParser(TokenType.True, "true", "(?i)TRUE"),
                         new TokenParser(TokenType.False, "false", "(?i)FALSE"),
-                        new TokenParser(TokenType.Identifier, "identifier", "\\w+"), // Обычный идентификатор
-                        new TokenParser(TokenType.Identifier, "identifier", "'([^']|(''))+'"), // Идентификатор, содержащий спецсимволы (", !, ', @, ...)  в имени или начинающиеся с цифры и прочее
-                        new TokenParser(TokenType.Token, "token", "\\=\\=|\\<\\>|\\<\\=|\\>\\=|\\<\\>|\\=|\\!|[\\=\\.\\,\\+\\-\\*\\/\\%\\<\\>\\(\\)\\&\\^]"), // скопированы в том числе повторяющиеся токены
+                        new SimpleIdentifierParser(),
+                        new QuotedIdentifierParser(),
+                        new TokenParser(TokenType.Token, "token", TokenPattern), 
                         new TokenParser(TokenType.Error, "error", "."),
                     });
             }
         }
+        
         #region Парсеры
 
         enum TokenType
@@ -449,12 +501,12 @@ namespace unvell.ReoGrid.Utility
                 return null;
             }
 
-            private const string RelativeRowGroupName = @"r1c1_RelativeRow";
-            private const string AbsoluteRowGroupName = @"r1c1_AbsoluteRow";
-            private const string RelativeColumnGroupName = @"r1c1_RelativeColumn";
-            private const string AbsoluteColumnGroupName = @"r1c1_AbsoluteColumn";
+            //private const string RelativeRowGroupName = @"r1c1_RelativeRow";
+            //private const string AbsoluteRowGroupName = @"r1c1_AbsoluteRow";
+            //private const string RelativeColumnGroupName = @"r1c1_RelativeColumn";
+            //private const string AbsoluteColumnGroupName = @"r1c1_AbsoluteColumn";
 
-            private const string R1C1RegexPattern = "R((\\[(?<" + RelativeRowGroupName + ">-?\\d+)\\])|(?<" + AbsoluteRowGroupName + ">\\d+)|())C((\\[(?<" + RelativeColumnGroupName + ">-?\\d+)\\])|(?<" + AbsoluteColumnGroupName + ">\\d+)|())";
+            //private const string R1C1RegexPattern = "R((\\[(?<" + RelativeRowGroupName + ">-?\\d+)\\])|(?<" + AbsoluteRowGroupName + ">\\d+)|())C((\\[(?<" + RelativeColumnGroupName + ">-?\\d+)\\])|(?<" + AbsoluteColumnGroupName + ">\\d+)|())";
         }
 
         private class A1TokenParser : TokenParser
@@ -476,10 +528,49 @@ namespace unvell.ReoGrid.Utility
                 }
                 return null;
             }
-
-            private const string A1RegexPattern = "\\$?[A-Z]+\\$?[0-9]+";
         }
 
+        private class SimpleIdentifierParser : TokenParser
+        {
+            public SimpleIdentifierParser() : base(TokenType.Identifier, "identifier", SimpleIdentifierPattern)
+            {
+            }
+
+            public override Token TryParse(Match match, int length)
+            {
+                var group = match.Groups[Name];
+                if (group.Success)
+                {
+                    return new Token
+                    {
+                        State = new IdentifierState(group.Value, length, group.Length, group.Value),
+                        TokenType = Type,
+                    };
+                }
+                return null;
+            }
+        }
+
+        private class QuotedIdentifierParser : TokenParser
+        {
+            public QuotedIdentifierParser() : base(TokenType.Identifier, "identifier", QuotedIdentifierPattern)
+            {
+            }
+
+            public override Token TryParse(Match match, int length)
+            {
+                var group = match.Groups[Name];
+                if (group.Success)
+                {
+                    return new Token
+                    {
+                        State = new IdentifierState(group.Value, length, group.Length, group.Value),
+                        TokenType = Type,
+                    };
+                }
+                return null;
+            }
+        }
 
         #endregion
 

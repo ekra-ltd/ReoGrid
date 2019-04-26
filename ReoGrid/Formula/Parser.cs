@@ -516,6 +516,7 @@ namespace unvell.ReoGrid.Formula
 			+ "|(?<cell>\\$?[A-Z]+\\$?[0-9]+)"
 			+ "|(?<token>-)|(?<number>\\-?\\d*\\" + FormulaExtension.NumberDecimalSeparator + "?\\d+)"
 			+ "|(?<true>(?i)TRUE)|(?<false>(?i)FALSE)|(?<identifier>\\w+)"
+			+ "|('(?<identifier>[^']+)')"                                                                               // идентификатор в кавычках. требуется для разбора формул вида 'AUX1'!A1;'123'!A1
 			+ "|(?<token>\\=\\=|\\<\\>|\\<\\=|\\>\\=|\\<\\>|\\=|\\!|[\\=\\.\\"
 			+ FormulaExtension.ParameterSeparator // ,
 			+ "\\+\\-\\*\\/\\%\\<\\>\\(\\)\\&\\^]))",

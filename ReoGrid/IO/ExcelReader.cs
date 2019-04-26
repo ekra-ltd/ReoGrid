@@ -314,7 +314,7 @@ namespace unvell.ReoGrid.IO.OpenXML
             List<string> cfRuleIds = new List<string>();
             if (sheet.conditionalFormatting != null)
             {
-                list.AddRange(ConditionalFormatHelper.From2006(sheet.conditionalFormatting, styles));
+                list.AddRange(ConditionalFormatHelper.From2006(sheet.conditionalFormatting, styles, doc));
             }
             if (sheet.extLst != null)
             {
@@ -322,7 +322,7 @@ namespace unvell.ReoGrid.IO.OpenXML
                 {
                     if (extension.ConditionalFormattings != null)
                     {
-                        var list2009 = ConditionalFormatHelper.From2009(extension.ConditionalFormattings);
+                        var list2009 = ConditionalFormatHelper.From2009(extension.ConditionalFormattings, doc);
                         
                         foreach (var format2009 in list2009)
                         {

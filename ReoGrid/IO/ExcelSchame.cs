@@ -1984,6 +1984,32 @@ namespace unvell.ReoGrid.IO.OpenXML.Schema
 
 		//[XmlIgnore]
 		//internal List<SolidColor> _colorPallate;
+		
+		/// <summary>
+		/// Get color by theme index [0-11]
+		/// </summary>
+		/// <param name="index"></param>
+		/// <returns></returns>
+		public CompColor GetElement(uint index)
+		{
+			// [20.1.6.2] Ecma open office XML part 1 
+			switch (index)
+			{
+				case 0: return dk1;
+				case 1: return lt1;
+				case 2: return dk2;
+				case 3: return lt2;
+				case 4: return accent1;
+				case 5: return accent2;
+				case 6: return accent3;
+				case 7: return accent4;
+				case 8: return accent5;
+				case 9: return accent6;
+				case 10: return hlink;
+				case 11: return folHlink;
+			}
+			return null;
+		}
 	}
 
 	public class CompColor
