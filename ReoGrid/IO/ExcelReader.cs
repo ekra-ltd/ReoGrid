@@ -2568,11 +2568,15 @@ namespace unvell.ReoGrid.IO.OpenXML
                 if (label.strRef.formula != null
                     && !string.IsNullOrEmpty(label.strRef.formula))
                 {
-                    var serialNameVal = Formula.Evaluator.Evaluate(rgSheet.workbook, label.strRef.formula);
-
-                    if (serialNameVal.type == Formula.FormulaValueType.Cell)
+                    var error = Formula.Evaluator.IsFormulaErrorConstant(label.strRef.formula);
+                    if (error.IsSetted && error.IsUndefined)
                     {
-                        labelAddress = (CellPosition)serialNameVal.value;
+                        var serialNameVal = Formula.Evaluator.Evaluate(rgSheet.workbook, label.strRef.formula);
+
+                        if (serialNameVal.type == Formula.FormulaValueType.Cell)
+                        {
+                            labelAddress = (CellPosition)serialNameVal.value;
+                        }
                     }
                 }
 
@@ -2595,23 +2599,27 @@ namespace unvell.ReoGrid.IO.OpenXML
                 && values.numRef.formula != null
                 && !string.IsNullOrEmpty(values.numRef.formula))
             {
-                var dataRangeVal = Formula.Evaluator.Evaluate(rgSheet.workbook, values.numRef.formula);
-
-                if (dataRangeVal.type == Formula.FormulaValueType.Range)
+                var error = Formula.Evaluator.IsFormulaErrorConstant(values.numRef.formula);
+                if (error.IsSetted && error.IsUndefined)
                 {
-                    var range = (RangePosition)dataRangeVal.value;
+                    var dataRangeVal = Formula.Evaluator.Evaluate(rgSheet.workbook, values.numRef.formula);
+                    if (dataRangeVal.type == Formula.FormulaValueType.Range)
+                    {
+                        var sheetRange = dataRangeVal.GetSheetRangePosition();
+                        var range = sheetRange.Position;
 
-                    if (serial is PieChartSerial)
-                    {
-                        // transfer to multiple serials
-                        for (int r = range.Row; r <= range.EndRow; r++)
+                        if (serial is PieChartSerial)
                         {
-                            dataSource.AddSerial(rgSheet, labelAddress, new RangePosition(r, range.Col, 1, 1));
+                            // transfer to multiple serials
+                            for (int r = range.Row; r <= range.EndRow; r++)
+                            {
+                                dataSource.AddSerial(sheetRange.Worksheet ?? rgSheet, labelAddress, new RangePosition(r, range.Col, 1, 1));
+                            }
                         }
-                    }
-                    else
-                    {
-                        dataSource.AddSerial(rgSheet, labelAddress, range);
+                        else
+                        {
+                            dataSource.AddSerial(sheetRange.Worksheet ?? rgSheet, labelAddress, range);
+                        }
                     }
                 }
             }

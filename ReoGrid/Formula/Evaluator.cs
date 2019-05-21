@@ -95,7 +95,8 @@ namespace unvell.ReoGrid.Formula
 					return ((STNumberNode)node).Value;
 
 				case STNodeType.RANGE:
-					return ((STRangeNode)node).Range;
+					var rangeNode = (STRangeNode)node;
+					return FormulaValue.FromRange(rangeNode.Worksheet, rangeNode.Range);
 
 				case STNodeType.STRING:
 					return ((STStringNode)node).Text;
@@ -117,10 +118,9 @@ namespace unvell.ReoGrid.Formula
 							{
 								return CreateFormulaValue(cell.Worksheet.GetCellData(range.StartPos));
 							}
-							else
-							{
-								return range.Position;
-							}
+							// Так как я не сталкивался еще с именованными диапазонами, вставлен null
+							// вместо него надо брать либо range.Worksheet либо cell.Worksheet
+							return FormulaValue.FromRange(null, range.Position);
 						}
 						else if (FormulaExtension.NameReferenceProvider != null)
 						{
@@ -465,6 +465,10 @@ namespace unvell.ReoGrid.Formula
 					#endregion // Parse Nodes
 			}
 		}
+
+		internal static ErrorConstant IsFormulaErrorConstant(string formula) =>
+			ErrorConstant.FromString(formula);
+
 		#endregion // Evaluate
 
 		internal static FormulaValue CheckAndGetDefaultValue(Cell cell, FormulaValue val)
@@ -1250,14 +1254,23 @@ namespace unvell.ReoGrid.Formula
 		#endregion // Cell
 
 		#region Range
-		public static implicit operator RangePosition(FormulaValue value)
+		// public static implicit operator RangePosition(FormulaValue value)
+		// {
+		// 	return value.type != FormulaValueType.Range ? RangePosition.Empty : (RangePosition)value.value;
+		// }
+		// 
+		// public static implicit operator FormulaValue(RangePosition range)
+		// {
+		// 	return new FormulaValue(FormulaValueType.Range, range);
+		// }
+		public static FormulaValue FromRange(Worksheet sheet, RangePosition posiotion)
 		{
-			return value.type != FormulaValueType.Range ? RangePosition.Empty : (RangePosition)value.value;
+			return new FormulaValue(FormulaValueType.Range, new SheetRangePosition(sheet, posiotion));
 		}
 
-		public static implicit operator FormulaValue(RangePosition range)
+		public SheetRangePosition GetSheetRangePosition()
 		{
-			return new FormulaValue(FormulaValueType.Range, range);
+			return (SheetRangePosition) value;
 		}
 		#endregion // Range
 
@@ -1307,10 +1320,16 @@ namespace unvell.ReoGrid.Formula
 		public Worksheet Worksheet { get; set; }
 		public RangePosition Position { get; set; } 
 
-		public static implicit operator RangePosition(SheetRangePosition pos)
+		public SheetRangePosition(Worksheet sheet, RangePosition posiotion)
 		{
-			return pos.Position;
+			Worksheet = sheet;
+			Position = posiotion;
 		}
+		
+		// public static implicit operator RangePosition(SheetRangePosition pos)
+		// {
+		// 	return pos.Position;
+		// }
 	}
 
 	//#if DEBUG

@@ -294,7 +294,9 @@ namespace unvell.ReoGrid.Chart
 			{
 				RGFloat columnWidth = (clientRect.Width) / dataCount;
 
-				var maxWidth = boxes.Max(b => b.Width);
+				var maxWidth = 1.0;
+				if(boxes.Any())
+					maxWidth = boxes.Max(b => b.Width);
 				var showableColumns = clientRect.Width / maxWidth;
 
 				int showTitleStride = (int)Math.Ceiling(dataCount / showableColumns);
