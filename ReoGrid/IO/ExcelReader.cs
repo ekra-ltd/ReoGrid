@@ -41,6 +41,7 @@ using unvell.ReoGrid.Utility;
 using unvell.ReoGrid.IO.OpenXML.Schema;
 using unvell.ReoGrid.Graphics;
 using unvell.ReoGrid.Drawing;
+using unvell.ReoGrid.IO.Additional;
 using Border = unvell.ReoGrid.IO.OpenXML.Schema.Border;
 using Fill = unvell.ReoGrid.IO.OpenXML.Schema.Fill;
 using GradientFill = unvell.ReoGrid.IO.OpenXML.Schema.GradientFill;
@@ -1799,12 +1800,7 @@ namespace unvell.ReoGrid.IO.OpenXML
                                 }
                             }
                             pattern = RemoveConditionFormatting(pattern);
-                            pattern = pattern.Replace("yyyy/mm", "yyyy/MM").Replace("mm/yy", "MM/yy")
-                                             .Replace("mm/d", "MM/d").Replace("m/d", "M/d")
-                                             .Replace("d/mm", "d/MM").Replace("d/m", "d/M")
-                                             .Replace("aaa", "ddd")
-                                            .Replace("mmmm\\ yy", "MMMM\\ yy")
-                                             .Replace("mmm\\-yy", "MMM\\-yy");
+                            pattern = ExcelDateTimeNumberFormatConverter.ToReogridFormatString(pattern);
 
                             flag = CellDataFormatFlag.DateTime;
                             
