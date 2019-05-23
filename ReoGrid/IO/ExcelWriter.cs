@@ -249,7 +249,7 @@ namespace unvell.ReoGrid.IO.OpenXML
 
 		#region Data Format
 		private static string ConvertToExcelNumberPattern(NumberDataFormatter.INumberFormatArgs arg,
-			string prefix = null, string postfix = null)
+			string prefix = null, string postfix = null, bool useAllFormats = false)
 		{
 			//NumberDataFormatter.NumberFormatArgs narg;
 
@@ -293,11 +293,13 @@ namespace unvell.ReoGrid.IO.OpenXML
 			if (!string.IsNullOrEmpty(postfix)) sb.Append(postfix);
 			sb.Append(';');
 
+			var canDropNegativePart = false;
 			#region Negative part
 			switch (arg.NegativeStyle)
 			{
 				default:
 				case NumberDataFormatter.NumberNegativeStyle.Default:
+					canDropNegativePart = true;
 					if (!string.IsNullOrEmpty(prefix)) sb.Append(prefix);
 					sb.Append('-');
 					sb.Append(digits);
@@ -346,10 +348,15 @@ namespace unvell.ReoGrid.IO.OpenXML
 			sb.Append(';');
 			#endregion // Negative part
 
+			var canDropZeroPart = true;
 			if (!string.IsNullOrEmpty(prefix)) sb.Append(prefix);
 			sb.Append(digits);
 			if (!string.IsNullOrEmpty(postfix)) sb.Append(postfix);
 
+			if (!useAllFormats && canDropNegativePart && canDropZeroPart)
+			{
+				return digits;
+			}
 			return sb.ToString();
 		}
 
@@ -472,7 +479,7 @@ namespace unvell.ReoGrid.IO.OpenXML
 
 					        }
 					    }
-                        var currencyPattern = ConvertToExcelNumberPattern(carg, carg.PrefixSymbol, carg.PostfixSymbol);
+                        var currencyPattern = ConvertToExcelNumberPattern(carg, carg.PrefixSymbol, carg.PostfixSymbol, true);
 
 						id = styles.numberFormats.Count + BaseUserNumberFormatId;
 
