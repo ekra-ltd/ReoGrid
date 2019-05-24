@@ -282,6 +282,11 @@ namespace unvell.ReoGrid.DataFormat
 			public override bool Equals(object obj)
 			{
 				if (!(obj is NumberFormatArgs)) return false;
+				// Чтобы исключить равенство наследников с базовым типом, проверяется что данный объект является именно
+				// объектом данного типа
+				// Проблема: https://soft-bugtrack.ekra.local/issues/6527#note-9 пункт 2. reogrid подменяет тип Денежный
+				// на числовой, так как у него совпадают параметры
+				if (GetType() != obj.GetType()) return false;
 				NumberFormatArgs o = (NumberFormatArgs)obj;
 				return this.DecimalPlaces == o.DecimalPlaces
 					&& this.NegativeStyle == o.NegativeStyle

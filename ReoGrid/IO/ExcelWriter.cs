@@ -355,7 +355,10 @@ namespace unvell.ReoGrid.IO.OpenXML
 
 			if (!useAllFormats && canDropNegativePart && canDropZeroPart)
 			{
-				return digits;
+				return
+					(string.IsNullOrEmpty(prefix) ? string.Empty : prefix) +
+					digits +
+					(string.IsNullOrEmpty(postfix) ? string.Empty : postfix);
 			}
 			return sb.ToString();
 		}
@@ -434,8 +437,29 @@ namespace unvell.ReoGrid.IO.OpenXML
 						narg = (NumberDataFormatter.NumberFormatArgs)arg;
 						if (narg.DecimalPlaces == 0)
 							return 9;
-						else
+						if (narg.DecimalPlaces == 2)
 							return 10;
+						// Пользовательский стиль
+						// Переопределенный пользователем формат - надо выдать его
+
+						// Создаем паттерн
+						// (Прибавлять % не совсем правильно, но excel не хочет чтобы % был в кавычках)
+						var pattern = ConvertToExcelNumberPattern(narg, string.Empty, string.Empty) + "%";
+						// 1. Проверяем что такой формат еще не добавлен
+						var id = TryFindAlreadyCreatedStyleIdByPattern(styles, pattern);
+						if (id > 0)
+						{
+							return id;
+						}
+						// 2. Еще не существует - создать
+						id = styles.numberFormats.Count + BaseUserNumberFormatId;
+						styles.numberFormats.Add(new NumberFormat
+						{
+							_iarg = narg,
+							formatId = id,
+							formatCode = pattern,
+						});
+						return id;
 					}
 				#endregion // Percent
 
@@ -449,19 +473,7 @@ namespace unvell.ReoGrid.IO.OpenXML
 
 						carg = (CurrencyDataFormatter.CurrencyFormatArgs)arg;
 
-						int id = 0;
-
-						for (int i = 0; i < styles.numberFormats.list.Count; i++)
-						{
-							var numFmt = styles.numberFormats.list[i];
-
-							if (numFmt._iarg.Equals(arg))
-							{
-								id = i + BaseUserNumberFormatId;
-								break;
-							}
-						}
-
+						int id = TryFindAlreadyCreatedStyleIdByNumberFormatArgs(styles, arg);
 						if (id > 0)
 						{
 							return id;
@@ -554,6 +566,40 @@ namespace unvell.ReoGrid.IO.OpenXML
 			return -1;
 		}
 
+		private static int TryFindAlreadyCreatedStyleIdByNumberFormatArgs(Stylesheet styles, object arg)
+		{
+			int id = 0;
+
+			for (int i = 0; i < styles.numberFormats.list.Count; i++)
+			{
+				var numFmt = styles.numberFormats.list[i];
+
+				if (numFmt._iarg.Equals(arg))
+				{
+					id = i + BaseUserNumberFormatId;
+					break;
+				}
+			}
+			return id;
+		}
+
+		private static int TryFindAlreadyCreatedStyleIdByPattern(Stylesheet styles, string arg)
+		{
+			int id = 0;
+
+			for (int i = 0; i < styles.numberFormats.list.Count; i++)
+			{
+				var numFmt = styles.numberFormats.list[i];
+
+				if (numFmt.formatCode == arg)
+				{
+					id = i + BaseUserNumberFormatId;
+					break;
+				}
+			}
+			return id;
+		}
+		
 		#endregion // Data Format
 
 		#region Style
