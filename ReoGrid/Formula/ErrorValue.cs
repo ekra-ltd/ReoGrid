@@ -57,13 +57,16 @@ namespace unvell.ReoGrid.Formula
             ErrorValue = value;
         }
 
+        public static ErrorConstant Undefined() => new ErrorConstant(true, null);
+        
+
         public static ErrorConstant FromString(string formula)
         {
             if (NameConversation.ContainsKey(formula))
             {
                 return new ErrorConstant(false, NameConversation[formula]);
             }
-            return new ErrorConstant(true, null);
+            return Undefined();
         }
 
         public bool IsSetted { get; }
@@ -88,7 +91,7 @@ namespace unvell.ReoGrid.Formula
 
         #region Приватные статические поля
 
-        private static Dictionary<string, ErrorValue> NameConversation = new Dictionary<string, ErrorValue>
+        private static readonly Dictionary<string, ErrorValue> NameConversation = new Dictionary<string, ErrorValue>
         {
             {Div0, Formula.ErrorValue.Div0},
             {GettingData, Formula.ErrorValue.GettingData},

@@ -467,7 +467,9 @@ namespace unvell.ReoGrid.Formula
 		}
 
 		internal static ErrorConstant IsFormulaErrorConstant(string formula) =>
-			ErrorConstant.FromString(formula);
+			string.IsNullOrEmpty(formula) ? 
+			ErrorConstant.Undefined() : 
+			ErrorConstant.FromString(FormulaExtension.ParseAddress(formula).SimpleAddress);
 
 		#endregion // Evaluate
 

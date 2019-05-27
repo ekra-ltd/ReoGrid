@@ -22,6 +22,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Text.RegularExpressions;
 
 namespace unvell.ReoGrid.Formula
 {
@@ -122,6 +123,41 @@ namespace unvell.ReoGrid.Formula
 			Evaluator.functionNameProvider = russianFunctionNameProvider;
 		}
 
+		public class FullAddress
+		{
+			public string SheetName { get; set; }
+
+			public string SimpleAddress { get; set; }
+		}
+
+		/// <summary>
+		/// Выполняет разбор параметра как полного адреса, например 'SHEET 1'!A1 или обычного адреса, например A1
+		/// </summary>
+		/// <param name="address">Полный или обычный адрес. !null</param>
+		/// <returns>
+		/// Возвращает FullAddress:
+		/// SheetName - !null в случае, если адрес полный и существовал адрес листа
+		///             null в случае, если адрес обычный
+		/// SimpleAddress - обычный адрес состоит из симвовлов после '!'
+		///                 из входного параметра
+		/// 
+		/// </returns>
+		public static FullAddress ParseAddress(string address)
+		{
+			var match = Regex.Match(address, "^((?<SheetName>[^!]+)!)?(?<address>.+)$");
+			if(!match.Success)
+				throw new ArgumentException(@"Failed parse parsemeter", nameof(address));
+			var result = new FullAddress();
+			if (match.Groups["SheetName"].Success)
+			{
+				result.SheetName = match.Groups["SheetName"].Value;
+			}
+			if (match.Groups["address"].Success)
+			{
+				result.SimpleAddress = match.Groups["address"].Value;
+			}
+			return result;
+		}
 	}
 }
 
