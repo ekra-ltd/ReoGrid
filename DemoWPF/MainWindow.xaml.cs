@@ -1,4 +1,8 @@
-﻿using System;
+﻿// #define ADD_SHEET_1
+#define ADD_SHEET_2
+// #define ADD_SHEET_3
+
+using System;
 using System.IO;
 using System.Linq;
 using System.Windows;
@@ -64,17 +68,21 @@ namespace unvell.ReoGrid.WPFDemo
             // result = FormulaUtility.EnumerateR1C1("SUM(RC[-1])").ToArray();
             // result = FormulaUtility.EnumerateR1C1("SUM(R[-1]C[-1])").ToArray();
 
-
+#if ADD_SHEET_1
 			// add demo sheet 1: document template
 			AddDemoSheet1();
+#endif
             
+#if ADD_SHEET_2
 			// add demo sheet 2: chart and drawing
-			AddDemoSheet2();
-            
-			// add demo sheet 3: cell types
+            // AddDemoSheet2();
+            AddDemoSheet2_OnlyChart();
+#endif
+#if ADD_SHEET_3 // add demo sheet 3: cell types
 			AddDemoSheet3();
 
             // ChangeColumnsRowsCount(grid, ColumnsCount, RowsCount);
+#endif
 
         }
 
@@ -90,7 +98,7 @@ namespace unvell.ReoGrid.WPFDemo
 			this.viewPageBreaksVisible.IsChecked = sheet.HasSettings(WorksheetSettings.View_ShowPageBreaks);
 		}
 
-		#region Demo Sheet 1 : Document Template
+#region Demo Sheet 1 : Document Template
 		private void AddDemoSheet1()
 		{
 
@@ -132,9 +140,9 @@ namespace unvell.ReoGrid.WPFDemo
             hightlight2.HighlightColor = SolidColor.DeepSkyBlue;
 
 		}
-		#endregion // Demo Sheet 1 : Document Template
+#endregion // Demo Sheet 1 : Document Template
 
-		#region Demo Sheet 2 : Chart & Drawing
+#region Demo Sheet 2 : Chart & Drawing
 		private void AddDemoSheet2()
 		{
 			/****************** Sheet2 : Chart & Drawing ********************/
@@ -215,6 +223,39 @@ namespace unvell.ReoGrid.WPFDemo
 			//line1.Style.EndCap = Graphics.LineCapStyles.Arrow;
 			//line2.Style.EndCap = Graphics.LineCapStyles.Arrow;
 		}
+
+        private void AddDemoSheet2_OnlyChart()
+        {
+            /****************** Sheet2 : Chart & Drawing ********************/
+            var worksheet = grid.NewWorksheet("Chart & Drawing");
+
+            worksheet["A2"] = new object[,] {
+                    {null, 2008,  2009, 2010, 2011, 2012},
+                    {"City 1",  5,  10, 12, 11, 14},
+                    {"City 2",  7,  8,  7,  6,  4},
+                    {"City 3",  13, 10, 9,  10, 9},
+                    {"Total", 25, 28, 28, 27, 27},
+            };
+
+            var chart = //new LineChart
+                new Pie2DChart
+                {
+                    Location = new Point(360, 140),
+
+                    Title = "Line Chart Sample",
+
+                    //DataSource = new WorksheetChartDataSource(worksheet, "A3:A6", "B3:F6")
+                    //{
+                    //	CategoryNameRange = new RangePosition("B2:F2"),
+                    //},
+                    DataSource = new WorksheetChartDataSource(worksheet, "B2:F2", "B3:F6", RowOrColumn.Column)
+                    {
+                        CategoryNameRange = new RangePosition("A3:A6"),
+                    },
+                };
+
+            worksheet.FloatingObjects.Add(chart);
+        }
 		#endregion // Demo Sheet 2 : Chart & Drawing
 
 		#region Demo Sheet 3 : Built-in Cell Types
@@ -345,9 +386,9 @@ namespace unvell.ReoGrid.WPFDemo
 		{
 			sheet[19, 0] = text;
 		}
-		#endregion // Demo Sheet 3 : Built-in Cell Types
+#endregion // Demo Sheet 3 : Built-in Cell Types
 
-		#region Menu - File
+#region Menu - File
 		private void File_New_Click(object sender, RoutedEventArgs e)
 		{
 			grid.Reset();
@@ -409,9 +450,9 @@ namespace unvell.ReoGrid.WPFDemo
 			Close();
 		}
 
-		#endregion // Menu - File
+#endregion // Menu - File
 
-		#region Menu - View
+#region Menu - View
 		private void View_SheetTab_Click(object sender, RoutedEventArgs e)
 		{
 			grid.SetSettings(unvell.ReoGrid.WorkbookSettings.View_ShowSheetTabControl, viewSheetTabVisible.IsChecked);
@@ -441,7 +482,7 @@ namespace unvell.ReoGrid.WPFDemo
 		{
 			grid.CurrentWorksheet.SetSettings(WorksheetSettings.View_ShowPageBreaks, viewPageBreaksVisible.IsChecked);
 		}
-		#endregion // Menu - View
+#endregion // Menu - View
 
 		#region Menu - Sheet
 

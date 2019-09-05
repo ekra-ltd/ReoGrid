@@ -71,6 +71,11 @@ namespace unvell.ReoGrid.Utility
 			return (RGFloat)emu / _emi_in_inch * dpi;
 		}
 
+		public static RGFloat EMUToPixel(long emu, RGFloat dpi)
+		{
+			return (RGFloat)emu / _emi_in_inch * dpi;
+		}
+
 		public static int PixelToEMU(RGFloat pixel, RGFloat dpi)
 		{
 			return (int)(pixel * _emi_in_inch / dpi);

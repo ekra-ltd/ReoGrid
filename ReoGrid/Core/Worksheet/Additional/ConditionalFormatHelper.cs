@@ -1056,13 +1056,32 @@ namespace unvell.ReoGrid.Core.Worksheet.Additional
                 {
                     uint theme = value.theme;
                     var s = doc.Themesheet?.elements?.clrScheme.GetElement(theme);
-                    if (s?.srgbColor != null)
+                    if (s?.srgbClr?.val != null)
                     {
-                        if (TextFormatHelper.DecodeColor(s.srgbColor.val, out var color))
+                        if (s.srgbClr.val.Length == 3)
                         {
-                            rgb = new[] {color.A, color.R, color.G, color.B};
+                            rgb = new[]
+                            {
+                                (byte) 255,
+                                s.srgbClr.val[0],
+                                s.srgbClr.val[1],
+                                s.srgbClr.val[2],
+                            };
+                        }else if (s.srgbClr.val.Length == 4)
+                        {
+                            rgb = new[]
+                            {
+                                s.srgbClr.val[0],
+                                s.srgbClr.val[1],
+                                s.srgbClr.val[2],
+                                s.srgbClr.val[3],
+                            };
                         }
                     }
+                    //if (TextFormatHelper.DecodeColor(s.srgbClr.val, out var color))
+                    //{
+                    //    rgb = new[] {color.A, color.R, color.G, color.B};
+                    //}
                 }
                 result = new Color
                 {

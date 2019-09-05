@@ -24,6 +24,7 @@ using System.Linq;
 using System.Text;
 using unvell.ReoGrid.DataFormat;
 using unvell.ReoGrid.Graphics;
+using unvell.ReoGrid.IO.Additional.Excel.FloatingObjects;
 using unvell.ReoGrid.IO.OpenXML.Schema;
 using unvell.ReoGrid.Rendering;
 using unvell.ReoGrid.Utility;
@@ -952,114 +953,114 @@ namespace unvell.ReoGrid.IO.OpenXML
 		#region Drawing Objects
 #if DRAWING
 
-		private static CellAnchor CreateCellAnchorByLocation(Worksheet rgSheet, Point p)
-		{
-			var dpi = PlatformUtility.GetDPI();
-
-			int row = 0, col = 0;
-
-			rgSheet.FindColumnByPosition(p.X, out col);
-			rgSheet.FindRowByPosition(p.Y, out row);
-
-			var colHeader = rgSheet.RetrieveColumnHeader(col);
-			int colOffset = MeasureToolkit.PixelToEMU(p.X - colHeader.Left, dpi);
-
-			var rowHeader = rgSheet.RetrieveRowHeader(row);
-			int rowOffset = MeasureToolkit.PixelToEMU(p.Y - rowHeader.Top, dpi);
-
-			return new CellAnchor
-			{
-				col = col,
-				colOff = colOffset,
-				row = row,
-				rowOff = rowOffset
-			};
-		}
-
-		private static ShapeProperty CreateShapeProperty(ReoGrid.Drawing.DrawingObject image)
-		{
-			var dpi = PlatformUtility.GetDPI();
-
-			return new ShapeProperty
-			{
-				transform = new Transform
-				{
-					offset = new Offset
-					{
-						x = MeasureToolkit.PixelToEMU(image.X, dpi),
-						y = MeasureToolkit.PixelToEMU(image.Y, dpi),
-					},
-					extents = new Extents
-					{
-						cx = MeasureToolkit.PixelToEMU(image.Right, dpi),
-						cy = MeasureToolkit.PixelToEMU(image.Bottom, dpi),
-					},
-				},
-
-				prstGeom = new PresetGeometry
-				{
-					presetType = "rect",
-					avList = new List<ShapeGuide>(),
-				},
-			};
-		}
-
-		private static void WriteImage(Document doc, Schema.Worksheet sheet, Schema.Drawing drawing,
-			Worksheet rgSheet, unvell.ReoGrid.Drawing.ImageObject image)
-		{
-			if (drawing.twoCellAnchors == null)
-			{
-				drawing.twoCellAnchors = new List<TwoCellAnchor>();
-			}
-
-			string typeName = image.GetFriendlyTypeName();
-
-			int typeObjCount = 0;
-
-			drawing._typeObjectCount.TryGetValue(typeName, out typeObjCount);
-			typeObjCount++;
-
-			drawing._typeObjectCount[typeName] = typeObjCount;
-
-			var twoCellAnchor = new Schema.TwoCellAnchor
-			{
-				from = CreateCellAnchorByLocation(rgSheet, image.Location),
-				to = CreateCellAnchorByLocation(rgSheet, new Point(image.Right, image.Bottom)),
-
-				pic = new Pic
-				{
-					nvPicPr = new NvPicProperty
-					{
-						cNvPr = new NonVisualProp
-						{
-							id = drawing._drawingObjectCount++,
-							name = typeName + " " + typeObjCount,
-						},
-
-						cNvPicPr = new CNvPicProperty
-						{
-							picLocks = new PicLocks(),
-						}
-					},
-
-					blipFill = new BlipFill
-					{
-						blip = doc.AddMediaImage(sheet, drawing, image),
-
-						stretch = new Stretch
-						{
-							fillRect = new FillRect(),
-						},
-					},
-
-					prop = CreateShapeProperty(image),
-				},
-
-				clientData = new ClientData(),
-			};
-
-			drawing.twoCellAnchors.Add(twoCellAnchor);
-		}
+		// private static CellAnchor CreateCellAnchorByLocation(Worksheet rgSheet, Point p)
+		// {
+		// 	var dpi = PlatformUtility.GetDPI();
+		//
+		// 	int row = 0, col = 0;
+		//
+		// 	rgSheet.FindColumnByPosition(p.X, out col);
+		// 	rgSheet.FindRowByPosition(p.Y, out row);
+		//
+		// 	var colHeader = rgSheet.RetrieveColumnHeader(col);
+		// 	int colOffset = MeasureToolkit.PixelToEMU(p.X - colHeader.Left, dpi);
+		//
+		// 	var rowHeader = rgSheet.RetrieveRowHeader(row);
+		// 	int rowOffset = MeasureToolkit.PixelToEMU(p.Y - rowHeader.Top, dpi);
+		//
+		// 	return new CellAnchor
+		// 	{
+		// 		col = col,
+		// 		colOff = colOffset,
+		// 		row = row,
+		// 		rowOff = rowOffset
+		// 	};
+		// }
+		//
+		// private static ShapeProperty CreateShapeProperty(ReoGrid.Drawing.DrawingObject image)
+		// {
+		// 	var dpi = PlatformUtility.GetDPI();
+		//
+		// 	return new ShapeProperty
+		// 	{
+		// 		transform = new Transform
+		// 		{
+		// 			offset = new Offset
+		// 			{
+		// 				x = MeasureToolkit.PixelToEMU(image.X, dpi),
+		// 				y = MeasureToolkit.PixelToEMU(image.Y, dpi),
+		// 			},
+		// 			extents = new Extents
+		// 			{
+		// 				cx = MeasureToolkit.PixelToEMU(image.Right, dpi),
+		// 				cy = MeasureToolkit.PixelToEMU(image.Bottom, dpi),
+		// 			},
+		// 		},
+		//
+		// 		prstGeom = new PresetGeometry
+		// 		{
+		// 			presetType = "rect",
+		// 			avList = new List<ShapeGuide>(),
+		// 		},
+		// 	};
+		// }
+		//
+		// private static void WriteImage(Document doc, Schema.Worksheet sheet, Schema.Drawing drawing,
+		// 	Worksheet rgSheet, unvell.ReoGrid.Drawing.ImageObject image)
+		// {
+		// 	if (drawing.twoCellAnchors == null)
+		// 	{
+		// 		drawing.twoCellAnchors = new List<TwoCellAnchor>();
+		// 	}
+		//
+		// 	string typeName = image.GetFriendlyTypeName();
+		//
+		// 	int typeObjCount = 0;
+		//
+		// 	drawing._typeObjectCount.TryGetValue(typeName, out typeObjCount);
+		// 	typeObjCount++;
+		//
+		// 	drawing._typeObjectCount[typeName] = typeObjCount;
+		//
+		// 	var twoCellAnchor = new Schema.TwoCellAnchor
+		// 	{
+		// 		from = CreateCellAnchorByLocation(rgSheet, image.Location),
+		// 		to = CreateCellAnchorByLocation(rgSheet, new Point(image.Right, image.Bottom)),
+		//
+		// 		pic = new Pic
+		// 		{
+		// 			nvPicPr = new NvPicProperty
+		// 			{
+		// 				cNvPr = new NonVisualProp
+		// 				{
+		// 					id = drawing._drawingObjectCount++,
+		// 					name = typeName + " " + typeObjCount,
+		// 				},
+		//
+		// 				cNvPicPr = new CNvPicProperty
+		// 				{
+		// 					picLocks = new PicLocks(),
+		// 				}
+		// 			},
+		//
+		// 			blipFill = new BlipFill
+		// 			{
+		// 				blip = doc.AddMediaImage(sheet, drawing, image),
+		//
+		// 				stretch = new Stretch
+		// 				{
+		// 					fillRect = new FillRect(),
+		// 				},
+		// 			},
+		//
+		// 			prop = CreateShapeProperty(image),
+		// 		},
+		//
+		// 		clientData = new ClientData(),
+		// 	};
+		//
+		// 	drawing.twoCellAnchors.Add(twoCellAnchor);
+		// }
 #endif // DRAWING
 		#endregion // Drawing Objects
 
@@ -1094,7 +1095,7 @@ namespace unvell.ReoGrid.IO.OpenXML
 				if (sheet.extLst == null) sheet.extLst = new CT_ExtensionList();
 				sheet.extLst.ext = new[]
 				{
-					new CT_Extension {uri = @"{78C0D931-6437-407d-A8EE-F0AAD7539E65}", ConditionalFormattings = item},
+					new Schema.CT_Extension {uri = @"{78C0D931-6437-407d-A8EE-F0AAD7539E65}", ConditionalFormattings = item},
 				};
 			}
 
@@ -1505,15 +1506,9 @@ namespace unvell.ReoGrid.IO.OpenXML
 
 				foreach (var obj in rgSheet.FloatingObjects)
 				{
-					if (obj is Drawing.ImageObject)
-					{
-						var img = (Drawing.ImageObject)obj;
-
-						if (img.Image != null)
-						{
-							WriteImage(doc, sheet, drawing, rgSheet, (Drawing.ImageObject)obj);
-						}
-					}
+					DrawingObjectExporters
+						.FirstOrDefault(exporter => exporter.CanExport(obj))
+						?.Export(doc, sheet, drawing, rgSheet, obj);
 				}
 			}
 #endif // DRAWING
@@ -1521,6 +1516,15 @@ namespace unvell.ReoGrid.IO.OpenXML
 
 
 		}
+
+#if DRAWING
+		private static readonly List<DrawingObjectExporterBase> DrawingObjectExporters = new List<DrawingObjectExporterBase> 
+		{
+			new ImageObjectExporter(),
+			new Pie2DChartExporter(),
+		};
+#endif
+
 #endregion // Worksheet
 	}
 
@@ -1667,13 +1671,14 @@ namespace unvell.ReoGrid.IO.OpenXML
 				ContentType = OpenXMLContentTypes.Drawing_______,
 			});
 
-			sheet.drawing = new SheetDrawing { id = resId, _instance = drawing };
+			sheet.DrawingReference = new SheetDrawingReference { id = resId, _instance = drawing };
 
 			return drawing;
 		}
 
 		private int mediaImageCount = 0;
 
+		[Obsolete]
 		internal Blip AddMediaImage(Schema.Worksheet sheet, Schema.Drawing drawing, Drawing.ImageObject image)
 		{
 			var imageFileName = string.Format("image{0}.png", ++mediaImageCount);
@@ -1705,6 +1710,94 @@ namespace unvell.ReoGrid.IO.OpenXML
 
 			return blip;
 		}
+
+		internal CT_Blip AddMediaImage_ForMicrosoftXsd(Schema.Worksheet sheet, Schema.Drawing drawing, Drawing.ImageObject image)
+        {
+            var imageFileName = $"image{++mediaImageCount}.png";
+
+            if (drawing._images_ForMicrosoftXsd == null)
+            {
+                drawing._images_ForMicrosoftXsd = new List<CT_Blip>();
+            }
+
+            var resId = drawing.AddRelationship(OpenXMLRelationTypes.image____________, "../media/" + imageFileName);
+
+            var blip = new CT_Blip
+            {
+                _imageObject = image,
+                _imageFileName = imageFileName,
+                embed = resId,
+            };
+
+            drawing._images_ForMicrosoftXsd.Add(blip);
+
+            if (!contentType.Defaults.Any(ct => ct.Extension == "png"))
+            {
+                contentType.Defaults.Add(new ContentTypeDefaultItem
+                {
+                    Extension = "png",
+                    ContentType = "image/png",
+                });
+            }
+
+            return blip;
+        }
+
+        internal class CreationResult<TResult>
+        {
+            public CreationResult(
+                TResult result,
+                string rId)
+            {
+                Result = result;
+                RId = rId;
+            }
+            public TResult Result { get; }
+
+            public string RId { get; }
+        }
+
+        //internal class MediaChartSpaceCreationResult
+        //{
+        //    public MediaChartSpaceCreationResult(
+        //        CT_ChartSpace chartSpace,
+        //        string rId)
+        //    {
+        //        ChartSpace = chartSpace;
+        //        RId = rId;
+        //    }
+        //    public CT_ChartSpace ChartSpace { get; }
+
+        //    public string RId { get; }
+        //}
+
+        private int _chartsFileCount;
+        internal CreationResult<CT_ChartSpace> CreateMediaChartSpace(Schema.Worksheet sheet, Schema.Drawing drawing)
+        {
+            var chartSpaceFileName = $"chart{++_chartsFileCount}.xml";
+
+            var chartSpace = new CT_ChartSpace
+            {
+                _xmlTarget = "xl/charts/" + chartSpaceFileName,
+                _rsTarget = "xl/charts/_rels/" + chartSpaceFileName + ".rels",
+
+                // TODO Возможно _typeObjectCount стоит перенести в базовый класс
+                // _typeObjectCount = new Dictionary<string, int>(),
+            };
+
+            // [ContentTypes.xml]
+            contentType.Overrides.Add(new ContentTypeOverrideItem
+            {
+                PartName = $"/{chartSpace._xmlTarget}",
+                ContentType = OpenXMLContentTypes.Chart_________,
+            });
+
+            var resId = drawing.AddRelationship(OpenXMLRelationTypes.chart____________, "../charts/" + chartSpaceFileName);
+
+            return new CreationResult<CT_ChartSpace>(chartSpace, resId);
+        }
+
+        // internal 
 #endif // DRAWING
 #endregion // Drawing & Images
 
@@ -1867,10 +1960,10 @@ namespace unvell.ReoGrid.IO.OpenXML
 			{
 #region Drawings
 #if DRAWING
-				if (sheet._instance.drawing != null
-					&& sheet._instance.drawing._instance != null)
+				if (sheet._instance.DrawingReference != null
+					&& sheet._instance.DrawingReference._instance != null)
 				{
-					var drawing = sheet._instance.drawing._instance;
+					var drawing = sheet._instance.DrawingReference._instance;
 					WriteOpenXMLFile(drawing);
 
 #region Floating Images
@@ -1899,7 +1992,38 @@ namespace unvell.ReoGrid.IO.OpenXML
 
 						}
 					}
+					if (drawing._images_ForMicrosoftXsd != null)
+					{
+						foreach (var blip in drawing._images_ForMicrosoftXsd)
+						{
+							//streamCache.Position = 0;
+
+							var stream = new MemoryStream(4096);
+							//var stream = ctEntry.CreateStream();
+							{
+								var image = blip._imageObject.Image;
+#if WINFORM
+                                image.Save(stream, System.Drawing.Imaging.ImageFormat.Png);
+#elif WPF
+								var encoder = new System.Windows.Media.Imaging.PngBitmapEncoder();
+								encoder.Frames.Add(System.Windows.Media.Imaging.BitmapFrame.Create((System.Windows.Media.Imaging.BitmapSource)image));
+								encoder.Save(stream);
+#endif // WPF
+							}
+
+							stream.Position = 0;
+
+							IZipEntry ctEntry = zipArchive.AddFile("xl/media/" + blip._imageFileName, stream);
+
+						}
+					}
 #endregion // Floating Images
+#region Charts
+					if (drawing._chartSpace != null)
+					{
+						WriteOpenXMLFile(drawing._chartSpace);
+					}
+#endregion
 				}
 #endif // DRAWING
 #endregion // Drawings
@@ -1981,44 +2105,44 @@ namespace unvell.ReoGrid.IO.OpenXML.Schema
 #endregion // Workbook
 
 #region Relationships
-	partial class OpenXMLFile
-	{
-		internal string GetAvailableRelationId()
-		{
-			if (this._relationFile == null
-				|| this._relationFile.relations == null
-				|| this._relationFile.relations.Count == 0)
-				return "rId1";
-
-			int index = this._relationFile.relations.Count + 1;
-			string rId = null;
-
-			while (this._relationFile.relations.Any(s => s.id.Equals((rId = "rId" + index), StringComparison.CurrentCultureIgnoreCase)))
-			{
-				index++;
-			}
-
-			return rId;
-		}
-
-		internal string AddRelationship(string type, string target)
-		{
-			if (this._relationFile == null)
-			{
-				this._relationFile = new Relationships(this._rsTarget);
-			}
-
-			if (this._relationFile.relations == null)
-			{
-				this._relationFile.relations = new List<Relationship>();
-			}
-
-			string rid = GetAvailableRelationId();
-
-			this._relationFile.relations.Add(new Relationship { id = rid, type = type, target = target });
-
-			return rid;
-		}
-	}
+	// partial class OpenXMLFile
+	// {
+	// 	internal string GetAvailableRelationId()
+	// 	{
+	// 		if (this._relationFile == null
+	// 			|| this._relationFile.relations == null
+	// 			|| this._relationFile.relations.Count == 0)
+	// 			return "rId1";
+	//
+	// 		int index = this._relationFile.relations.Count + 1;
+	// 		string rId = null;
+	//
+	// 		while (this._relationFile.relations.Any(s => s.id.Equals((rId = "rId" + index), StringComparison.CurrentCultureIgnoreCase)))
+	// 		{
+	// 			index++;
+	// 		}
+	//
+	// 		return rId;
+	// 	}
+	//
+	// 	internal string AddRelationship(string type, string target)
+	// 	{
+	// 		if (this._relationFile == null)
+	// 		{
+	// 			this._relationFile = new Relationships(this._rsTarget);
+	// 		}
+	//
+	// 		if (this._relationFile.relations == null)
+	// 		{
+	// 			this._relationFile.relations = new List<Relationship>();
+	// 		}
+	//
+	// 		string rid = GetAvailableRelationId();
+	//
+	// 		this._relationFile.relations.Add(new Relationship { id = rid, type = type, target = target });
+	//
+	// 		return rid;
+	// 	}
+	// }
 #endregion // Relationships
 }

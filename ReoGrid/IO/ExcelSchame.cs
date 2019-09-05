@@ -21,6 +21,7 @@ using System.Collections.Generic;
 using System.Xml.Serialization;
 
 using unvell.ReoGrid.Graphics;
+using unvell.ReoGrid.IO.Additional.Excel.FloatingObjects;
 
 #pragma warning disable 1591
 
@@ -74,6 +75,7 @@ namespace unvell.ReoGrid.IO.OpenXML.Schema
 		internal const string SharedStrings_ = "application/vnd.openxmlformats-officedocument.spreadsheetml.sharedStrings+xml";
 		internal const string App___________ = "application/vnd.openxmlformats-officedocument.extended-properties+xml";
 		internal const string Drawing_______ = "application/vnd.openxmlformats-officedocument.drawing+xml";
+		internal const string Chart_________ = "application/vnd.openxmlformats-officedocument.drawingml.chart+xml";
 	}
 	#endregion // ContentTypes Definitions
 
@@ -91,6 +93,7 @@ namespace unvell.ReoGrid.IO.OpenXML.Schema
 		internal const string styles___________ = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles";
 		internal const string drawing__________ = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/drawing";
 		internal const string image____________ = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/image";
+		internal const string chart____________ = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/chart";
 	}
 	#endregion // RelationTypes Definitions
 
@@ -429,7 +432,7 @@ namespace unvell.ReoGrid.IO.OpenXML.Schema
 		public List<MergeCell> mergeCells;
 
 		[XmlElement("drawing")]
-		public SheetDrawing drawing;
+		public SheetDrawingReference DrawingReference;
 
 		[XmlElement("pageMargins")]
 		public PageMargins pageMargins;
@@ -683,18 +686,18 @@ namespace unvell.ReoGrid.IO.OpenXML.Schema
 	}
 
 	// <drawing r:id="rId1"/>
-	public class SheetDrawing
-	{
-		[XmlAttribute("id", Namespace = OpenXMLNamespaces.R____________,
-			Form = System.Xml.Schema.XmlSchemaForm.Qualified)]
-		public string id;
-
-#if DRAWING
-		[XmlIgnore]
-		internal Drawing _instance;
-#endif // DRAWING
-
-	}
+// 	public class SheetDrawing
+// 	{
+// 		[XmlAttribute("id", Namespace = OpenXMLNamespaces.R____________,
+// 			Form = System.Xml.Schema.XmlSchemaForm.Qualified)]
+// 		public string id;
+// 
+// #if DRAWING
+// 		[XmlIgnore]
+// 		internal Drawing _instance;
+// #endif // DRAWING
+// 
+// 	}
 	#endregion // xl/worksheets/sheet.xml
 
 	#region xl/styles.xml
@@ -1214,30 +1217,31 @@ namespace unvell.ReoGrid.IO.OpenXML.Schema
 #region Drawing
 #if DRAWING
 
-	[XmlRoot("wsDr", Namespace = OpenXMLNamespaces.XDR__________)]
-	public class Drawing : OpenXMLFile
-	{
-		[XmlNamespaceDeclarations]
-		public XmlSerializerNamespaces xmlns = new XmlSerializerNamespaces(
-			new System.Xml.XmlQualifiedName[]
-			{
-				new System.Xml.XmlQualifiedName("xdr", OpenXMLNamespaces.XDR__________),
-				new System.Xml.XmlQualifiedName("a", OpenXMLNamespaces.Drawing______),
-			});
+	// [XmlRoot("wsDr", Namespace = OpenXMLNamespaces.XDR__________)]
+	// public class Drawing : OpenXMLFile
+	// {
+	// 	[XmlNamespaceDeclarations]
+	// 	public XmlSerializerNamespaces xmlns = new XmlSerializerNamespaces(
+	// 		new System.Xml.XmlQualifiedName[]
+	// 		{
+	// 			new System.Xml.XmlQualifiedName("xdr", OpenXMLNamespaces.XDR__________),
+	// 			new System.Xml.XmlQualifiedName("a", OpenXMLNamespaces.Drawing______),
+	// 		});
+	//
+	// 	[XmlElement("twoCellAnchor")]
+	// 	public List<TwoCellAnchor> twoCellAnchors;
+	//
+	// 	[XmlIgnore]
+	// 	internal int _drawingObjectCount = 2;
+	//
+	// 	[XmlIgnore]
+	// 	internal Dictionary<string, int> _typeObjectCount;
+	//
+	// 	[XmlIgnore]
+	// 	internal List<Blip> _images;
+	// }
 
-		[XmlElement("twoCellAnchor")]
-		public List<TwoCellAnchor> twoCellAnchors;
-
-		[XmlIgnore]
-		internal int _drawingObjectCount = 2;
-
-		[XmlIgnore]
-		internal Dictionary<string, int> _typeObjectCount;
-
-		[XmlIgnore]
-		internal List<Blip> _images;
-	}
-
+	[Obsolete("перейти на CT_TwoCellAnchor")]
 	public class TwoCellAnchor
 	{
 		[XmlElement("from")]
@@ -1277,6 +1281,7 @@ namespace unvell.ReoGrid.IO.OpenXML.Schema
 		public int rowOff;
 	}
 
+	[Obsolete("Перейти на CT_Picture")]
 	public class Pic
 	{
 		[XmlElement("nvPicPr")]
@@ -1349,6 +1354,7 @@ namespace unvell.ReoGrid.IO.OpenXML.Schema
 	}
 
 	// <xdr:sp macro="" textlink="">
+	[Obsolete("перейти на CT_Shape")]
 	public class Shape
 	{
 		[XmlAttribute("macro")]
@@ -1384,6 +1390,7 @@ namespace unvell.ReoGrid.IO.OpenXML.Schema
 		public NonVisualProp nvPr;
 	}
 
+	[Obsolete(nameof(CT_ShapeProperties))]
 	public class ShapeProperty
 	{
 		[XmlElement("xfrm", Namespace = OpenXMLNamespaces.Drawing______)]
@@ -1440,6 +1447,7 @@ namespace unvell.ReoGrid.IO.OpenXML.Schema
 	{
 	}
 
+	[Obsolete("-> ")]
 	// <a:prstGeom prst="rect">
 	public class PresetGeometry
 	{
@@ -1958,29 +1966,29 @@ namespace unvell.ReoGrid.IO.OpenXML.Schema
 	public class ClrScheme
 	{
 		[XmlElement("dk1")]
-		public CompColor dk1;
+		public CT_SolidColorFillProperties dk1;
 		[XmlElement("lt1")]
-		public CompColor lt1;
+		public CT_SolidColorFillProperties lt1;
 		[XmlElement("dk2")]
-		public CompColor dk2;
+		public CT_SolidColorFillProperties dk2;
 		[XmlElement("lt2")]
-		public CompColor lt2;
+		public CT_SolidColorFillProperties lt2;
 		[XmlElement("accent1")]
-		public CompColor accent1;
+		public CT_SolidColorFillProperties accent1;
 		[XmlElement("accent2")]
-		public CompColor accent2;
+		public CT_SolidColorFillProperties accent2;
 		[XmlElement("accent3")]
-		public CompColor accent3;
+		public CT_SolidColorFillProperties accent3;
 		[XmlElement("accent4")]
-		public CompColor accent4;
+		public CT_SolidColorFillProperties accent4;
 		[XmlElement("accent5")]
-		public CompColor accent5;
+		public CT_SolidColorFillProperties accent5;
 		[XmlElement("accent6")]
-		public CompColor accent6;
+		public CT_SolidColorFillProperties accent6;
 		[XmlElement("hlink")]
-		public CompColor hlink;
+		public CT_SolidColorFillProperties hlink;
 		[XmlElement("folHlink")]
-		public CompColor folHlink;
+		public CT_SolidColorFillProperties folHlink;
 
 		//[XmlIgnore]
 		//internal List<SolidColor> _colorPallate;
@@ -1990,7 +1998,7 @@ namespace unvell.ReoGrid.IO.OpenXML.Schema
 		/// </summary>
 		/// <param name="index"></param>
 		/// <returns></returns>
-		public CompColor GetElement(uint index)
+		public CT_SolidColorFillProperties GetElement(uint index)
 		{
 			// [20.1.6.2] Ecma open office XML part 1 
 			switch (index)
@@ -2012,6 +2020,7 @@ namespace unvell.ReoGrid.IO.OpenXML.Schema
 		}
 	}
 
+	[Obsolete(nameof(CT_SolidColorFillProperties))]
 	public class CompColor
 	{
 		[XmlElement("sysClr")]
@@ -2144,53 +2153,53 @@ namespace unvell.ReoGrid.IO.OpenXML.Schema
 #endregion // Theme
 
 #region Relationships
-	[XmlRoot("Relationships", Namespace = OpenXMLNamespaces.Relationships)]
-	public class Relationships
-	{
-		[XmlNamespaceDeclarations]
-		public XmlSerializerNamespaces xmlns = new XmlSerializerNamespaces(
-			new System.Xml.XmlQualifiedName[] {
-				new System.Xml.XmlQualifiedName(string.Empty, OpenXMLNamespaces.Relationships),
-			});
-
-		[XmlElement("Relationship")]
-		public List<Relationship> relations;
-
-		[XmlIgnore]
-		internal string _xmlTarget;
-
-		public Relationships() { }
-
-		internal Relationships(string _rsTarget)
-		{
-			_xmlTarget = _rsTarget;
-		}
-	}
-
-	public class Relationship
-	{
-		[XmlAttribute("Id")]
-		public string id;
-		[XmlAttribute("Type")]
-		public string type;
-		[XmlAttribute("Target")]
-		public string target;
-	}
-
-	public partial class OpenXMLFile
-	{
-		[XmlIgnore]
-		internal Relationships _relationFile;
-
-		[XmlIgnore]
-		internal string _resId;
-		[XmlIgnore]
-		internal string _xmlTarget;
-		[XmlIgnore]
-		internal string _path;
-		[XmlIgnore]
-		internal string _rsTarget;
-	}
+	// [XmlRoot("Relationships", Namespace = OpenXMLNamespaces.Relationships)]
+	// public class Relationships
+	// {
+	// 	[XmlNamespaceDeclarations]
+	// 	public XmlSerializerNamespaces xmlns = new XmlSerializerNamespaces(
+	// 		new System.Xml.XmlQualifiedName[] {
+	// 			new System.Xml.XmlQualifiedName(string.Empty, OpenXMLNamespaces.Relationships),
+	// 		});
+	//
+	// 	[XmlElement("Relationship")]
+	// 	public List<Relationship> relations;
+	//
+	// 	[XmlIgnore]
+	// 	internal string _xmlTarget;
+	//
+	// 	public Relationships() { }
+	//
+	// 	internal Relationships(string _rsTarget)
+	// 	{
+	// 		_xmlTarget = _rsTarget;
+	// 	}
+	// }
+	//
+	// public class Relationship
+	// {
+	// 	[XmlAttribute("Id")]
+	// 	public string id;
+	// 	[XmlAttribute("Type")]
+	// 	public string type;
+	// 	[XmlAttribute("Target")]
+	// 	public string target;
+	// }
+	//
+	// public partial class OpenXMLFile
+	// {
+	// 	[XmlIgnore]
+	// 	internal Relationships _relationFile;
+	//
+	// 	[XmlIgnore]
+	// 	internal string _resId;
+	// 	[XmlIgnore]
+	// 	internal string _xmlTarget;
+	// 	[XmlIgnore]
+	// 	internal string _path;
+	// 	[XmlIgnore]
+	// 	internal string _rsTarget;
+	// }
 #endregion // Relationships
 
 #region Typed Element

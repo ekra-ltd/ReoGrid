@@ -24,6 +24,7 @@ using System.IO;
 using System.Diagnostics;
 using System.Globalization;
 using System.Text.RegularExpressions;
+using System.Xml;
 #if WINFORM || ANDROID
 using RGFloat = System.Single;
 #elif WPF
@@ -42,6 +43,7 @@ using unvell.ReoGrid.IO.OpenXML.Schema;
 using unvell.ReoGrid.Graphics;
 using unvell.ReoGrid.Drawing;
 using unvell.ReoGrid.IO.Additional;
+using unvell.ReoGrid.IO.Additional.Excel.FloatingObjects;
 using Border = unvell.ReoGrid.IO.OpenXML.Schema.Border;
 using Fill = unvell.ReoGrid.IO.OpenXML.Schema.Fill;
 using GradientFill = unvell.ReoGrid.IO.OpenXML.Schema.GradientFill;
@@ -1012,13 +1014,13 @@ namespace unvell.ReoGrid.IO.OpenXML
 
 #region Drawing
 #if DRAWING
-            if (sheet.drawing != null)
+            if (sheet.DrawingReference != null)
             {
 #if DEBUG
                 swDrawing.Start();
 #endif // DEBUG
 
-                var drawingFile = doc.LoadRelationResourceById<Schema.Drawing>(sheet, sheet.drawing.id);
+                var drawingFile = doc.LoadRelationResourceById<Schema.Drawing>(sheet, sheet.DrawingReference.id);
 
                 if (drawingFile != null)
                 {
@@ -1888,38 +1890,42 @@ namespace unvell.ReoGrid.IO.OpenXML
 #if DRAWING
         private static void LoadDrawingObjects(Document doc, Schema.Worksheet sheet, RGWorksheet rgSheet, Schema.Drawing drawingFile)
         {
-            foreach (var archor in drawingFile.twoCellAnchors)
+            foreach (var anchor in drawingFile.twoCellAnchors)
             {
                 DrawingObject obj = null;
 
-                if (archor.pic != null)
+                if (anchor.Item is CT_Picture pic)
                 {
-                    obj = LoadImage(doc, rgSheet, archor.pic, drawingFile);
+                    obj = LoadImage(doc, rgSheet, pic, drawingFile);
                 }
                 else
-                if (archor.shape != null)
+                if (anchor.Item is CT_Shape shape)
                 {
-                    obj = LoadShape(doc, rgSheet, archor.shape);
+                    obj = LoadShape(doc, rgSheet, shape);
                 }
-                else if (archor.cxnShape != null)
+                else if (anchor.Item is CT_Connector connector)
                 {
-                    obj = LoadShape(doc, rgSheet, archor.cxnShape);
+                    obj = LoadShape(doc, rgSheet, connector);
                 }
-                else if (archor.graphcFrame != null)
+                else if (anchor.Item is CT_GraphicalObjectFrame graphcFrame)
                 {
-                    obj = LoadGraphic(doc, rgSheet, drawingFile, archor.graphcFrame);
+                    obj = LoadGraphic(doc, rgSheet, drawingFile, graphcFrame);
                 }
+                // else if (archor.graphcFrame != null)
+                // {
+                //     obj = LoadGraphic(doc, rgSheet, drawingFile, archor.graphcFrame);
+                // }
 
                 if (obj != null)
                 {
-                    obj.Bounds = GetDrawingBounds(rgSheet, archor);
+                    obj.Bounds = GetDrawingBounds(rgSheet, anchor);
 
                     rgSheet.FloatingObjects.Add(obj);
                 }
             }
         }
 
-        private static void SetDrawingObjectStyle(Document doc, DrawingObject obj, Schema.Shape shape)
+        private static void SetDrawingObjectStyle(Document doc, DrawingObject obj, CT_Shape shape)
         {
             var theme = doc.Themesheet;
 
@@ -1930,7 +1936,7 @@ namespace unvell.ReoGrid.IO.OpenXML
             }
 
             var style = shape.style;
-            var prop = shape.prop;
+            var prop = shape.spPr;
 
             // line color
             bool overrideFill = false;
@@ -1941,33 +1947,31 @@ namespace unvell.ReoGrid.IO.OpenXML
             if (prop != null)
             {
 #region Line
-                if (prop.line != null)
+                if (prop.ln != null)
                 {
-                    if (prop.line.solidFill != null)
+                    if (prop.ln.solidFill != null)
                     {
-                        obj.LineColor = doc.ConvertFromCompColor(prop.line.solidFill);
+                        obj.LineColor = doc.ConvertFromCompColor(prop.ln.solidFill);
                         overrideLineColor = true;
                     }
-                    else if (prop.line.noFill != null)
+                    else if (prop.ln.noFill != null)
                     {
                         obj.LineColor = SolidColor.Transparent;
                         overrideLineColor = true;
                     }
 
-                    if (prop.line.weight != null)
+                    if (prop.ln.wSpecified)
                     {
-						if (int.TryParse(prop.line.weight, out var weight))
-                        {
-                            obj.LineWidth = MeasureToolkit.EMUToPixel(weight, PlatformUtility.GetDPI());
-                            overrideLineWeight = true;
-                        }
+                        int weight = prop.ln.w;
+                        obj.LineWidth = MeasureToolkit.EMUToPixel(weight, PlatformUtility.GetDPI());
+                        overrideLineWeight = true;
                     }
 
-                    if (prop.line.prstDash != null)
+                    if (prop.ln.prstDash != null)
                     {
                         Graphics.LineStyles lineStyle;
 
-                        if (ConvertFromDashStyle(prop.line.prstDash.value, out lineStyle))
+                        if (ConvertFromDashStyle(prop.ln.prstDash, out lineStyle))
                         {
                             obj.LineStyle = lineStyle;
                             overrideLineStyle = true;
@@ -1993,10 +1997,9 @@ namespace unvell.ReoGrid.IO.OpenXML
             {
                 var lnRef = style.lnRef;
 
-                if (lnRef != null && !string.IsNullOrEmpty(lnRef.idx))
+                if (lnRef != null)
                 {
-                    int index = -1;
-                    int.TryParse(lnRef.idx, out index);
+                    int index = (int)lnRef.idx;
 
                     if (theme.elements.fmtScheme != null
                         && theme.elements.fmtScheme.lineStyles != null
@@ -2023,10 +2026,9 @@ namespace unvell.ReoGrid.IO.OpenXML
                     }
                 }
 
-                if (!overrideFill && style.fillRef != null && !string.IsNullOrEmpty(style.fillRef.idx))
+                if (!overrideFill && style.fillRef != null)
                 {
-                    int index = -1;
-                    int.TryParse(style.fillRef.idx, out index);
+                    var index = (int)style.fillRef.idx;
 
                     if (theme.elements.fmtScheme != null
                         && theme.elements.fmtScheme.fillStyles != null
@@ -2057,9 +2059,161 @@ namespace unvell.ReoGrid.IO.OpenXML
             }
 #endregion Style
 
-            if (prop != null && prop.transform != null)
+            if (prop != null && prop.xfrm != null)
             {
-                if (OpenXMLUtility.IsTrue(prop.transform.flipV))
+                if (prop.xfrm.flipV)
+                {
+                    if (obj is Drawing.Shapes.ShapeObject)
+                    {
+                        obj.ScaleY = -1;
+                    }
+                }
+            }
+        }
+        
+        private static void SetDrawingObjectStyle(
+            Document doc,
+            DrawingObject obj,
+            CT_Connector shape)
+        {
+            // Игнорим
+
+            var theme = doc.Themesheet;
+
+            if (theme?.elements?.fmtScheme == null)
+            {
+                return;
+            }
+
+            var style = shape.style;
+            var prop = shape.spPr;
+
+            // line color
+            bool overrideFill = false;
+            bool overrideLineWeight = false;
+            bool overrideLineStyle = false;
+            bool overrideLineColor = false;
+
+            if (prop != null)
+            {
+                #region Line
+
+                if (prop.ln != null)
+                {
+                    if (prop.ln.solidFill != null)
+                    {
+                        obj.LineColor = doc.ConvertFromCompColor(prop.ln.solidFill);
+                        overrideLineColor = true;
+                    }
+                    else if (prop.ln.noFill != null)
+                    {
+                        obj.LineColor = SolidColor.Transparent;
+                        overrideLineColor = true;
+                    }
+
+                    if (prop.ln.wSpecified)
+                    {
+                        int weight = prop.ln.w;
+                        obj.LineWidth = MeasureToolkit.EMUToPixel(weight, PlatformUtility.GetDPI());
+                        overrideLineWeight = true;
+                    }
+
+                    if (prop.ln.prstDash != null)
+                    {
+                        if (ConvertFromDashStyle(prop.ln.prstDash, out var lineStyle))
+                        {
+                            obj.LineStyle = lineStyle;
+                            overrideLineStyle = true;
+                        }
+                    }
+                }
+
+                #endregion // Line
+
+                if (prop.solidFill != null)
+                {
+                    obj.FillColor = doc.ConvertFromCompColor(prop.solidFill, prop.solidFill);
+                    overrideFill = true;
+                }
+                else if (prop.noFill != null)
+                {
+                    obj.FillColor = SolidColor.Transparent;
+                    overrideFill = true;
+                }
+            }
+
+            #region Style
+
+            if (style != null)
+            {
+                var lnRef = style.lnRef;
+
+                if (lnRef != null)
+                {
+                    int index = (int) lnRef.idx;
+                    if (theme.elements.fmtScheme != null
+                        && theme.elements.fmtScheme.lineStyles != null
+                        && index > 0
+                        && index <= theme.elements.fmtScheme.lineStyles.Count)
+                    {
+                        var refLineStyle = theme.elements.fmtScheme.lineStyles[index - 1];
+
+                        if (!overrideLineColor
+                            && refLineStyle.solidFill != null
+                            && refLineStyle.solidFill.schemeColor != null)
+                        {
+                            obj.LineColor = doc.ConvertFromCompColor(refLineStyle.solidFill, style.lnRef);
+                        }
+
+                        if (!overrideLineWeight)
+                        {
+                            obj.LineWidth = MeasureToolkit.EMUToPixel(refLineStyle.weight, PlatformUtility.GetDPI());
+                        }
+
+                        if (!overrideLineStyle && refLineStyle.prstDash != null)
+                        {
+                            ConvertFromDashStyle(refLineStyle.prstDash.value, out var lineStyle);
+                            obj.LineStyle = lineStyle;
+                        }
+                    }
+                }
+
+                if (!overrideFill && style.fillRef != null)
+                {
+                    var index = (int) style.fillRef.idx;
+                    //int.TryParse(style.fillRef.idx, out var index);
+
+                    if (theme.elements.fmtScheme != null
+                        && theme.elements.fmtScheme.fillStyles != null
+                        && index > 0 && index <= theme.elements.fmtScheme.fillStyles.Count)
+                    {
+                        var fillStyle = theme.elements.fmtScheme.fillStyles[index - 1];
+
+                        if (fillStyle is CompColor compColor)
+                        {
+                            obj.FillColor = doc.ConvertFromCompColor(compColor, style.fillRef);
+                        }
+                        else if (fillStyle is GradientFill gf)
+                        {
+                            if (gf.gsLst.Count > 0)
+                            {
+                                var gs = gf.gsLst[gf.gsLst.Count / 2];
+                                obj.FillColor = doc.ConvertFromCompColor(gs, style.fillRef);
+                            }
+                        }
+                    }
+                }
+
+                if (style.fontRef != null)
+                {
+                }
+            }
+
+            #endregion Style
+
+            if (prop?.xfrm != null)
+            {
+                if (prop.xfrm.flipV)
                 {
                     if (obj is Drawing.Shapes.ShapeObject)
                     {
@@ -2069,31 +2223,51 @@ namespace unvell.ReoGrid.IO.OpenXML
             }
         }
 
-        private static bool ConvertFromDashStyle(string val, out Graphics.LineStyles lineStyle)
+        private static bool ConvertFromDashStyle(CT_PresetLineDashProperties val, out Graphics.LineStyles lineStyle)
+        {
+            lineStyle = LineStyles.Solid;
+            bool result = false;
+            if (val?.valSpecified == true)
+            {
+                switch (val.val)
+                {
+                    case ST_PresetLineDashVal.dash:
+                        lineStyle = LineStyles.Dash;
+                        result = true;
+                        break;
+                    default:
+                        break;
+                }
+            }
+            return result;
+        }
+
+        [Obsolete]
+        private static bool ConvertFromDashStyle(string val, out LineStyles lineStyle)
         {
             switch (val)
             {
                 case "dash":
-                    lineStyle = Graphics.LineStyles.Dash;
+                    lineStyle = LineStyles.Dash;
                     return true;
 
                 default:
-                    lineStyle = Graphics.LineStyles.Solid;
+                    lineStyle = LineStyles.Solid;
                     return false;
             }
         }
-
+        
 #region Image
-        private static ImageObject LoadImage(Document doc, RGWorksheet rgSheet, Pic pic, Schema.Drawing drawingFile)
+        private static ImageObject LoadImage(Document doc, RGWorksheet rgSheet, CT_Picture pic, Schema.Drawing drawingFile)
         {
             var blipFill = pic.blipFill;
 
             if (blipFill != null)
             {
                 var blip = pic.blipFill.blip;
-                if (blip != null && !string.IsNullOrEmpty(blip.embedId) && drawingFile._relationFile != null)
+                if (blip != null && !string.IsNullOrEmpty(blip.embed) && drawingFile._relationFile != null)
                 {
-                    var relation = drawingFile._relationFile.relations.FirstOrDefault(r => r.id == blip.embedId);
+                    var relation = drawingFile._relationFile.relations.FirstOrDefault(r => r.id == blip.embed);
                     var finalPath = RelativePathUtility.GetRelativePath(drawingFile._path, relation.target);
                     var stream = doc.GetResourceStream(finalPath);
 
@@ -2156,32 +2330,32 @@ namespace unvell.ReoGrid.IO.OpenXML
 #endregion // Image
 
 #region LoadShape
-        private static Drawing.DrawingObject LoadShape(Document doc, RGWorksheet rgSheet, Schema.Shape shape)
+        private static Drawing.DrawingObject LoadShape(Document doc, RGWorksheet rgSheet, CT_Shape shape)
         {
             DrawingObject obj = null;
 
-            var prop = shape.prop;
+            var prop = shape.spPr;
 
             // create shape
             if (prop != null && prop.prstGeom != null)
             {
-                switch (prop.prstGeom.presetType)
+                switch (prop.prstGeom.prst)
                 {
-                    case "rect": obj = new Drawing.Shapes.RectangleShape(); break;
+                    case ST_ShapeType.rect: obj = new Drawing.Shapes.RectangleShape(); break;
 
-                    case "roundRect":
+                    case ST_ShapeType.roundRect:
                         Drawing.Shapes.RoundedRectangleShape roundRect = new Drawing.Shapes.RoundedRectangleShape();
 
-                        if (shape.prop.prstGeom.avList != null)
+                        if (shape.spPr.prstGeom.avLst != null)
                         {
-                            var adj = shape.prop.prstGeom.avList.FirstOrDefault(gd => gd.name == "adj");
+                            var adj = shape.spPr.prstGeom.avLst.FirstOrDefault(gd => gd.name == "adj");
 
                             if (adj != null)
                             {
-                                if (adj.formula.StartsWith("val "))
+                                if (adj.fmla.StartsWith("val "))
                                 {
                                     int rate = -1;
-                                    int.TryParse(adj.formula.Substring(4), out rate);
+                                    int.TryParse(adj.fmla.Substring(4), out rate);
                                     if (rate >= 0)
                                     {
                                         roundRect.RoundRate = (float)rate / 50000f;
@@ -2194,12 +2368,12 @@ namespace unvell.ReoGrid.IO.OpenXML
 
                         break;
 
-                    case "diamond": obj = new Drawing.Shapes.DiamondShape(); break;
+                    case ST_ShapeType.diamond: obj = new Drawing.Shapes.DiamondShape(); break;
 
-                    case "ellipse": obj = new Drawing.Shapes.EllipseShape(); break;
+                    case ST_ShapeType.ellipse: obj = new Drawing.Shapes.EllipseShape(); break;
 
-                    case "line":
-                    case "straightConnector1":
+                    case ST_ShapeType.line:
+                    case ST_ShapeType.straightConnector1:
                         obj = LoadLine(prop);
                         break;
                 }
@@ -2214,37 +2388,33 @@ namespace unvell.ReoGrid.IO.OpenXML
             if (obj is Drawing.Shapes.ShapeObject)
             {
                 // text
-                if (shape.textBody != null)
+                if (shape.txBody?.p != null)
                 {
-                    if (shape.textBody.paragraphs != null)
+                    if (shape.txBody.p != null)
                     {
                         var rgShape = (Drawing.Shapes.ShapeObject)obj;
 
-                        rgShape.RichText = CreateRichTextFromRuns(doc, shape.textBody.paragraphs);
+                        rgShape.RichText = CreateRichTextFromRuns(doc, shape.txBody.p);
                     var sb = new StringBuilder();
                     RGFloat fontSize = 11.0f;
 
-                    foreach (var p in shape.textBody.paragraphs)
+                    foreach (var p in shape.txBody.p)
                     {
-                        if (p.runs != null)
+                        if (p.r != null)
                         {
-                            foreach (var r in p.runs)
+                            foreach (var r in p.r)
                             {
-                                if (r.text != null
-                                    && !string.IsNullOrEmpty(r.text.innerText))
+                                if (r?.t != null
+                                    && !string.IsNullOrEmpty(r.t))
                                 {
-                                    var runPr = r.property;
+                                    var runPr = r.rPr;
 
                                     if (runPr != null)
                                     {
-                                        int size = 0;
-                                        if (int.TryParse(runPr.sizeAttr, out size))
-                                        {
-                                            fontSize = (float)size / 133f;
-                                        }
+                                        fontSize = (float) runPr.sz / 133f;
                                     }
 
-                                    sb.Append(r.text.innerText);
+                                    sb.Append(r.t);
                                 }
                             }
 
@@ -2255,13 +2425,13 @@ namespace unvell.ReoGrid.IO.OpenXML
                     rgShape.Text = sb.ToString();
                     rgShape.FontSize = fontSize;
 
-                        if (shape.textBody.bodyProperty != null)
+                        if (shape.txBody.bodyPr != null)
                         {
-                            if (shape.textBody.bodyProperty.anchor != null)
+                            if (shape.txBody.bodyPr.anchorSpecified)
                             {
-                                switch (shape.textBody.bodyProperty.anchor)
+                                switch (shape.txBody.bodyPr.anchor)
                                 {
-                                    case "t":
+                                    case ST_TextAnchoringType.t:
                                         if (rgShape.RichText != null)
                                         {
                                             rgShape.RichText.VerticalAlignment = ReoGridVerAlign.Top;
@@ -2275,7 +2445,7 @@ namespace unvell.ReoGrid.IO.OpenXML
                                         }
                                         break;
 
-                                    case "b":
+                                    case ST_TextAnchoringType.b:
                                         if (rgShape.RichText != null)
                                         {
                                             rgShape.RichText.VerticalAlignment = ReoGridVerAlign.Bottom;
@@ -2291,22 +2461,88 @@ namespace unvell.ReoGrid.IO.OpenXML
             return obj;
         }
 
-        private static Drawing.Shapes.Line LoadLine(ShapeProperty prop)
+        private static DrawingObject LoadShape(
+            Document doc, 
+            RGWorksheet rgSheet, 
+            CT_Connector shape)
+        {
+            DrawingObject obj = null;
+
+
+            var prop = shape.spPr;
+
+            // create shape
+            if (prop != null && prop.prstGeom != null)
+            {
+                switch (prop.prstGeom.prst)
+                {
+                    case ST_ShapeType.rect:
+                        obj = new Drawing.Shapes.RectangleShape();
+                        break;
+                    case ST_ShapeType.roundRect:
+                        Drawing.Shapes.RoundedRectangleShape roundRect = new Drawing.Shapes.RoundedRectangleShape();
+
+                        if (shape.spPr.prstGeom.avLst != null)
+                        {
+                            var adj = shape.spPr.prstGeom.avLst.FirstOrDefault(gd => gd.name == "adj");
+
+                            if (adj != null)
+                            {
+                                if (adj.fmla.StartsWith("val "))
+                                {
+                                    int rate = -1;
+                                    int.TryParse(adj.fmla.Substring(4), out rate);
+                                    if (rate >= 0)
+                                    {
+                                        roundRect.RoundRate = (float)rate / 50000f;
+                                    }
+                                }
+                            }
+                        }
+
+                        obj = roundRect;
+
+                        break;
+
+                    case ST_ShapeType.diamond:
+                        obj = new Drawing.Shapes.DiamondShape();
+                        break;
+
+                    case ST_ShapeType.ellipse:
+                        obj = new Drawing.Shapes.EllipseShape();
+                        break;
+
+                    case ST_ShapeType.line:
+                    case ST_ShapeType.straightConnector1:
+                        obj = LoadLine(prop);
+                        break;
+                }
+            }
+
+            // set style
+            if (obj != null)
+            {
+                SetDrawingObjectStyle(doc, obj, shape);
+            }
+            return obj;
+        }
+        
+        private static Drawing.Shapes.Line LoadLine(CT_ShapeProperties prop)
         {
             Drawing.Shapes.Line line = new Drawing.Shapes.Line();
 
-            var xfrm = prop.transform;
+            var xfrm = prop.xfrm;
 
             if (xfrm != null)
             {
                 RGFloat dpi = PlatformUtility.GetDPI();
 
-                Rectangle bounds = new Rectangle(MeasureToolkit.EMUToPixel(xfrm.offset.x, dpi), MeasureToolkit.EMUToPixel(xfrm.offset.y, dpi),
-                    MeasureToolkit.EMUToPixel(xfrm.extents.cx, dpi), MeasureToolkit.EMUToPixel(xfrm.extents.cy, dpi));
+                Rectangle bounds = new Rectangle(MeasureToolkit.EMUToPixel(xfrm.off.x, dpi), MeasureToolkit.EMUToPixel(xfrm.off.y, dpi),
+                    MeasureToolkit.EMUToPixel(xfrm.ext.cx, dpi), MeasureToolkit.EMUToPixel(xfrm.ext.cy, dpi));
 
                 RGFloat startX, startY, endX, endY;
 
-                if (OpenXMLUtility.IsTrue(xfrm.flipV))
+                if (xfrm.flipV)
                 {
                     startY = bounds.Bottom;
                     endY = bounds.Top;
@@ -2317,7 +2553,7 @@ namespace unvell.ReoGrid.IO.OpenXML
                     endY = bounds.Bottom;
                 }
 
-                if (OpenXMLUtility.IsTrue(xfrm.flipH))
+                if (xfrm.flipH)
                 {
                     startX = bounds.Right;
                     endX = bounds.Left;
@@ -2332,25 +2568,23 @@ namespace unvell.ReoGrid.IO.OpenXML
                 line.EndPoint = new Point(endX, endY);
             }
 
-            if (prop.line != null)
+            if (prop.ln != null)
             {
-                if (prop.line.headEnd != null
-                    && !string.IsNullOrEmpty(prop.line.headEnd.type))
+                if (prop.ln.headEnd != null)
                 {
-                    switch (prop.line.headEnd.type)
+                    switch (prop.ln.headEnd.type)
                     {
-                        case "triangle":
+                        case ST_LineEndType.triangle:
                             line.StartCap = LineCapStyles.Arrow;
                             break;
                     }
                 }
 
-                if (prop.line.tailEnd != null
-                    && !string.IsNullOrEmpty(prop.line.tailEnd.type))
+                if (prop.ln.tailEnd != null)
                 {
-                    switch (prop.line.tailEnd.type)
+                    switch (prop.ln.tailEnd.type)
                     {
-                        case "triangle":
+                        case ST_LineEndType.triangle:
                             line.EndCap = LineCapStyles.Arrow;
                             break;
                     }
@@ -2363,7 +2597,7 @@ namespace unvell.ReoGrid.IO.OpenXML
 #endregion // LoadShape
 
 #region GetDrawingBounds
-        private static Rectangle GetDrawingBounds(RGWorksheet rgSheet, TwoCellAnchor archor)
+        private static Rectangle GetDrawingBounds(RGWorksheet rgSheet, CT_TwoCellAnchor archor)
         {
             if (archor.to.row >= rgSheet.RowCount)
             {
@@ -2400,19 +2634,47 @@ namespace unvell.ReoGrid.IO.OpenXML
 #endregion // GetDrawingBounds
 
 #region LoadGraphic
-        private static Drawing.DrawingObject LoadGraphic(Document doc, RGWorksheet rgSheet, Schema.Drawing drawingFile, Schema.GraphicFrame graphicFrame)
+        private static Drawing.DrawingObject LoadGraphic(Document doc, RGWorksheet rgSheet, Schema.Drawing drawingFile, CT_GraphicalObjectFrame graphicFrame)
         {
             var graphic = graphicFrame.graphic;
 
-            if (graphic != null && graphic.data != null)
+            if (graphic != null && graphic.graphicData != null)
             {
-                switch (graphic.data.uri)
+switch (graphic.graphicData.uri)
                 {
                     case OpenXMLNamespaces.Chart________:
-                        if (graphic.data.chart != null
-                            && !string.IsNullOrEmpty(graphic.data.chart.id))
+                        // Тут надо проверить существует id и выделить id
+                        string chartId = null;
+                        if (!string.IsNullOrEmpty(graphic.graphicData?.chart?.id))
                         {
-                            var xmlChart = doc.LoadRelationResourceById<Schema.ChartSpace>(drawingFile, graphic.data.chart.id);
+                            chartId = graphic.graphicData.chart.id;
+                        }
+                        else
+                        {
+                            foreach (var element in graphic.graphicData.Any)
+                            {
+                                string xmlnsLocalName = null;
+                                foreach (XmlAttribute attribute in element.Attributes)
+                                {
+                                    if (attribute.LocalName == "id")
+                                    {
+                                        if (!string.IsNullOrEmpty(attribute.Prefix))
+                                        {
+                                            if (OpenXMLNamespaces.R____________ == attribute.GetNamespaceOfPrefix(attribute.Prefix))
+                                            {
+                                                chartId = attribute.Value;
+                                                break;
+                                            }
+                                        }
+                                    }
+                                    // attribute.
+                                }
+                            }
+                        }
+
+                        if (!string.IsNullOrEmpty(chartId))
+                        {
+                            var xmlChart = doc.LoadRelationResourceById<ChartSpace>(drawingFile, chartId);
                             if (xmlChart != null)
                             {
                                 return LoadChart(rgSheet, xmlChart);
@@ -2660,6 +2922,46 @@ namespace unvell.ReoGrid.IO.OpenXML
             return rt;
         }
 
+        private static RichText CreateRichTextFromRuns(
+            Document doc, 
+            IEnumerable<CT_TextParagraph> paragraphs)
+        {
+            var rt = new RichText();
+
+            foreach (var p in paragraphs)
+            {
+                foreach (var run in p.r)
+                {
+                    AddRunIntoRichText(doc, rt, run);
+                }
+
+                if (p.pPr != null)
+                {
+                    if (p.pPr.algnSpecified)
+                    {
+                        switch (p.pPr.algn)
+                        {
+                            case ST_TextAlignType.ctr:
+                                rt.SetStyles(halign: ReoGridHorAlign.Center);
+                                break;
+                        }
+                    }
+                }
+
+                rt.NewLine();
+            }
+
+            return rt;
+        }
+
+        private static void AddRunIntoRichText(
+            Document doc, 
+            RichText rt, 
+            CT_RegularTextRun r)
+        {
+            // Код удален
+        }
+        
         private static void AddRunIntoRichText(Document doc, RichText rt, Run r)
         {
 			if (string.IsNullOrEmpty(r.text.innerText))
@@ -3224,103 +3526,381 @@ namespace unvell.ReoGrid.IO.OpenXML
         }
 
 #region Convert CompColor
-        internal SolidColor ConvertFromCompColor(CompColor compColor, CompColor overrideColor = null)
+        // internal SolidColor ConvertFromCompColor(CompColor compColor, CompColor overrideColor = null)
+        // {
+        //     if (compColor._solidColor.A > 0)
+        //     {
+        //         return compColor._solidColor;
+        //     }
+        //
+        //     if (compColor.srgbColor != null
+        //         && !string.IsNullOrEmpty(compColor.srgbColor.val))
+        //     {
+        //         int hex = 0;
+        //         int.TryParse(compColor.srgbColor.val, System.Globalization.NumberStyles.AllowHexSpecifier, null, out hex);
+        //         compColor._solidColor = SolidColor.FromRGB(hex);
+        //         return compColor._solidColor;
+        //     }
+        //
+        //     if (compColor.sysColor != null
+        //         && !string.IsNullOrEmpty(compColor.sysColor.val))
+        //     {
+        //         switch (compColor.sysColor.val)
+        //         {
+        //             case "windowText":
+        //                 compColor._solidColor = StaticResources.SystemColor_WindowText;
+        //                 return compColor._solidColor;
+        //
+        //             case "window":
+        //                 compColor._solidColor = StaticResources.SystemColor_Window;
+        //                 return compColor._solidColor;
+        //         }
+        //     }
+        //
+        //     if (compColor.schemeColor != null)
+        //     {
+        //         SolidColor color = SolidColor.Black;
+        //
+        //         var theme = this.Themesheet;
+        //
+        //         switch (compColor.schemeColor.val)
+        //         {
+        //             case "dk1": color = ConvertFromCompColor(theme.elements.clrScheme.dk1); break;
+        //             case "lt1": color = ConvertFromCompColor(theme.elements.clrScheme.lt1); break;
+        //             case "dk2": color = ConvertFromCompColor(theme.elements.clrScheme.dk2); break;
+        //             case "lt2": color = ConvertFromCompColor(theme.elements.clrScheme.lt2); break;
+        //             case "accent1": color = ConvertFromCompColor(theme.elements.clrScheme.accent1); break;
+        //             case "accent2": color = ConvertFromCompColor(theme.elements.clrScheme.accent2); break;
+        //             case "accent3": color = ConvertFromCompColor(theme.elements.clrScheme.accent3); break;
+        //             case "accent4": color = ConvertFromCompColor(theme.elements.clrScheme.accent4); break;
+        //             case "accent5": color = ConvertFromCompColor(theme.elements.clrScheme.accent5); break;
+        //             case "accent6": color = ConvertFromCompColor(theme.elements.clrScheme.accent6); break;
+        //             case "hlink": color = ConvertFromCompColor(theme.elements.clrScheme.hlink); break;
+        //             case "folHlink": color = ConvertFromCompColor(theme.elements.clrScheme.folHlink); break;
+        //             case "phClr": color = ConvertFromCompColor(overrideColor); break;
+        //         }
+        //
+        //         if (overrideColor != null)
+        //         {
+        //             HSLColor hlsColor = ColorUtility.RGBToHSL(color);
+        //
+        //             var compColorVal = overrideColor.schemeColor;
+        //
+        //             if (compColorVal.shade != null)
+        //             {
+        //                 hlsColor.L = ColorUtility.CalculateFinalLumValue(-(float)compColorVal.shade.value / 100000f, (float)hlsColor.L * 255f) / 255f;
+        //             }
+        //
+        //             if (compColorVal.tint != null)
+        //             {
+        //                 hlsColor.L = ColorUtility.CalculateFinalLumValue((float)compColorVal.tint.value / 100000f, (float)hlsColor.L * 255f) / 255f;
+        //             }
+        //
+        //             if (compColorVal.lumMod != null)
+        //             {
+        //                 hlsColor.L *= (float)compColorVal.lumMod.value / 100000f;
+        //             }
+        //
+        //             if (compColorVal.lumOff != null)
+        //             {
+        //                 hlsColor.L += (float)compColorVal.lumOff.value / 100000f;
+        //             }
+        //
+        //             if (compColorVal.satMod != null)
+        //             {
+        //                 hlsColor.S *= (float)compColorVal.satMod.value / 100000f;
+        //             }
+        //
+        //             color = ColorUtility.HSLToRgb(hlsColor);
+        //         }
+        //         else
+        //         {
+        //             compColor._solidColor = color;
+        //         }
+        //
+        //         return color;
+        //     }
+        //
+        //     return SolidColor.Transparent;
+        // }
+        private SolidColor? GetPrecomputedSolidColor(
+            CT_SolidColorFillProperties compColor)
         {
             if (compColor._solidColor.A > 0)
             {
                 return compColor._solidColor;
             }
+            return null;
+        }
 
-            if (compColor.srgbColor != null
-                && !string.IsNullOrEmpty(compColor.srgbColor.val))
+        private SolidColor? GetPrecomputedSolidColor(
+            CompColor compColor)
+        {
+            if (compColor._solidColor.A > 0)
             {
-                int hex = 0;
-                int.TryParse(compColor.srgbColor.val, System.Globalization.NumberStyles.AllowHexSpecifier, null, out hex);
-                compColor._solidColor = SolidColor.FromRGB(hex);
                 return compColor._solidColor;
             }
+            return null;
+        }
 
-            if (compColor.sysColor != null
-                && !string.IsNullOrEmpty(compColor.sysColor.val))
+        private SolidColor? GetSrgbSolidColor(
+            CT_SRgbColor srgbClr)
+        {
+            if (srgbClr.val.Length == 3)
             {
-                switch (compColor.sysColor.val)
+                return SolidColor.FromArgb(
+                    (byte)255,
+                    srgbClr.val[0],
+                    srgbClr.val[1],
+                    srgbClr.val[2]);
+            }
+            if (srgbClr.val.Length == 4)
+            {
+                return SolidColor.FromArgb(
+                    srgbClr.val[0],
+                    srgbClr.val[1],
+                    srgbClr.val[2],
+                    srgbClr.val[3]);
+            }
+            return null;
+        }
+
+        private SolidColor? GetSrgbSolidColor(
+            CompColorVar srgbColor)
+        {
+            if (srgbColor != null
+                && !string.IsNullOrEmpty(srgbColor.val))
+            {
+                int.TryParse(srgbColor.val, NumberStyles.AllowHexSpecifier, null, out var hex);
+                return SolidColor.FromRGB(hex);
+            }
+            return null;
+        }
+
+        private SolidColor? GetSysSolidColor(
+            CT_SystemColor sysClr)
+        {
+            switch (sysClr.val)
+            {
+                case ST_SystemColorVal.windowText:
+                    return  StaticResources.SystemColor_WindowText;
+                case ST_SystemColorVal.window:
+                    return StaticResources.SystemColor_Window;
+            }
+            return null;
+        }
+
+        private SolidColor? GetSysSolidColor(
+            CompColorVar sysColor)
+        {
+            if (sysColor != null
+                && !string.IsNullOrEmpty(sysColor.val))
+            {
+                switch (sysColor.val)
                 {
                     case "windowText":
-                        compColor._solidColor = StaticResources.SystemColor_WindowText;
-                        return compColor._solidColor;
-
+                        return StaticResources.SystemColor_WindowText;
                     case "window":
-                        compColor._solidColor = StaticResources.SystemColor_Window;
-                        return compColor._solidColor;
+                        return StaticResources.SystemColor_Window;
                 }
             }
-
-            if (compColor.schemeColor != null)
-            {
-                SolidColor color = SolidColor.Black;
-
-                var theme = this.Themesheet;
-
-                switch (compColor.schemeColor.val)
-                {
-                    case "dk1": color = ConvertFromCompColor(theme.elements.clrScheme.dk1); break;
-                    case "lt1": color = ConvertFromCompColor(theme.elements.clrScheme.lt1); break;
-                    case "dk2": color = ConvertFromCompColor(theme.elements.clrScheme.dk2); break;
-                    case "lt2": color = ConvertFromCompColor(theme.elements.clrScheme.lt2); break;
-                    case "accent1": color = ConvertFromCompColor(theme.elements.clrScheme.accent1); break;
-                    case "accent2": color = ConvertFromCompColor(theme.elements.clrScheme.accent2); break;
-                    case "accent3": color = ConvertFromCompColor(theme.elements.clrScheme.accent3); break;
-                    case "accent4": color = ConvertFromCompColor(theme.elements.clrScheme.accent4); break;
-                    case "accent5": color = ConvertFromCompColor(theme.elements.clrScheme.accent5); break;
-                    case "accent6": color = ConvertFromCompColor(theme.elements.clrScheme.accent6); break;
-                    case "hlink": color = ConvertFromCompColor(theme.elements.clrScheme.hlink); break;
-                    case "folHlink": color = ConvertFromCompColor(theme.elements.clrScheme.folHlink); break;
-                    case "phClr": color = ConvertFromCompColor(overrideColor); break;
-                }
-
-                if (overrideColor != null)
-                {
-                    HSLColor hlsColor = ColorUtility.RGBToHSL(color);
-
-                    var compColorVal = overrideColor.schemeColor;
-
-                    if (compColorVal.shade != null)
-                    {
-                        hlsColor.L = ColorUtility.CalculateFinalLumValue(-(float)compColorVal.shade.value / 100000f, (float)hlsColor.L * 255f) / 255f;
-                    }
-
-                    if (compColorVal.tint != null)
-                    {
-                        hlsColor.L = ColorUtility.CalculateFinalLumValue((float)compColorVal.tint.value / 100000f, (float)hlsColor.L * 255f) / 255f;
-                    }
-
-                    if (compColorVal.lumMod != null)
-                    {
-                        hlsColor.L *= (float)compColorVal.lumMod.value / 100000f;
-                    }
-
-                    if (compColorVal.lumOff != null)
-                    {
-                        hlsColor.L += (float)compColorVal.lumOff.value / 100000f;
-                    }
-
-                    if (compColorVal.satMod != null)
-                    {
-                        hlsColor.S *= (float)compColorVal.satMod.value / 100000f;
-                    }
-
-                    color = ColorUtility.HSLToRgb(hlsColor);
-                }
-                else
-                {
-                    compColor._solidColor = color;
-                }
-
-                return color;
-            }
-
-            return SolidColor.Transparent;
+            return null;
         }
+
+        private SolidColor? GetSchemeSolidColor(
+            CT_SchemeColor schemeClr)
+        {
+            if (schemeClr != null)
+            {
+                var theme = Themesheet;
+                switch (schemeClr.val)
+                {
+                    case ST_SchemeColorVal.dk1:
+                        return ConvertFromCompColor(theme.elements.clrScheme.dk1);
+                    case ST_SchemeColorVal.lt1:
+                        return ConvertFromCompColor(theme.elements.clrScheme.lt1);
+                    case ST_SchemeColorVal.dk2:
+                        return ConvertFromCompColor(theme.elements.clrScheme.dk2);
+                    case ST_SchemeColorVal.lt2:
+                        return ConvertFromCompColor(theme.elements.clrScheme.lt2);
+                    case ST_SchemeColorVal.accent1:
+                        return ConvertFromCompColor(theme.elements.clrScheme.accent1);
+                    case ST_SchemeColorVal.accent2:
+                        return ConvertFromCompColor(theme.elements.clrScheme.accent2);
+                    case ST_SchemeColorVal.accent3:
+                        return ConvertFromCompColor(theme.elements.clrScheme.accent3);
+                    case ST_SchemeColorVal.accent4:
+                        return ConvertFromCompColor(theme.elements.clrScheme.accent4);
+                    case ST_SchemeColorVal.accent5:
+                        return ConvertFromCompColor(theme.elements.clrScheme.accent5);
+                    case ST_SchemeColorVal.accent6:
+                        return ConvertFromCompColor(theme.elements.clrScheme.accent6);
+                    case ST_SchemeColorVal.hlink:
+                        return ConvertFromCompColor(theme.elements.clrScheme.hlink);
+                    case ST_SchemeColorVal.folHlink:
+                        return ConvertFromCompColor(theme.elements.clrScheme.folHlink);
+                }
+                return SolidColor.Black;
+            }
+            return null;
+        }
+
+        private SolidColor? GetSchemeSolidColor(
+            CompColorVar schemeColor)
+        {
+            if (schemeColor != null)
+            {
+                var theme = Themesheet;
+
+                switch (schemeColor.val)
+                {
+                    case "dk1":
+                        return ConvertFromCompColor(theme.elements.clrScheme.dk1);
+                    case "lt1":
+                        return ConvertFromCompColor(theme.elements.clrScheme.lt1);
+                    case "dk2":
+                        return ConvertFromCompColor(theme.elements.clrScheme.dk2);
+                    case "lt2":
+                        return ConvertFromCompColor(theme.elements.clrScheme.lt2);
+                    case "accent1":
+                        return ConvertFromCompColor(theme.elements.clrScheme.accent1);
+                    case "accent2":
+                        return ConvertFromCompColor(theme.elements.clrScheme.accent2);
+                    case "accent3":
+                        return ConvertFromCompColor(theme.elements.clrScheme.accent3);
+                    case "accent4":
+                        return ConvertFromCompColor(theme.elements.clrScheme.accent4);
+                    case "accent5":
+                        return ConvertFromCompColor(theme.elements.clrScheme.accent5);
+                    case "accent6":
+                        return ConvertFromCompColor(theme.elements.clrScheme.accent6);
+                    case "hlink":
+                        return ConvertFromCompColor(theme.elements.clrScheme.hlink);
+                    case "folHlink":
+                        return ConvertFromCompColor(theme.elements.clrScheme.folHlink);
+                }
+                return SolidColor.Black;
+            }
+            return null;
+        }
+
+        private static SolidColor? ApplyColorParameters(SolidColor? src,
+            int? shade,
+            int? tint,
+            int? lumMod,
+            int? lumOff,
+            int? satMod)
+        {
+            if (src.HasValue)
+            {
+                var result = ColorUtility.RGBToHSL(src.Value);
+
+                if (shade != null)
+                {
+                    result.L = ColorUtility.CalculateFinalLumValue(
+                                   -(float) shade / 100000f,
+                                   (float) result.L * 255f) / 255f;
+                }
+
+                if (tint != null)
+                {
+                    result.L = ColorUtility.CalculateFinalLumValue(
+                                   (float) tint / 100000f,
+                                   (float) result.L * 255f) / 255f;
+                }
+
+                if (lumMod != null)
+                {
+                    result.L *= (float) lumMod / 100000f;
+                }
+
+                if (lumOff != null)
+                {
+                    result.L += (float) lumOff / 100000f;
+                }
+
+                if (satMod != null)
+                {
+                    result.S *= (float) satMod / 100000f;
+                }
+                return ColorUtility.HSLToRgb(result);
+            }
+            return null;
+
+        }
+
+        private static SolidColor? ApplyColorParameters(
+            SolidColor? src,
+            CT_SolidColorFillProperties overrideColor)
+        {
+            if (overrideColor != null)
+            {
+                return ApplyColorParameters(src,
+                    overrideColor.schemeClr?.shade?.FirstOrDefault()?.val,
+                    overrideColor.schemeClr?.tint?.FirstOrDefault()?.val,
+                    overrideColor.schemeClr?.lumMod?.FirstOrDefault()?.val,
+                    overrideColor.schemeClr?.lumOff?.FirstOrDefault()?.val,
+                    overrideColor.schemeClr?.satMod?.FirstOrDefault()?.val
+                );
+            }
+            return src;
+        }
+
+        private static SolidColor? ApplyColorParameters(
+            SolidColor? src,
+            CT_StyleMatrixReference overrideColor)
+        {
+            if (overrideColor != null)
+            {
+                return ApplyColorParameters(src,
+                    overrideColor.schemeClr?.shade?.FirstOrDefault()?.val,
+                    overrideColor.schemeClr?.tint?.FirstOrDefault()?.val,
+                    overrideColor.schemeClr?.lumMod?.FirstOrDefault()?.val,
+                    overrideColor.schemeClr?.lumOff?.FirstOrDefault()?.val,
+                    overrideColor.schemeClr?.satMod?.FirstOrDefault()?.val
+                );
+            }
+            return src;
+        }
+
+        internal SolidColor ConvertFromCompColor(
+            CT_SolidColorFillProperties compColor, 
+            CT_SolidColorFillProperties overrideColor = null)
+        {
+            // Обратить внимание что один раз присвоив значение overrideColor
+            // перестает участвовать в вычислении
+            var result =
+                GetPrecomputedSolidColor(compColor) ??
+                GetSrgbSolidColor(compColor.srgbClr) ??
+                GetSysSolidColor(compColor.sysClr) ??
+                ApplyColorParameters(GetSchemeSolidColor(compColor.schemeClr), overrideColor);
+
+            if (result.HasValue && overrideColor == null)
+            {
+                compColor._solidColor = result.Value;
+            }
+            return result ?? SolidColor.Transparent;
+        }
+
+        internal SolidColor ConvertFromCompColor(
+            CompColor compColor,
+            CT_StyleMatrixReference overrideColor = null)
+        {
+            // Обратить внимание что один раз присвоив значение overrideColor
+            // перестает участвовать в вычислении
+            var result =
+                GetPrecomputedSolidColor(compColor) ??
+                GetSrgbSolidColor(compColor.srgbColor) ??
+                GetSysSolidColor(compColor.sysColor) ??
+                ApplyColorParameters(GetSchemeSolidColor(compColor.schemeColor), overrideColor);
+
+            if (result.HasValue && overrideColor == null)
+            {
+                compColor._solidColor = result.Value;
+            }
+            return result ?? SolidColor.Transparent;
+        }
+
 #endregion // Convert CompColor
 
 #endregion // Themesheet
