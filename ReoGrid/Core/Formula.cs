@@ -191,7 +191,7 @@ namespace unvell.ReoGrid
 
 		private static void AddCellReferenceIntoList(List<ReferenceRange> referencedRanges, ReferenceRange range)
 		{
-			if (referencedRanges.All(rr => rr.Worksheet == range.Worksheet && !rr.Contains(range)))
+			if (referencedRanges.All(rr => !rr.Contains(range)))
 			{
 				referencedRanges.Add(range);
 			}
@@ -490,6 +490,11 @@ namespace unvell.ReoGrid
 			this.settings |= WorksheetSettings.Formula_AutoUpdateReferenceCell;
 		}
 
+		/// <summary>
+		/// Словарь, указывающий зависимость диапазона ячеек данного листа от значения в какой либо ячейке
+		/// Ключ: зависимая ячейка (ячейка с формулой)
+		/// Значение: список ячеек-источников
+		/// </summary>
 		private Dictionary<Cell, List<ReferenceRange>> formulaRanges = new Dictionary<Cell, List<ReferenceRange>>();
 
 		private static void UpdateWorksheetReferencedFormulaCells(Worksheet worksheet, Cell fromCell,
@@ -499,17 +504,18 @@ namespace unvell.ReoGrid
 
 			foreach (var range in worksheet.formulaRanges)
 			{
-				if (range.Value.Any(r => r.Contains(fromCell.InternalPos)))
+				if (range.Value.Any(r => r.Contains(fromCell)))
 				{
-					if ((dirtyCells == null || !dirtyCells.Contains(range.Key))
-						&& (dirtyCellStack == null || dirtyCellStack.All(s => !s.Contains(range.Key))))
+					var dependentCell = range.Key;
+					if ((dirtyCells == null || !dirtyCells.Contains(dependentCell))
+						&& (dirtyCellStack == null || dirtyCellStack.All(s => !s.Contains(dependentCell))))
 					{
 						if (dirtyCells == null)
 						{
 							dirtyCells = new List<Cell>();
 						}
 
-						dirtyCells.Add(range.Key);
+						dirtyCells.Add(dependentCell);
 					}
 				}
 			}
@@ -820,7 +826,7 @@ namespace unvell.ReoGrid
 			{
 				var refRanges = formulaRanges[dependentCell];
 
-				if (refRanges.Any(rr => rr.Contains(cell.InternalPos)))
+				if (refRanges.Any(rr => rr.Contains(cell)))
 				{
 					AddTraceLine(cell, dependentCell);
 					found = true;

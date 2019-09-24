@@ -132,7 +132,7 @@ namespace unvell.ReoGrid
 				// reference ranges (including cells)
 				foreach (var referencedRange in formulaRanges)
 				{
-					if (referencedRange.Value.Any(rr => rr.Contains(cell.InternalPos)))
+					if (referencedRange.Value.Any(rr => rr.Contains(cell)))
 					{
 						if (!formulaDirtyCells.Contains(referencedRange.Key))
 						{

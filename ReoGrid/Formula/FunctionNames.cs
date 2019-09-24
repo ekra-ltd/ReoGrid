@@ -150,6 +150,8 @@ namespace unvell.ReoGrid.Formula
 
 		public const string SQRT_EN = "SQRT";
 		public const string SQRT_RU = "КОРЕНЬ";
+		public const string PRODUCT_EN = "PRODUCT";
+		public const string PRODUCT_RU = "ПРОИЗВЕД";
 	}
 }
 

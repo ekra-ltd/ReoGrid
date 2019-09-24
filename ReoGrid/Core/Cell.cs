@@ -314,8 +314,7 @@ namespace unvell.ReoGrid
 		private void AfterCellDataUpdate(Cell cell, Stack<List<Cell>> dirtyCellStack = null)
 		{
 #if FORMULA
-			if ((this.settings & WorksheetSettings.Formula_AutoUpdateReferenceCell)
-				== WorksheetSettings.Formula_AutoUpdateReferenceCell)
+			if (HasSettings(WorksheetSettings.Formula_AutoUpdateReferenceCell))
 			{
 				UpdateReferencedFormulaCells(cell, dirtyCellStack);
 			}

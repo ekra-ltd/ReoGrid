@@ -17,6 +17,7 @@
  ****************************************************************************/
 
 using System;
+using System.Diagnostics;
 using unvell.ReoGrid.Core;
 
 namespace unvell.ReoGrid
@@ -188,6 +189,18 @@ namespace unvell.ReoGrid
 		#endregion Value & Properties
 
 		#region Utility
+
+		public bool Contains(Cell cell)
+		{
+			if (cell is null) return false;
+			if (Worksheet is null)
+			{
+				Debug.Fail($"Ожидается что рабочий лист ({nameof(Worksheet)}) класса {nameof(ReferenceRange)} будет задан при сравнении. Принято: null");
+			}
+			if (Worksheet != null && Worksheet != cell.Worksheet) return false;
+			return Contains(cell.InternalPos);
+		}
+
 		/// <summary>
 		/// Check whether or not the specified position is contained by this range.
 		/// </summary>
@@ -209,6 +222,8 @@ namespace unvell.ReoGrid
 		/// <returns>True if the specified range is contained by this range; Otherwise return false.</returns>
 		public bool Contains(ReferenceRange range)
 		{
+			if (Worksheet != range.Worksheet) return false;
+
 			return this.startCell.InternalRow <= range.startCell.InternalRow
 				&& this.startCell.InternalCol <= range.startCell.InternalCol
 				&& this.endCell.InternalRow >= range.endCell.InternalRow

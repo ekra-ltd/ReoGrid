@@ -203,7 +203,7 @@ namespace unvell.ReoGrid
 
 #if FORMULA
             // clear formula referenced cells and ranges
-            formulaRanges.Clear();
+            formulaRanges?.Clear();
 
             // clear trace lines
 			if (this.traceDependentArrows != null)

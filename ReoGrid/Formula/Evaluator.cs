@@ -1032,6 +1032,42 @@ namespace unvell.ReoGrid.Formula
 
 				#endregion // ISBLANK
 
+				#region PRODUCT
+
+				case BuiltinFunctionNames.PRODUCT_EN:
+				case BuiltinFunctionNames.PRODUCT_RU:
+					if (funNode.Children == null || funNode.Children.Count == 0)
+						throw new FormulaParameterMismatchException(cell);
+					val = 1;
+					foreach (var n in funNode.Children)
+					{
+						var t = Evaluate(cell, n);
+						if (t.type == FormulaValueType.Number)
+						{
+							val *= (double) t.value;
+						}else if(t.type == FormulaValueType.Cell)
+						{
+                            
+						}else if (t.type == FormulaValueType.Range)
+						{
+							var range = (SheetRangePosition)t.value;
+							double rangeValue = 1;
+							(range.Worksheet ?? cell.Worksheet).IterateCells(range.Position, true, (r, c, rangeCell) =>
+							{
+								if (rangeCell.Data is double dValue)
+								{
+									rangeValue *= dValue;
+								}
+								return true;
+							});
+							val *= rangeValue;
+						}
+					}
+					return val;
+
+
+				#endregion
+				
 				#endregion System
 
 				default:

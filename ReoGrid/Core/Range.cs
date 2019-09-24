@@ -228,7 +228,7 @@ namespace unvell.ReoGrid
 #if FORMULA
 				foreach (var referecedRange in this.formulaRanges)
 				{
-					if (referecedRange.Value.Any(r => r.Contains(cell.InternalPos))
+					if (referecedRange.Value.Any(r => r.Contains(cell))
 						&& !formulaDirtyCells.Contains(referecedRange.Key))
 					{
 						formulaDirtyCells.Add(referecedRange.Key);
@@ -1015,7 +1015,7 @@ namespace unvell.ReoGrid
 #if FORMULA
 								foreach (var referecedRange in this.formulaRanges)
 								{
-									if (referecedRange.Value.Any(rr => rr.Contains(cell.InternalPos))
+									if (referecedRange.Value.Any(rr => rr.Contains(cell))
 										&& !formulaDirtyCells.Contains(referecedRange.Key))
 									{
 										formulaDirtyCells.Add(referecedRange.Key);
