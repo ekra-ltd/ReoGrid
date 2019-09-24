@@ -28,14 +28,14 @@ namespace unvell.ReoGrid
 		/// Save workbook into file.
 		/// </summary>
 		/// <param name="path">File path to create file and save workbook data.</param>
-		void Save(string path);
+		void Save(string path, ExportOptions options = null);
 
 		/// <summary>
 		/// Save workbook into file.
 		/// </summary>
 		/// <param name="path">File path to create file and save workbook data.</param>
 		/// <param name="fileFormat">Specified file format used to write data of workbook.</param>
-		void Save(string path, IO.FileFormat fileFormat);
+		void Save(string path, IO.FileFormat fileFormat, ExportOptions options = null);
 
 		/// <summary>
 		/// Save workbook into file.
@@ -43,14 +43,14 @@ namespace unvell.ReoGrid
 		/// <param name="path">File path to create file and save workbook data.</param>
 		/// <param name="fileFormat">Specified file format used to write data of workbook.</param>
 		/// <param name="encoding">Encoding used to write plain-text format file data. (Optional)</param>
-		void Save(string path, IO.FileFormat fileFormat, Encoding encoding);
+		void Save(string path, IO.FileFormat fileFormat, Encoding encoding, ExportOptions options = null);
 
 		/// <summary>
 		/// Save workbook into stream.
 		/// </summary>
 		/// <param name="stream">Output stream to write data of workbook.</param>
 		/// <param name="fileFormat">Specifies the file format used to write data of workbook.</param>
-		void Save(System.IO.Stream stream, unvell.ReoGrid.IO.FileFormat fileFormat);
+		void Save(System.IO.Stream stream, unvell.ReoGrid.IO.FileFormat fileFormat, ExportOptions options = null);
 
 		/// <summary>
 		/// Save workbook into stream.
@@ -58,7 +58,7 @@ namespace unvell.ReoGrid
 		/// <param name="stream">Output stream to write data of workbook.</param>
 		/// <param name="fileFormat">Specifies the file format used to write data of workbook.</param>
 		/// <param name="encoding">Encoding used to write plain-text from resource. (Optional)</param>
-		void Save(System.IO.Stream stream, unvell.ReoGrid.IO.FileFormat fileFormat, Encoding encoding);
+		void Save(System.IO.Stream stream, unvell.ReoGrid.IO.FileFormat fileFormat, Encoding encoding, ExportOptions options = null);
 
 		/// <summary>
 		/// Load workbook from file by specified path.

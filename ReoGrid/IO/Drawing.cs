@@ -34,6 +34,6 @@ namespace unvell.ReoGrid.IO.OpenXML.Schema
         internal List<CT_Blip> _images_ForMicrosoftXsd;
 
         [XmlIgnore]
-        internal CT_ChartSpace _chartSpace;
+        internal List<CT_ChartSpace> _chartSpaces { get; set; } = new List<CT_ChartSpace>();
     }
 }

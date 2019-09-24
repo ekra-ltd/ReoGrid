@@ -86,7 +86,8 @@ namespace unvell.ReoGrid.IO
 		/// <param name="stream">Stream to output serialized data of workbook</param>
 		/// <param name="encoding">Encoding used to write plain-text file format</param>
 		/// <param name="arg">Arguments of format provider</param>
-		void Save(IWorkbook workbook, Stream stream, Encoding encoding, object arg);
+		/// <param name="options">Опции сохранения файла</param>
+		void Save(IWorkbook workbook, Stream stream, Encoding encoding, object arg, ExportOptions options = null);
 	}
 
 	#endregion // File Format Provider Interface
@@ -131,7 +132,7 @@ namespace unvell.ReoGrid.IO
 			sheet.LoadRGF(stream);
 		}
 
-		public void Save(IWorkbook workbook, Stream stream, Encoding encoding, object arg)
+		public void Save(IWorkbook workbook, Stream stream, Encoding encoding, object arg, ExportOptions options = null)
 		{
 			if (workbook.Worksheets == null || workbook.Worksheets.Count <= 0)
 			{
@@ -161,9 +162,9 @@ namespace unvell.ReoGrid.IO
 			unvell.ReoGrid.IO.OpenXML.ExcelReader.ReadStream(workbook, stream);
 		}
 
-		public void Save(IWorkbook workbook, Stream stream, Encoding encoding, object arg)
+		public void Save(IWorkbook workbook, Stream stream, Encoding encoding, object arg, ExportOptions options = null)
 		{
-			unvell.ReoGrid.IO.OpenXML.ExcelWriter.WriteStream(workbook, stream);
+			unvell.ReoGrid.IO.OpenXML.ExcelWriter.WriteStream(workbook, stream, options);
 		}
 	}
 

@@ -198,7 +198,25 @@ namespace unvell.ReoGrid.Utility
                 .Where(s => s != null);
         }
 
+        public static bool SplitAddress(string fullAddress, out string worksheetName, out string address)
+        {
+            var match = SPPositionRegex.Match(fullAddress);
+            if (match.Success)
+            {
+                var escaped = match.Groups["escapedworksheetname"].Value;
+                var name = match.Groups["worksheetname"].Value;
+                var cell = match.Groups["cellId"].Value;
 
+                if (string.IsNullOrEmpty(name))
+                    name = escaped;
+                worksheetName = name;
+                address = cell;
+                return true;
+            }
+            worksheetName = string.Empty;
+            address = string.Empty;
+            return false;
+        }
 
         #region Вспомогательные методы
 
@@ -232,6 +250,7 @@ namespace unvell.ReoGrid.Utility
 
         private static LexerBase _r1c1Lexer;
         private static LexerBase _a1Lexer;
+        private static Regex SPPositionRegex = new Regex("^((('(?<escapedworksheetname>(([^']+)|(''))+)')|(?<worksheetname>[^!']+))!)?(?<cellId>\\$?[A-Z]+\\$?[0-9]+(:\\$?[A-Z]+\\$?[0-9]+)?)$");
 
         #endregion
 

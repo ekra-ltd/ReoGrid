@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using unvell.ReoGrid.Drawing;
 using unvell.ReoGrid.Graphics;
 using unvell.ReoGrid.IO.OpenXML;
-using unvell.ReoGrid.IO.OpenXML.Schema;
 using unvell.ReoGrid.Rendering;
 using unvell.ReoGrid.Utility;
 
@@ -13,7 +12,7 @@ namespace unvell.ReoGrid.IO.Additional.Excel.FloatingObjects
     {
         #region DrawingObjectExporterBase
 
-        public override bool CanExport(IDrawingObject exportObject)
+        public override bool CanExport(IDrawingObject exportObject, ExportOptions options)
         {
             if (exportObject is ImageObject image)
             {
@@ -22,9 +21,9 @@ namespace unvell.ReoGrid.IO.Additional.Excel.FloatingObjects
             return false;
         }
 
-        public override void Export(Document doc, OpenXML.Schema.Worksheet sheet, OpenXML.Schema.Drawing drawing, Worksheet rgSheet, IDrawingObject exportObject)
+        public override void Export(Document doc, OpenXML.Schema.Worksheet sheet, OpenXML.Schema.Drawing drawing, Worksheet rgSheet, IDrawingObject exportObject, ExportOptions options)
         {
-            if (CanExport(exportObject))
+            if (CanExport(exportObject, options))
             {
                 WriteImage(doc, sheet, drawing, rgSheet, exportObject as ImageObject);
             }

@@ -18,8 +18,23 @@
 
 #if DRAWING
 
+/*
+ * Eсть два варианта отображения круговой диаграммы:
+ *     Эталонный, принятый в excel (отображаемые в диаграмме значения берутся из первого ряда данных)
+ *     реализованный в reogrid (отображаемые в диаграмме значения берутся из первого значения каждого ряда)
+ * К сожалению, если реализовавывать правильный вариант - то придется дорабатываться студию и вставлять два костыля (один 
+ * в студию, другой в скада). Так как изначально настройка была реализована по варианту reogrid. Кастыли в студии 
+ * выглядят ужасно, поэтому лучше вставить один кастыль сюда в код экспорта в excel
+ *     
+ *     WORKAROUND_PIE_CHART - указывает на то что используется кастыль в reogrid,
+ *     иначе используется вариант excel
+ */
+
+#define WORKAROUND_PIE_CHART
+
 using System;
 using System.Collections.Generic;
+using System.Linq;
 
 #if WINFORM || ANDROID
 using RGFloat = System.Single;
@@ -42,6 +57,17 @@ namespace unvell.ReoGrid.Chart
 		internal virtual List<RGFloat> PlotPieAngles { get; private set; }
 		internal virtual PiePlotView PiePlotView { get; private set; }
 
+		internal bool UseReogridWorkaround
+		{
+			get
+			{
+#if WORKAROUND_PIE_CHART
+				return true;
+#else
+                return false;
+#endif
+			}
+		}
 		/// <summary>
 		/// Creates pie chart instance.
 		/// </summary>
@@ -56,7 +82,7 @@ namespace unvell.ReoGrid.Chart
 		#region Legend
 		protected override ChartLegend CreateChartLegend(LegendType type)
 		{
-			var chartLegend = base.CreateChartLegend(type);
+			var chartLegend = UseReogridWorkaround ? base.CreateChartLegend(type) : new PieChartLegend(this);
 
 			if (type == LegendType.PrimaryLegend)
 			{
@@ -112,74 +138,113 @@ namespace unvell.ReoGrid.Chart
 		/// </summary>
 		protected override void UpdatePlotData()
 		{
-			var ds = this.DataSource;
-
-			if (ds == null) return;
-
-			double sum = 0;
-
-			if (ds != null && ds.SerialCount > 0)
-			{
-				for (int index = 0; index < ds.SerialCount; index++)
-				{
-					double? data = ds[index][0];
-
-					if (data != null)
-					{
-						sum += (double)data;
-					}
-				}
-			}
-
-			this.DataInfo.Total = sum;
-
-			this.UpdatePlotPoints();
+			if (DataSource == null) return;
+			DataInfo.Total = CalculateTotal();
+			UpdatePlotPoints();
 		}
 
+		private double CalculateTotal() =>
+			EnumeratePieValues().Sum();
+		
 		/// <summary>
-		/// Update plot calculation points.
-		/// </summary>
-		protected virtual void UpdatePlotPoints()
+        /// Update plot calculation points.
+        /// </summary>
+        protected virtual void UpdatePlotPoints()
+        {
+            if (DataSource != null && DataSource.SerialCount > 0)
+            {
+                RGFloat scale = (RGFloat)(360.0 / DataInfo.Total);
+                var i = 0;
+                foreach (var val in EnumeratePieValues())
+                {
+                    var angle = (RGFloat)(val * scale);
+
+                    if (i >= PlotPieAngles.Count)
+                    {
+                        PlotPieAngles.Add(angle);
+                    }
+                    else
+                    {
+                        PlotPieAngles[i] = angle;
+                    }
+                    i++;
+                }
+            }
+            else
+            {
+                PlotPieAngles.Clear();
+            }
+
+            PiePlotView?.Invalidate();
+        }
+
+        private IEnumerable<RGFloat> EnumeratePieValues()
+        {
+            if (UseReogridWorkaround)
+            {
+                for (var index = 0; index < DataSource.SerialCount; index++)
+                {
+                    if (DataSource[index][0] is RGFloat data)
+                    {
+                        yield return data;
+                    }
+                    else
+                    {
+                        yield return (RGFloat) 0;
+                    }
+                }
+            }
+            else
+            {
+                if (DataSource.SerialCount > 0)
+                {
+                    for (var index = 0; index < DataSource[0].Count; index++)
+                    {
+                        if (DataSource[0][index] is RGFloat data)
+                        {
+                            yield return data;
+                        }
+                        else
+                        {
+                            yield return (RGFloat)0;
+                        }
+                    }
+                }
+            }
+        }
+		#endregion // Update Draw Points
+		
+		#region Переопределенные методы
+
+		protected override void ResetDataSerialStyles()
 		{
-			var ds = this.DataSource;
-
-			if (ds != null)
+			if (UseReogridWorkaround)
 			{
-				int dataCount = ds.SerialCount;
-
-				var clientRect = this.ClientBounds;
-				RGFloat scale = (RGFloat)(360.0 / this.DataInfo.Total);
-
-				for (int i = 0; i < dataCount; i++)
-				{
-					var data = ds[i][0];
-
-					if (data != null)
-					{
-						RGFloat angle = (RGFloat)(data * scale);
-
-						if (i >= this.PlotPieAngles.Count)
-						{
-							this.PlotPieAngles.Add(angle);
-						}
-						else
-						{
-							this.PlotPieAngles[i] = angle;
-						}
-					}
-				}
+				base.ResetDataSerialStyles();
 			}
 			else
 			{
-				this.PlotPieAngles.Clear();
-			}
+				var ds = DataSource;
+				if (ds == null) return;
 
-			if (this.PiePlotView != null)
-			{
-				this.PiePlotView.Invalidate();
+				if (ds.SerialCount <= 0 || ds[0].Count <= 0)
+				{
+					serialStyles.Clear();
+				}
+				int dataSerialCount = ds[0].Count;
+				while (serialStyles.Count < dataSerialCount)
+				{
+					serialStyles.Add(new DataSerialStyle(this)
+					{
+						FillColor = ChartUtility.GetDefaultDataSerialFillColor(serialStyles.Count),
+						LineColor = ChartUtility.GetDefaultDataSerialFillColor(serialStyles.Count),
+						LineWidth = 2f,
+					});
+				}
 			}
 		}
-		#endregion // Update Draw Points
+
+		#endregion
 	}
 	
 	/// <summary>
@@ -221,30 +286,38 @@ namespace unvell.ReoGrid.Chart
 
 		protected virtual void UpdatePieShapes()
 		{
-			var pieChart = this.Chart as PieChart;
-			if (pieChart == null) return;
-
-			var ds = this.Chart.DataSource;
-			if (ds != null)
+			if (Chart is PieChart pieChart)
 			{
-				var dataCount = ds.SerialCount;
-				RGFloat currentAngle = 0;
-
-				for (int i = 0; i < dataCount && i < pieChart.PlotPieAngles.Count; i++)
+				var ds = Chart.DataSource;
+				if (ds != null && ds.SerialCount > 0)
 				{
-					RGFloat angle = pieChart.PlotPieAngles[i];
-
-					if (i >= this.PlotPieShapes.Count)
+					var dataCount = 0;
+					if (pieChart.UseReogridWorkaround)
 					{
-						this.PlotPieShapes.Add(CreatePieShape(this.ClientBounds));
+						dataCount = ds.SerialCount;
 					}
+					else
+					{
+						dataCount = ds[0].Count;
+					}
+					RGFloat currentAngle = 0;
 
-					var pie = this.PlotPieShapes[i];
-					pie.StartAngle = currentAngle;
-					pie.SweepAngle = angle;
-					pie.FillColor = pieChart.DataSerialStyles[i].FillColor;
+					for (var i = 0; i < dataCount && i < pieChart.PlotPieAngles.Count; i++)
+					{
+						RGFloat angle = pieChart.PlotPieAngles[i];
 
-					currentAngle += angle;
+						if (i >= PlotPieShapes.Count)
+						{
+							PlotPieShapes.Add(CreatePieShape(ClientBounds));
+						}
+
+						var pie = PlotPieShapes[i];
+						pie.StartAngle = currentAngle;
+						pie.SweepAngle = angle;
+						pie.FillColor = pieChart.DataSerialStyles[i].FillColor;
+
+						currentAngle += angle;
+					}
 				}
 			}
 		}
@@ -323,6 +396,37 @@ namespace unvell.ReoGrid.Chart
 				LineColor = SolidColor.White,
 			};
 		}
+	}
+	
+	public class PieChartLegend: ChartLegend
+	{
+		public PieChartLegend(IChart chart) : base(chart)
+		{
+		}
+
+		#region Переопределенные методы
+
+		protected override int GetLegendItemsCount()
+		{
+			var serialCount = Chart?.DataSource?.SerialCount;
+			if (serialCount.HasValue && serialCount.Value >= 0)
+			{
+				return Chart.DataSource[0].Count;
+			}
+			return 0;
+		}
+
+		public override string GetLegendLabel(int index)
+		{
+			if (index >= 0 && index < Chart.DataSource.CategoryCount)
+			{
+				return Chart.DataSource.GetCategoryName(index) ?? string.Empty;
+			}
+			return string.Empty;
+		}
+
+
+		#endregion
 	}
 }
 

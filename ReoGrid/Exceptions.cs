@@ -793,4 +793,44 @@ namespace unvell.ReoGrid
 		}
 	}
 	#endregion // IO Exceptions
+	
+	#region
+
+	internal enum CombineSequentalCellPostionsExceptionCode
+	{
+		/// <summary>
+		/// Послоедовательность пустая
+		/// </summary>
+		SequinceIsEmpty,
+		/// <summary>
+		/// В последовательности разные листы
+		/// </summary>
+		DifferentWorkshetsInSequence,
+		/// <summary>
+		/// Данные находятся не в одной строке или колонке
+		/// </summary>
+		NotSameRowOrColumn,
+		/// <summary>
+		/// Последовательность с пропусками
+		/// </summary>
+		ErrorInSequence,
+
+
+	}
+
+	internal class CombineSequentalCellPostionsException : Exception
+	{
+		public CombineSequentalCellPostionsException(CombineSequentalCellPostionsExceptionCode code)
+		{
+			Code = code;
+		}
+
+		#region Свойства
+
+		public CombineSequentalCellPostionsExceptionCode Code { get; }
+
+		#endregion
+	}
+
+	#endregion
 }

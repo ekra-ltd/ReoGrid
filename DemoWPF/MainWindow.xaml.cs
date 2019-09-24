@@ -174,7 +174,7 @@ namespace unvell.ReoGrid.WPFDemo
                 //},
                 DataSource = new WorksheetChartDataSource(worksheet, "B2:F2", "B3:F6", RowOrColumn.Column)
                 {
-                	CategoryNameRange = new RangePosition("A3:A6"),
+                    CategoryNameRange = new WorksheetedRangePosition(worksheet, "A3:A6"),
                 },
             };
 
@@ -250,7 +250,7 @@ namespace unvell.ReoGrid.WPFDemo
                     //},
                     DataSource = new WorksheetChartDataSource(worksheet, "B2:F2", "B3:F6", RowOrColumn.Column)
                     {
-                        CategoryNameRange = new RangePosition("A3:A6"),
+                        CategoryNameRange = new WorksheetedRangePosition(worksheet, "A3:A6"),
                     },
                 };
 

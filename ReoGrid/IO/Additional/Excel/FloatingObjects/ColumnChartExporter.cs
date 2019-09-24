@@ -2,26 +2,26 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
-using System.Linq;
-using System.Windows.Media.Imaging;
-using unvell.ReoGrid.Chart;
+using System.Windows.Controls.Primitives;
 using unvell.ReoGrid.Drawing;
+using unvell.ReoGrid.Formula;
 using unvell.ReoGrid.IO.OpenXML;
 using unvell.ReoGrid.IO.OpenXML.Schema;
-using ChartType = unvell.ReoGrid.Chart.Pie2DChart;
+
+using ChartType = unvell.ReoGrid.Chart.ColumnChart;
+using BarChartType = unvell.ReoGrid.Chart.BarChart;
 
 namespace unvell.ReoGrid.IO.Additional.Excel.FloatingObjects
 {
-    class Pie2DChartExporter : DrawingObjectExporterBase
+    class ColumnChartExporter : DrawingObjectExporterBase
     {
-        #region DrawingObjectExporterBase
+#region DrawingObjectExporterBase
 
         public override void Export(Document doc, OpenXML.Schema.Worksheet sheet, OpenXML.Schema.Drawing drawing, Worksheet rgSheet, IDrawingObject exportObject, ExportOptions options)
         {
             if (CanExport(exportObject, options))
             {
-                // Здесь будет сохранение pie chart
-                WriteChart(doc, sheet, drawing, rgSheet, exportObject as Pie2DChart);
+                WriteChart(doc, sheet, drawing, rgSheet, exportObject as ChartType);
             }
             else
             {
@@ -34,7 +34,7 @@ namespace unvell.ReoGrid.IO.Additional.Excel.FloatingObjects
             return options?.ExportCharts == true && exportObject is ChartType;
         }
 
-        #endregion
+#endregion
 
         private static void WriteChart(
             Document doc,
@@ -48,7 +48,7 @@ namespace unvell.ReoGrid.IO.Additional.Excel.FloatingObjects
                 drawing.twoCellAnchors = new List<CT_TwoCellAnchor>();
             }
 
-            string typeName = /*chart.GetFriendlyTypeName()*/ "Pie2DChart";
+            string typeName = GetTypename(chart);
 
             drawing._typeObjectCount.TryGetValue(typeName, out var typeObjCount);
             typeObjCount++;
@@ -82,8 +82,8 @@ namespace unvell.ReoGrid.IO.Additional.Excel.FloatingObjects
                     },
                     xfrm = new CT_Transform2D
                     {
-                        off = new CT_Point2D { x = 0, y = 0},
-                        ext = new CT_PositiveSize2D { cx = 0, cy = 0},
+                        off = new CT_Point2D { x = 0, y = 0 },
+                        ext = new CT_PositiveSize2D { cx = 0, cy = 0 },
                     },
 
                     graphic = new CT_GraphicalObject
@@ -101,15 +101,20 @@ namespace unvell.ReoGrid.IO.Additional.Excel.FloatingObjects
                 clientData = new CT_AnchorClientData(),
             };
 
-            // Далее надо заполнить chartSpaceCreationResult и куда то его 
-            // записать так чтобы он сериализовался (изучить reogrid)
             drawing._chartSpaces.Add(chartSpaceCreationResult.Result);
             drawing.twoCellAnchors.Add(twoCellAnchor);
 
             FillChartSpace(chartSpaceCreationResult.Result, chart);
         }
 
-        private static void FillChartSpace(CT_ChartSpace space, Pie2DChart chart)
+        private static string GetTypename(ChartType chart)
+        {
+            return chart is BarChartType ? @"BarChart" : @"ColumnChart";
+        }
+
+        
+
+        private static void FillChartSpace(CT_ChartSpace space, ChartType chart)
         {
             space.date1904 = new CT_Boolean { val = false };
             space.lang = new CT_TextLanguageID
@@ -117,7 +122,14 @@ namespace unvell.ReoGrid.IO.Additional.Excel.FloatingObjects
                 val = "ru-RU",
             };
             space.roundedCorners = new CT_Boolean { val = false };
-            //пропущен <mc:AlternateContent xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006">
+
+
+#warning  пропущен <mc:AlternateContent xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006">
+            var axId = new CT_UnsignedInt { val = 158564480 };
+            var valId = new CT_UnsignedInt { val = 158569576 };
+            var catAx = CreateCatAx(axId, valId, chart.DataSource.CategoryNameRange == null);
+            var valAx = CreateValAx(valId, axId);
+
             space.chart = new CT_Chart
             {
                 title = new CT_Title
@@ -153,7 +165,7 @@ namespace unvell.ReoGrid.IO.Additional.Excel.FloatingObjects
                                         defRPr = new CT_TextCharacterProperties
                                         {
                                             sz = 1400, szSpecified = true,
-                                            b=false, bSpecified = true,
+                                            b = false, bSpecified = true,
                                             i = false, iSpecified =  true,
                                             u = ST_TextUnderlineType.none, uSpecified = true,
                                             strike = ST_TextStrikeType.noStrike, strikeSpecified = true,
@@ -199,13 +211,20 @@ namespace unvell.ReoGrid.IO.Additional.Excel.FloatingObjects
                     {
                         bodyPr = new CT_TextBodyProperties
                         {
-                            rot = 0, rotSpecified = true,
-                            spcFirstLastPara = true, spcFirstLastParaSpecified = true,
-                            vertOverflow = ST_TextVertOverflowType.ellipsis, vertOverflowSpecified = true,
-                            vert = ST_TextVerticalType.horz, vertSpecified = true,
-                            wrap = ST_TextWrappingType.square, wrapSpecified = true,
-                            anchor = ST_TextAnchoringType.ctr, anchorSpecified = true,
-                            anchorCtr = true, anchorCtrSpecified = true,
+                            rot = 0,
+                            rotSpecified = true,
+                            spcFirstLastPara = true,
+                            spcFirstLastParaSpecified = true,
+                            vertOverflow = ST_TextVertOverflowType.ellipsis,
+                            vertOverflowSpecified = true,
+                            vert = ST_TextVerticalType.horz,
+                            vertSpecified = true,
+                            wrap = ST_TextWrappingType.square,
+                            wrapSpecified = true,
+                            anchor = ST_TextAnchoringType.ctr,
+                            anchorSpecified = true,
+                            anchorCtr = true,
+                            anchorCtrSpecified = true,
                         },
                         lstStyle = new CT_TextListStyle(),
                         p = new[]
@@ -249,10 +268,13 @@ namespace unvell.ReoGrid.IO.Additional.Excel.FloatingObjects
                     layout = new CT_Layout(),
                     Items = new object[]
                     {
-                        new CT_PieChart
+                        new CT_BarChart
                         {
-                            varyColors = new CT_Boolean{val = true,},
-                            ser = CreatePieSerArray(space, chart),
+                            barDir = new CT_BarDir{ val = chart is BarChartType ? ST_BarDir.bar : ST_BarDir.col},
+                            grouping = new CT_BarGrouping{val = ST_BarGrouping.clustered},
+                            varyColors = new CT_Boolean{val = false,},          // Видимо цвета придется задавать вручную =(
+                            // !<------
+                            ser = CreateColSerArray(space, chart),
                             dLbls = new CT_DLbls
                             {
                                 ItemsElementName = new[]
@@ -263,7 +285,6 @@ namespace unvell.ReoGrid.IO.Additional.Excel.FloatingObjects
                                     ItemsChoiceType2.showSerName,
                                     ItemsChoiceType2.showPercent,
                                     ItemsChoiceType2.showBubbleSize,
-                                    ItemsChoiceType2.showLeaderLines,
                                 },
                                 Items = new object[]
                                 {
@@ -273,12 +294,19 @@ namespace unvell.ReoGrid.IO.Additional.Excel.FloatingObjects
                                     new CT_Boolean{val = false},// <c:showSerName val="0"/>
                                     new CT_Boolean{val = false},// <c:showPercent val="0"/>
                                     new CT_Boolean{val = false},// <c:showBubbleSize val="0"/>
-                                    new CT_Boolean{val = true},// <c:showLeaderLines val="1"/>
                                 },
                             },
-                            firstSliceAng = new CT_FirstSliceAng{val = 0},
+                            gapWidth = new CT_GapAmount{ val = 150}, 
+                            // smooth = new CT_Boolean{val = false,},
+                            axId = new CT_UnsignedInt[]{ catAx.axId, valAx.axId},
+                            //firstSliceAng = new CT_FirstSliceAng{val = 0},
                         },//CT_PieChart
                     },//Items
+                    Items1 = new object[]
+                    {
+                        catAx,
+                        valAx,
+                    },
                     spPr = new CT_ShapeProperties
                     {
                         noFill = new CT_NoFillProperties { },
@@ -289,87 +317,28 @@ namespace unvell.ReoGrid.IO.Additional.Excel.FloatingObjects
                         effectLst = new CT_EffectList { }
                     },
                 },
-                // legend = new CT_Legend
-                // {
-                //     legendPos = new CT_LegendPos { val = ST_LegendPos.b},
-                //     layout = new CT_Layout { },
-                //     overlay = new CT_Boolean { val = false},
-                //     spPr = new CT_ShapeProperties
-                //     {
-                //         noFill = new CT_NoFillProperties { },
-                //         ln = new CT_LineProperties
-                //         {
-                //             noFill = new CT_NoFillProperties { }
-                //         },
-                //         effectLst = new CT_EffectList { }
-                //     },
-                //     txPr = new CT_TextBody
-                //     {
-                //         bodyPr = new CT_TextBodyProperties
-                //         {
-                //             rot = 0, rotSpecified = true,
-                //             spcFirstLastPara = true, spcFirstLastParaSpecified = true,
-                //             vertOverflow = ST_TextVertOverflowType.ellipsis, vertOverflowSpecified = true,
-                //             vert = ST_TextVerticalType.horz, vertSpecified = true,
-                //             wrap = ST_TextWrappingType.square, wrapSpecified = true,
-                //             anchor = ST_TextAnchoringType.ctr, anchorSpecified = true,
-                //             anchorCtr = true, anchorCtrSpecified = true,
-                //         },
-                //         lstStyle = new CT_TextListStyle{},
-                //         p = new CT_TextParagraph[]
-                //         {
-                //             new CT_TextParagraph
-                //             {
-                //                 pPr = new CT_TextParagraphProperties
-                //                 {
-                //                     rtl = false, rtlSpecified = true,
-                //                     defRPr = new CT_TextCharacterProperties
-                //                     {
-                //                         sz = 900, szSpecified = true,
-                //                         b = false, bSpecified = true,
-                //                         i = false, iSpecified = true,
-                //                         u = ST_TextUnderlineType.none, uSpecified = true,
-                //                         strike = ST_TextStrikeType.noStrike, strikeSpecified = true,
-                //                         kern = 1200, kernSpecified = true,
-                //                         baseline = 0, baselineSpecified = true,
-                //                         solidFill = new CT_SolidColorFillProperties
-                //                         {
-                //                             schemeClr = new CT_SchemeColor
-                //                             {
-                //                                 val =ST_SchemeColorVal.tx1,
-                //                                 lumMod = new []{new CT_Percentage { val = 65000}},  // TODO тут массив а в файле значение
-                //                                 lumOff = new []{new CT_Percentage { val = 35000}},  // TODO тут массив а в файле значение
-                //                             }
-                //                         },
-                //                         latin = new CT_TextFont{typeface = @"+mn-lt"},              // TODO непонятная константа
-                //                         ea = new CT_TextFont{typeface = @"+mn-ea"},              // TODO непонятная константа
-                //                         cs = new CT_TextFont{typeface = @"+mn-cs"},              // TODO непонятная константа
-                //                     },
-                //                 },
-                //                 endParaRPr = new CT_TextCharacterProperties{lang = @"ru-RU"} // TODO непонятно от чего зависит
-                //             }
-                //         }
-                //         
-                //     }
-                // },
                 legend = CreateLegend(chart),
-                plotVisOnly = new CT_Boolean { val = true},
-                dispBlanksAs = new CT_DispBlanksAs { val = ST_DispBlanksAs.gap},
-                showDLblsOverMax = new CT_Boolean { val = false}
+                plotVisOnly = new CT_Boolean { val = true },
+                dispBlanksAs = new CT_DispBlanksAs { val = ST_DispBlanksAs.gap },
+                showDLblsOverMax = new CT_Boolean { val = false }
             };
 
             space.spPr = new CT_ShapeProperties
             {
                 solidFill = new CT_SolidColorFillProperties
                 {
-                    schemeClr = new CT_SchemeColor { val = ST_SchemeColorVal.bg1}
+                    schemeClr = new CT_SchemeColor { val = ST_SchemeColorVal.bg1 }
                 },
                 ln = new CT_LineProperties
                 {
-                    w = 9525, wSpecified = true,
-                    cap = ST_LineCap.flat, capSpecified = true,
-                    cmpd = ST_CompoundLine.sng, cmpdSpecified = true,
-                    algn= ST_PenAlignment.ctr, algnSpecified = true,
+                    w = 9525,
+                    wSpecified = true,
+                    cap = ST_LineCap.flat,
+                    capSpecified = true,
+                    cmpd = ST_CompoundLine.sng,
+                    cmpdSpecified = true,
+                    algn = ST_PenAlignment.ctr,
+                    algnSpecified = true,
                     solidFill = new CT_SolidColorFillProperties
                     {
                         schemeClr = new CT_SchemeColor
@@ -379,7 +348,7 @@ namespace unvell.ReoGrid.IO.Additional.Excel.FloatingObjects
                             lumOff = new[] { new CT_Percentage { val = 85000 } },
                         },
                     },
-                    round = new CT_LineJoinRound {},
+                    round = new CT_LineJoinRound { },
                 },
                 effectLst = new CT_EffectList()
             };
@@ -416,7 +385,7 @@ namespace unvell.ReoGrid.IO.Additional.Excel.FloatingObjects
             if (!chart.ShowLegend) return null;
             return new CT_Legend
             {
-                legendPos = new CT_LegendPos { val = ST_LegendPos.b },
+                legendPos = new CT_LegendPos { val = ST_LegendPos.r },
                 layout = new CT_Layout { },
                 overlay = new CT_Boolean { val = false },
                 spPr = new CT_ShapeProperties
@@ -486,35 +455,295 @@ namespace unvell.ReoGrid.IO.Additional.Excel.FloatingObjects
             };
         }
 
-        private static CT_PieSer[] CreatePieSerArray(CT_ChartSpace space, Pie2DChart chart)
+        private static CT_CatAx CreateCatAx(CT_UnsignedInt id, CT_UnsignedInt crossId, bool delete)
         {
-            var count = WaGetSerialCount(chart);
-            var result = new CT_PieSer[count];
+            CT_ShapeProperties spPr = null;
+            CT_TextBody txPr = null;
+            if (!delete)
+            {
+                spPr = new CT_ShapeProperties
+                {
+                    noFill = new CT_NoFillProperties(),
+                    ln = new CT_LineProperties
+                    {
+                        w = 9525,
+                        wSpecified = true,
+                        cap = ST_LineCap.flat,
+                        capSpecified = true,
+                        cmpd = ST_CompoundLine.sng,
+                        cmpdSpecified = true,
+                        algn = ST_PenAlignment.ctr,
+                        algnSpecified = true,
+                        solidFill = new CT_SolidColorFillProperties
+                        {
+                            schemeClr = new CT_SchemeColor
+                            {
+                                val = ST_SchemeColorVal.tx1,
+                                lumMod = new[] {new CT_Percentage {val = 15000}},
+                                lumOff = new[] {new CT_Percentage {val = 85000}},
+                            },
+                        },
+                        round = new CT_LineJoinRound { },
+                    },
+                    effectLst = new CT_EffectList(),
+                };
+                txPr = new CT_TextBody
+                {
+                    bodyPr = new CT_TextBodyProperties
+                    {
+                        rot = -60000000,
+                        rotSpecified = true,
+                        spcFirstLastPara = true,
+                        spcFirstLastParaSpecified = true,
+                        vertOverflow = ST_TextVertOverflowType.ellipsis,
+                        vertOverflowSpecified = true,
+                        vert = ST_TextVerticalType.horz,
+                        vertSpecified = true,
+                        wrap = ST_TextWrappingType.square,
+                        wrapSpecified = true,
+                        anchor = ST_TextAnchoringType.ctr,
+                        anchorSpecified = true,
+                        anchorCtr = true,
+                        anchorCtrSpecified = true,
+                    },
+                    lstStyle = new CT_TextListStyle(),
+                    p = new[]
+                    {
+                        new CT_TextParagraph
+                        {
+                            pPr = new CT_TextParagraphProperties
+                            {
+                                defRPr = new CT_TextCharacterProperties
+                                {
+                                    sz = 900,
+                                    szSpecified = true,
+                                    b = false,
+                                    bSpecified = true,
+                                    i = false,
+                                    iSpecified = false,
+                                    u = ST_TextUnderlineType.none,
+                                    uSpecified = true,
+                                    strike = ST_TextStrikeType.noStrike,
+                                    strikeSpecified = true,
+                                    kern = 1200,
+                                    kernSpecified = true,
+                                    baseline = 0,
+                                    baselineSpecified = true,
+                                    solidFill = new CT_SolidColorFillProperties
+                                    {
+                                        schemeClr = new CT_SchemeColor
+                                        {
+                                            val = ST_SchemeColorVal.tx1,
+                                            lumMod = new[] {new CT_Percentage {val = 65000}},
+                                            lumOff = new[] {new CT_Percentage {val = 35000}},
+                                        }
+                                    },
+
+                                    latin = new CT_TextFont {typeface = @"+mn-lt"},
+                                    ea = new CT_TextFont {typeface = @"+mn-ea"},
+                                    cs = new CT_TextFont {typeface = @"+mn-cs"},
+                                }
+                            },
+                            endParaRPr = new CT_TextCharacterProperties {lang = "ru-RU"}
+                        }
+                    }
+                };
+            }
+            return new CT_CatAx
+            {
+                axId = id,
+                scaling = new CT_Scaling { orientation = new CT_Orientation { val = ST_Orientation.minMax } },
+                delete = new CT_Boolean { val = delete },
+                axPos = new CT_AxPos { val = ST_AxPos.b },
+                numFmt = new CT_NumFmt { formatCode = @"General", sourceLinked = true, sourceLinkedSpecified = true },
+                majorTickMark = new CT_TickMark { val = ST_TickMark.none, },
+                minorTickMark = new CT_TickMark { val = ST_TickMark.none, },
+                tickLblPos = new CT_TickLblPos { val = ST_TickLblPos.nextTo, },
+                spPr = spPr,
+                txPr = txPr,
+                crossAx = crossId,
+#warning <c:crosses val="autoZero"/> пропущен
+                auto = new CT_Boolean { val = true },
+                lblAlgn = new CT_LblAlgn { val = ST_LblAlgn.ctr },
+                lblOffset = new CT_LblOffset { val = 100 },                      // непонятно что значит
+                noMultiLvlLbl = new CT_Boolean { val = false },
+            };
+        }
+
+        private static CT_ValAx CreateValAx(CT_UnsignedInt id, CT_UnsignedInt crossId)
+        {
+            return new CT_ValAx
+            {
+                axId = id,
+                scaling = new CT_Scaling { orientation = new CT_Orientation { val = ST_Orientation.minMax } },
+                delete = new CT_Boolean { val = false },
+                axPos = new CT_AxPos { val = ST_AxPos.l },
+                majorGridlines = new CT_ChartLines
+                {
+                    spPr = new CT_ShapeProperties
+                    {
+                        ln = new CT_LineProperties
+                        {
+                            w = 9525,
+                            wSpecified = true,
+                            cap = ST_LineCap.flat,
+                            capSpecified = true,
+                            cmpd = ST_CompoundLine.sng,
+                            cmpdSpecified = true,
+                            algn = ST_PenAlignment.ctr,
+                            algnSpecified = true,
+                            solidFill = new CT_SolidColorFillProperties
+                            {
+                                schemeClr = new CT_SchemeColor
+                                {
+                                    val = ST_SchemeColorVal.tx1,
+                                    lumMod = new[] { new CT_Percentage { val = 15000 } },
+                                    lumOff = new[] { new CT_Percentage { val = 85000 } },
+                                },
+                            },
+                            round = new CT_LineJoinRound(),
+                        },
+                        effectLst = new CT_EffectList(),
+                    }
+                },
+                numFmt = new CT_NumFmt { formatCode = @"General", sourceLinked = true, sourceLinkedSpecified = true },
+                majorTickMark = new CT_TickMark { val = ST_TickMark.none, },
+                minorTickMark = new CT_TickMark { val = ST_TickMark.none, },
+                tickLblPos = new CT_TickLblPos { val = ST_TickLblPos.nextTo, },
+                spPr = new CT_ShapeProperties
+                {
+                    noFill = new CT_NoFillProperties(),
+                    ln = new CT_LineProperties
+                    {
+                        noFill = new CT_NoFillProperties(),
+                    },
+                    effectLst = new CT_EffectList(),
+                },
+                txPr = new CT_TextBody
+                {
+                    bodyPr = new CT_TextBodyProperties
+                    {
+                        rot = -60000000,
+                        rotSpecified = true,
+                        spcFirstLastPara = true,
+                        spcFirstLastParaSpecified = true,
+                        vertOverflow = ST_TextVertOverflowType.ellipsis,
+                        vertOverflowSpecified = true,
+                        vert = ST_TextVerticalType.horz,
+                        vertSpecified = true,
+                        wrap = ST_TextWrappingType.square,
+                        wrapSpecified = true,
+                        anchor = ST_TextAnchoringType.ctr,
+                        anchorSpecified = true,
+                        anchorCtr = true,
+                        anchorCtrSpecified = true,
+                    },
+                    lstStyle = new CT_TextListStyle(),
+                    p = new[]
+                    {
+                        new CT_TextParagraph
+                        {
+                            pPr = new CT_TextParagraphProperties
+                            {
+                                defRPr = new CT_TextCharacterProperties
+                                {
+                                    sz = 900, szSpecified = true,
+                                      b = false, bSpecified = true,
+                                      i = false, iSpecified = false,
+                                      u = ST_TextUnderlineType.none, uSpecified = true,
+                                      strike = ST_TextStrikeType.noStrike, strikeSpecified = true,
+                                      kern = 1200, kernSpecified = true,
+                                      baseline = 0, baselineSpecified = true,
+                                      solidFill = new CT_SolidColorFillProperties
+                                      {
+                                          schemeClr = new CT_SchemeColor
+                                          {
+                                              val = ST_SchemeColorVal.tx1,
+                                              lumMod = new []{ new CT_Percentage{ val = 65000}},
+                                              lumOff = new []{ new CT_Percentage{ val = 35000}},
+                                          }
+                                      },
+
+                                    latin = new CT_TextFont{typeface = @"+mn-lt"},
+                                    ea = new CT_TextFont{typeface = @"+mn-ea"},
+                                    cs = new CT_TextFont{typeface = @"+mn-cs"},
+                                }
+                            },
+                            endParaRPr = new CT_TextCharacterProperties{lang = "ru-RU"}
+                        }
+                    }
+                },
+                crossAx = crossId,
+#warning <c:crosses val="autoZero"/> пропущен
+                crossBetween = new CT_CrossBetween { val = ST_CrossBetween.between },
+            };
+        }
+
+        private static CT_BarSer[] CreateColSerArray(CT_ChartSpace space, ChartType chart)
+        {
+            var count = (uint)chart.DataSource.SerialCount;
+            var result = new CT_BarSer[count];
             for (uint i = 0; i < count; i++)
             {
-                result[i] = CreatePieSer(space, chart, i);
+                result[i] = CreateColSer(space, chart, i);
             }
             return result;
         }
 
-        private static CT_PieSer CreatePieSer(CT_ChartSpace space, Pie2DChart chart, uint index)
+        private static CT_BarSer CreateColSer(CT_ChartSpace space, ChartType chart, uint index)
         {
-            var catRange = WaCategoryNameRange(chart);
-            var valRange = WaDataRange(chart, index); 
+            var catRange = chart.DataSource.CategoryNameRange;
+            var serial = chart.DataSource.Serials[(int)index];
+            var valRange = serial.DataRange;
+
 
             CT_AxDataSource cat = null;
-            if (index == 0 && catRange != null)
+            if (catRange != null)
             {
-                cat = new CT_AxDataSource { Item = CreateCatReference(catRange) };    // Категории только для первого ser(ряда)
+                cat = new CT_AxDataSource {Item = CreateCatReference(catRange)};
             }
 
-            return new CT_PieSer
+            return new CT_BarSer
             {
-                idx = new CT_UnsignedInt {val = index}, // порядковый номер
-                order = new CT_UnsignedInt {val = index}, // ? что означает, может порядок в котором следуют значения?
-                dPt = CreateDataPoints(space, chart),
+                idx = new CT_UnsignedInt { val = index },
+                order = new CT_UnsignedInt { val = index },
+                tx = GetSerialTx(serial.LabelAddress, serial.Label),            // tx - имя ряда
+                spPr = new CT_ShapeProperties
+                {
+                    solidFill = new CT_SolidColorFillProperties
+                    {
+                        schemeClr = new CT_SchemeColor { val = GetCyclicSchemeColor(index) },
+                    },
+                    ln = new CT_LineProperties
+                    {
+                       noFill = new CT_NoFillProperties(),
+                    },
+                    effectLst = new CT_EffectList { },
+                },
+                invertIfNegative = new CT_Boolean { val = false},
                 cat = cat,
-                val = new CT_NumDataSource {Item = CreateNumRef(valRange) },    // Для каждого ser
+                val = new CT_NumDataSource { Item = CreateNumRef(valRange) },    // Для каждого ser
+#warning В исходном документе присутствует <c:smooth val="0"/>, здесь его нет
+            };
+        }
+
+        [Obsolete("Вынести этот метод уже в базовый класс")]
+        private static CT_SerTx GetSerialTx(WorksheetedCellPosition position, string label)
+        {
+            if (position is null || position.Position.IsEmpty)
+            {
+                return new CT_SerTx { Item = label ?? string.Empty };
+            }
+            return new CT_SerTx { Item = CreateStrRef(position) };
+        }
+
+
+        private static object CreateStrRef(WorksheetedCellPosition position)
+        {
+            return new CT_StrRef
+            {
+                f = FormulaExtension.ConcatAddress(position.Worksheet, position.Position.ToAbsoluteAddress()),
+                strCache = GetStrData(position)
             };
         }
 
@@ -525,6 +754,21 @@ namespace unvell.ReoGrid.IO.Additional.Excel.FloatingObjects
             {
                 f = position.ToExcelFormula(),
                 strCache = GetStrData(position)
+            };
+        }
+
+        private static CT_StrData GetStrData(WorksheetedCellPosition position)
+        {
+            uint count = 1;
+            var values = new List<CT_StrVal>();
+            for (uint i = 0; i < count; i++)
+            {
+                values.Add(GetStrVal(position, i));
+            }
+            return new CT_StrData
+            {
+                ptCount = new CT_UnsignedInt { val = (uint)values.Count },
+                pt = values.ToArray(),
             };
         }
 
@@ -540,6 +784,16 @@ namespace unvell.ReoGrid.IO.Additional.Excel.FloatingObjects
             {
                 ptCount = new CT_UnsignedInt { val = (uint)values.Count },
                 pt = values.ToArray(),
+            };
+        }
+
+        private static CT_StrVal GetStrVal(WorksheetedCellPosition position, uint index)
+        {
+            Debug.Assert(index == 0, "Ожидается что индекс будет равен 0");
+            return new CT_StrVal
+            {
+                idx = index,
+                v = position.GetCellText()
             };
         }
 
@@ -560,7 +814,7 @@ namespace unvell.ReoGrid.IO.Additional.Excel.FloatingObjects
                 numCache = GetNumData(position)
             };
         }
-        
+
         private static CT_NumData GetNumData(WorksheetedRangePosition position)
         {
             uint count = position.CellsCountInRange();
@@ -595,7 +849,7 @@ namespace unvell.ReoGrid.IO.Additional.Excel.FloatingObjects
             return @"0";
         }
 
-        private static CT_DPt[] CreateDataPoints(CT_ChartSpace space, Pie2DChart chart)
+        private static CT_DPt[] CreateDataPoints(CT_ChartSpace space, ChartType chart)
         {
             var result = new CT_DPt[chart.DataSource.CategoryCount];
             for (uint i = 0; i < result.Length; i++)
@@ -603,7 +857,7 @@ namespace unvell.ReoGrid.IO.Additional.Excel.FloatingObjects
             return result;
         }
 
-        private static CT_DPt CreateDataPoint(CT_ChartSpace space, Pie2DChart chart, uint index)
+        private static CT_DPt CreateDataPoint(CT_ChartSpace space, ChartType chart, uint index)
         {
             return new CT_DPt
             {
@@ -641,88 +895,5 @@ namespace unvell.ReoGrid.IO.Additional.Excel.FloatingObjects
             }
             return ST_SchemeColorVal.accent1; // иначе ошибка "not all code paths return a value"
         }
-        
-        #region workaround
-
-        private static uint WaGetSerialCount(ChartType chart)
-        {
-            if (chart.UseReogridWorkaround)
-            {
-                // Данные берутся из первой ячейки каждого ряда - поэтому ряд - это последовательность N-х ячеек реального ряда
-                // Следовательно количество рядов - это минимальный размер одного реального ряда
-                return (uint)chart.DataSource.Serials.Min(s => s.Count);
-            }
-            else
-            {
-                // Данные берутся из первого ряда - поэтому ряд - это ряд
-                return (uint) chart.DataSource.SerialCount;
-            }
-        }
-
-        private static WorksheetedRangePosition WaCategoryNameRange(ChartType chart)
-        {
-            if (chart.UseReogridWorkaround)
-            {
-                try
-                {
-                    return WorksheetedRangePosition.CombineSequentalCellPostions(chart.DataSource.Serials.Select(s => s.LabelAddress));
-                }
-                catch (CombineSequentalCellPostionsException combineException)
-                {
-                    Debug.Fail($"Ожидается что исключение не будет сгенерировано. Исключение:{combineException.Code}");
-                }
-                catch(Exception e)
-                {
-                    // ignored
-                    Debug.Fail($"Ожидается что исключение не будет сгенерировано. Исключение:{e.Message}");
-                }
-                // Код достижим в release
-                // ReSharper disable once HeuristicUnreachableCode
-                return chart.DataSource.CategoryNameRange;
-            }
-            else
-            {
-                return chart.DataSource.CategoryNameRange;
-            }
-        }
-
-        private static WorksheetedRangePosition WaDataRange(ChartType chart, uint index)
-        {
-            if (chart.UseReogridWorkaround)
-            {
-                try
-                {
-                    return WorksheetedRangePosition.CombineSequentalCellPostions(chart.DataSource.Serials.Select(s => s.DataRange.GetWorksheetedCellPosition(0)));
-                }
-                catch (CombineSequentalCellPostionsException combineException)
-                {
-                    Debug.Fail($"Ожидается что исключение не будет сгенерировано. Исключение:{combineException.Code}");
-                }
-                catch (Exception e)
-                {
-                    // ignored
-                    Debug.Fail($"Ожидается что исключение не будет сгенерировано. Исключение:{e.Message}");
-                }
-                // Код достижим в release
-                // ReSharper disable once HeuristicUnreachableCode
-                var rgWPos = chart.DataSource.Serials[0].DataRange;
-                var rgPos = rgWPos.Position;
-                if (rgPos.Cols == 1)
-                {
-                    return new WorksheetedRangePosition(rgWPos.Worksheet, new RangePosition((int)(rgPos.Row + index), (int)(rgPos.Col), 1, chart.DataSource.SerialCount));
-                }
-                if (rgPos.Rows == 1)
-                {
-                    return new WorksheetedRangePosition(rgWPos.Worksheet, new RangePosition(rgPos.Row, (int) (rgPos.Col + index), chart.DataSource.SerialCount, 1));
-                }
-                throw new Exception("Ошибка преобразования круговой диаграммы в формат Excel: ряд сосотоит из более чем одного столбца и ряда (ожидается что будет либо один столбец либо одна строка)");
-            }
-            else
-            {
-                return chart.DataSource.Serials[(int)index].DataRange;
-            }
-        }
-
-        #endregion
     }
 }

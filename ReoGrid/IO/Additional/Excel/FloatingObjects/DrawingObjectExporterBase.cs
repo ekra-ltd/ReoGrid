@@ -9,15 +9,15 @@ namespace unvell.ReoGrid.IO.Additional.Excel.FloatingObjects
 {
     abstract class DrawingObjectExporterBase
     {
-        public abstract bool CanExport(
-            IDrawingObject exportObject);
+        public abstract bool CanExport(IDrawingObject exportObject, ExportOptions options);
 
         public abstract void Export(
             Document doc,
             OpenXML.Schema.Worksheet sheet,
             OpenXML.Schema.Drawing drawing,
             Worksheet rgSheet,
-            IDrawingObject exportObject);
+            IDrawingObject exportObject,
+            ExportOptions options);
 
         protected static CellAnchor CreateCellAnchorByLocation(Worksheet rgSheet, Point p)
         {

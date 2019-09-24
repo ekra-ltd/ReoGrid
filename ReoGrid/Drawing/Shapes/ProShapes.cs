@@ -222,18 +222,32 @@ namespace unvell.ReoGrid.Drawing.Shapes
 
 			if (this.sweepAngle > 0)
 			{
-                // 2017-12-25 исправлена отрисовка круговой диаграммы
-				System.Windows.Media.PathFigure pf = new System.Windows.Media.PathFigure();
-                pf.StartPoint = this.OriginPoint;
-                double h = OriginPoint.X;
-                double start = (startAngle) * Math.PI / 180.0;
-                double full= (startAngle + sweepAngle) * Math.PI / 180.0;
-                pf.Segments.Add(new System.Windows.Media.LineSegment(new System.Windows.Point(h * (1 - Math.Cos(start)), h * (1 + Math.Sin(start))), false));
-                 pf.Segments.Add(
-                     new System.Windows.Media.ArcSegment(new System.Windows.Point(h * (1 - Math.Cos(full)), h * (1 + Math.Sin(full))),
-                     new System.Windows.Size(/*this.Width*/h, /*this.Height*/h), 0, sweepAngle > 180, System.Windows.Media.SweepDirection.Counterclockwise, false));
+				// 2017-12-25 исправлена отрисовка круговой диаграммы
+				var pf = new System.Windows.Media.PathFigure
+				{
+					StartPoint = OriginPoint
+				};
+				double h = OriginPoint.X;
 
-                Path.Figures.Add(pf);
+				double s = startAngle + 90; // Приведение к виду excel
+				double start = (s) * Math.PI / 180.0;
+				double full = (s + sweepAngle) * Math.PI / 180.0;
+
+				start = -start; // приведение к виду excel
+				full = -full;
+
+
+				pf.Segments.Add(new System.Windows.Media.LineSegment(
+					new System.Windows.Point(
+						h * (1 - Math.Cos(start)),
+						h * (1 + Math.Sin(start))),
+					false));
+
+				pf.Segments.Add(
+					new System.Windows.Media.ArcSegment(new System.Windows.Point(h * (1 - Math.Cos(full)), h * (1 + Math.Sin(full))),
+						new System.Windows.Size(h, h), 0, sweepAngle > 180, System.Windows.Media.SweepDirection.Clockwise, false));
+
+				Path.Figures.Add(pf);
 			}
 
 #elif ANDROID

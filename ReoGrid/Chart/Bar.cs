@@ -153,19 +153,20 @@ namespace unvell.ReoGrid.Chart
 
 					if (pt.hasValue)
 					{
+						var scaleY = Bounds.Width / Bounds.Height;
 						var style = axisChart.DataSerialStyles[r];
 
 						if (pt.value > 0)
 						{
 							g.DrawAndFillRectangle(new Rectangle(
-									axisChart.ZeroWidth, (RGFloat)y,
-									pt.value, (RGFloat)(singleColumnHeight - 1)), style.LineColor, style.FillColor);
+									-axisChart.ZeroWidth, (RGFloat)y,
+									pt.value * scaleY, (RGFloat)(singleColumnHeight - 1)), style.LineColor, style.FillColor);
 						}
 						else
 						{
 							g.DrawAndFillRectangle(new Rectangle(
-								axisChart.ZeroWidth - pt.value, (RGFloat)y,
-								pt.value, (RGFloat)(singleColumnHeight - 1)), style.LineColor, style.FillColor);
+								-(axisChart.ZeroWidth - pt.value * scaleY), (RGFloat)y,
+								-pt.value* scaleY, (RGFloat)(singleColumnHeight - 1)), style.LineColor, style.FillColor);
 						}
 					}
 

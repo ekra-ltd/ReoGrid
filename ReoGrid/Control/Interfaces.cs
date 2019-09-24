@@ -108,8 +108,8 @@ namespace unvell.ReoGrid.Main
 
 	internal interface IPersistenceWorkbook
 	{
-		void Save(string path, FileFormat format = FileFormat._Auto, System.Text.Encoding encoding = null);
-		void Save(System.IO.Stream stream, FileFormat format = FileFormat._Auto, System.Text.Encoding encoding = null);
+		void Save(string path, FileFormat format = FileFormat._Auto, System.Text.Encoding encoding = null, ExportOptions options = null);
+		void Save(System.IO.Stream stream, FileFormat format = FileFormat._Auto, System.Text.Encoding encoding = null, ExportOptions options = null);
 
 		void Load(string path, FileFormat format = FileFormat._Auto, System.Text.Encoding encoding = null);
 		void Load(System.IO.Stream stream, FileFormat format = FileFormat._Auto, System.Text.Encoding encoding = null);

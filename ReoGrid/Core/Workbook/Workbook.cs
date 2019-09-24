@@ -135,17 +135,17 @@ namespace unvell.ReoGrid
 		public static readonly Dictionary<FileFormat, IFileFormatProvider> FileFormatProviders =
 			new Dictionary<FileFormat, IFileFormatProvider>();
 
-		public void Save(string path)
+		public void Save(string path, ExportOptions options = null)
 		{
-			this.Save(path, FileFormat._Auto);
+			this.Save(path, FileFormat._Auto, options);
 		}
 
-		public void Save(string path, IO.FileFormat fileFormat)
+		public void Save(string path, IO.FileFormat fileFormat, ExportOptions options = null)
 		{
-			this.Save(path, fileFormat, Encoding.Default);
+			this.Save(path, fileFormat, Encoding.Default, options);
 		}
 
-		public void Save(string path, IO.FileFormat fileFormat, Encoding encoding)
+		public void Save(string path, IO.FileFormat fileFormat, Encoding encoding, ExportOptions options = null)
 		{
 			if (fileFormat == IO.FileFormat._Auto)
 			{
@@ -166,16 +166,16 @@ namespace unvell.ReoGrid
 
 			using (var fs = new FileStream(path, FileMode.Create, FileAccess.Write))
 			{
-				Save(fs, fileFormat, encoding);
+				Save(fs, fileFormat, encoding, options);
 			}
 		}
 
-		public void Save(System.IO.Stream stream, IO.FileFormat fileFormat)
+		public void Save(System.IO.Stream stream, IO.FileFormat fileFormat, ExportOptions options = null)
 		{
-			this.Save(stream, fileFormat, Encoding.Default);
+			this.Save(stream, fileFormat, Encoding.Default, options);
 		}
 
-		public void Save(System.IO.Stream stream, IO.FileFormat fileFormat, Encoding encoding)
+		public void Save(System.IO.Stream stream, IO.FileFormat fileFormat, Encoding encoding, ExportOptions options = null)
 		{
 			if (!FileFormatProviders.TryGetValue(fileFormat, out var provider))
 			{
@@ -189,7 +189,7 @@ namespace unvell.ReoGrid
 
 			try
 			{
-				provider.Save(this, stream, encoding, null);
+				provider.Save(this, stream, encoding, null, options);
 			}
 			finally
 			{

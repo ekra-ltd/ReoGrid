@@ -2716,6 +2716,7 @@ switch (graphic.graphicData.uri)
                 rgChart = new Chart.LineChart()
                 {
                     DataSource = dataSource,
+                    Title = ReadTitle(chartSpace?.chart?.Title),
                 };
 #endregion // Line Chart Plot Area
             }
@@ -2733,11 +2734,17 @@ switch (graphic.graphicData.uri)
                 if (plot.barChart.barDir != null
                     && plot.barChart.barDir.value == "col")
                 {
-                    rgChart = new Chart.ColumnChart();
+                    rgChart = new Chart.ColumnChart()
+                    {
+                        Title = ReadTitle(chartSpace?.chart?.Title),
+                    };
                 }
                 else
                 {
-                    rgChart = new Chart.BarChart();
+                    rgChart = new Chart.BarChart()
+                    {
+                        Title = ReadTitle(chartSpace?.chart?.Title),
+                    };
                 }
 
                 rgChart.DataSource = dataSource;
@@ -2751,12 +2758,14 @@ switch (graphic.graphicData.uri)
                     foreach (var ser in plot.pieChart.serials)
                     {
                         ReadDataSerial(dataSource, rgSheet, ser);
+                        break;
                     }
                 }
 
                 rgChart = new Chart.PieChart()
                 {
                     DataSource = dataSource,
+                    Title = ReadTitle(chartSpace?.chart?.Title),
                 };
 #endregion // Pie Chart Plot Area
             }
@@ -2774,6 +2783,7 @@ switch (graphic.graphicData.uri)
                 rgChart = new Chart.DoughnutChart()
                 {
                     DataSource = dataSource,
+                    Title = ReadTitle(chartSpace?.chart?.Title),
                 };
 #endregion // Pie Chart Plot Area	
             }
@@ -2791,6 +2801,7 @@ switch (graphic.graphicData.uri)
                 rgChart = new Chart.AreaChart()
                 {
                     DataSource = dataSource,
+                    Title = ReadTitle(chartSpace?.chart?.Title),
                 };
 #endregion // Area Chart Plot Area
             }
@@ -2816,8 +2827,23 @@ switch (graphic.graphicData.uri)
             if (serial == null) return null;
 
 #if FORMULA
-            CellPosition labelAddress = CellPosition.Empty;
+            WorksheetedRangePosition catRange = null;
+            if (dataSource.CategoryNameRange is null && serial.Categories?.Item is CT_StrRef strRef)
+            {
+                if (!string.IsNullOrEmpty(strRef?.f))
+                {
+                    catRange = WorksheetedRangePosition.TryCreateFromFormula(rgSheet, strRef.f);
+                    if (catRange != null)
+                    {
+                        dataSource.CategoryNameRange = catRange;
+                    }
+                }
 
+            }
+
+            CellPosition labelAddress = CellPosition.Empty;
+            WorksheetedCellPosition wsheetedLabelPosition = null;
+            
             var label = serial.ChartLabel;
 
             if (label != null
@@ -2834,6 +2860,14 @@ switch (graphic.graphicData.uri)
                         if (serialNameVal.type == Formula.FormulaValueType.Cell)
                         {
                             labelAddress = (CellPosition)serialNameVal.value;
+                        }
+                        else
+                        {
+                            if (!string.IsNullOrEmpty(label.strRef.formula?.val))
+                            {
+                                var formula = label.strRef.formula?.val;
+                                wsheetedLabelPosition = WorksheetedCellPosition.TryCreateFromFormula(rgSheet, formula);
+                            }
                         }
                     }
                 }
@@ -2869,22 +2903,68 @@ switch (graphic.graphicData.uri)
                         if (serial is PieChartSerial)
                         {
                             // transfer to multiple serials
-                            for (int r = range.Row; r <= range.EndRow; r++)
+                            if (range.Cols == 1)
                             {
-                                dataSource.AddSerial(sheetRange.Worksheet ?? rgSheet, labelAddress, new RangePosition(r, range.Col, 1, 1));
+                                uint index = 0;
+                                for (var r = range.Row; r <= range.EndRow; r++, index++)
+                                {
+                                    var sheet = sheetRange.Worksheet ?? rgSheet;
+                                    var wsRange = new WorksheetedRangePosition(sheet, new RangePosition(r, range.Col, 1, 1));
+                                    var wsLabel = wsheetedLabelPosition ?? catRange?.GetWorksheetedCellPosition(index) ?? new WorksheetedCellPosition(sheet, labelAddress);
+                                    dataSource.AddSerial(wsLabel, wsRange);
+                                }
+                            }
+                            else
+                            {
+                                uint index = 0;
+                                for (var c = range.Col; c <= range.EndCol; c++, index++)
+                                {
+                                    var sheet = sheetRange.Worksheet ?? rgSheet;
+                                    var wsRange = new WorksheetedRangePosition(sheet, new RangePosition(range.Row, c, 1, 1));
+                                    var wsLabel = wsheetedLabelPosition ?? catRange?.GetWorksheetedCellPosition(index) ?? new WorksheetedCellPosition(sheet, labelAddress);
+                                    dataSource.AddSerial(wsLabel, wsRange);
+                                }
                             }
                         }
                         else
                         {
-                            dataSource.AddSerial(sheetRange.Worksheet ?? rgSheet, labelAddress, range);
+                            var sheet = sheetRange.Worksheet ?? rgSheet;
+                            var wsRange = new WorksheetedRangePosition(sheet, range);
+                            var wsLabel = wsheetedLabelPosition ?? new WorksheetedCellPosition(sheet, labelAddress);
+                            dataSource.AddSerial(wsLabel, wsRange);
                         }
                     }
+                }
+                else
+                {
+                    var wsRange = new WorksheetedRangePosition(rgSheet, RangePosition.Empty);
+                    var wsLabel = wsheetedLabelPosition ?? new WorksheetedCellPosition(rgSheet, labelAddress);
+                    dataSource.AddSerial(wsLabel, wsRange);
                 }
             }
 
 #endif // FORMULA
 
             return null;
+        }
+        
+        private static string ReadTitle(CT_Title title)
+        {
+            var result = "Chart";
+            if (title?.tx?.Item is CT_TextBody body)
+            {
+                if (body.p != null)
+                {
+                    result = string.Join(Environment.NewLine, body.p.Select(
+                        p =>
+                        {
+                            if (p?.r is null) return null;
+                            return string.Concat(p.r.Select(r => r.t).Where(t => !string.IsNullOrEmpty(t)));
+                        }
+                    ));
+                }
+            }
+            return result;
         }
 #endregion // Chart
 #endif // DRAWING

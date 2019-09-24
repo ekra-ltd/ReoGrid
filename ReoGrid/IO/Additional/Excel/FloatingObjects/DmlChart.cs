@@ -22021,7 +22021,7 @@ namespace unvell.ReoGrid.IO.Additional.Excel.FloatingObjects
 
         /// <remarks/>
         [System.Xml.Serialization.XmlAttributeAttribute()]
-        [System.ComponentModel.DefaultValueAttribute(ST_BarDir.col)]
+        // [System.ComponentModel.DefaultValueAttribute(ST_BarDir.col)] к сожалению excel не считает это значеним по умолчанию и выдает ошибку
         public ST_BarDir val
         {
             get
@@ -22542,21 +22542,21 @@ namespace unvell.ReoGrid.IO.Additional.Excel.FloatingObjects
         }
 
         /// <remarks/>
-        [System.Xml.Serialization.XmlElementAttribute("dLblPos", typeof(CT_DLblPos))]
-        [System.Xml.Serialization.XmlElementAttribute("delete", typeof(CT_Boolean))]
-        [System.Xml.Serialization.XmlElementAttribute("leaderLines", typeof(CT_ChartLines))]
-        [System.Xml.Serialization.XmlElementAttribute("numFmt", typeof(CT_NumFmt))]
-        [System.Xml.Serialization.XmlElementAttribute("separator", typeof(string))]
-        [System.Xml.Serialization.XmlElementAttribute("showBubbleSize", typeof(CT_Boolean))]
-        [System.Xml.Serialization.XmlElementAttribute("showCatName", typeof(CT_Boolean))]
-        [System.Xml.Serialization.XmlElementAttribute("showLeaderLines", typeof(CT_Boolean))]
-        [System.Xml.Serialization.XmlElementAttribute("showLegendKey", typeof(CT_Boolean))]
-        [System.Xml.Serialization.XmlElementAttribute("showPercent", typeof(CT_Boolean))]
-        [System.Xml.Serialization.XmlElementAttribute("showSerName", typeof(CT_Boolean))]
-        [System.Xml.Serialization.XmlElementAttribute("showVal", typeof(CT_Boolean))]
-        [System.Xml.Serialization.XmlElementAttribute("spPr", typeof(CT_ShapeProperties))]
-        [System.Xml.Serialization.XmlElementAttribute("txPr", typeof(CT_TextBody))]
-        [System.Xml.Serialization.XmlChoiceIdentifierAttribute("ItemsElementName")]
+        [System.Xml.Serialization.XmlElementAttribute(nameof(ItemsChoiceType2.dLblPos), typeof(CT_DLblPos))]
+        [System.Xml.Serialization.XmlElementAttribute(nameof(ItemsChoiceType2.delete), typeof(CT_Boolean))]
+        [System.Xml.Serialization.XmlElementAttribute(nameof(ItemsChoiceType2.leaderLines), typeof(CT_ChartLines))]
+        [System.Xml.Serialization.XmlElementAttribute(nameof(ItemsChoiceType2.numFmt), typeof(CT_NumFmt))]
+        [System.Xml.Serialization.XmlElementAttribute(nameof(ItemsChoiceType2.separator), typeof(string))]
+        [System.Xml.Serialization.XmlElementAttribute(nameof(ItemsChoiceType2.showBubbleSize), typeof(CT_Boolean))]
+        [System.Xml.Serialization.XmlElementAttribute(nameof(ItemsChoiceType2.showCatName), typeof(CT_Boolean))]
+        [System.Xml.Serialization.XmlElementAttribute(nameof(ItemsChoiceType2.showLeaderLines), typeof(CT_Boolean))]
+        [System.Xml.Serialization.XmlElementAttribute(nameof(ItemsChoiceType2.showLegendKey), typeof(CT_Boolean))]
+        [System.Xml.Serialization.XmlElementAttribute(nameof(ItemsChoiceType2.showPercent), typeof(CT_Boolean))]
+        [System.Xml.Serialization.XmlElementAttribute(nameof(ItemsChoiceType2.showSerName), typeof(CT_Boolean))]
+        [System.Xml.Serialization.XmlElementAttribute(nameof(ItemsChoiceType2.showVal), typeof(CT_Boolean))]
+        [System.Xml.Serialization.XmlElementAttribute(nameof(ItemsChoiceType2.spPr), typeof(CT_ShapeProperties))]
+        [System.Xml.Serialization.XmlElementAttribute(nameof(ItemsChoiceType2.txPr), typeof(CT_TextBody))]
+        [System.Xml.Serialization.XmlChoiceIdentifierAttribute(nameof(ItemsElementName))]
         public object[] Items
         {
             get
@@ -24691,7 +24691,7 @@ namespace unvell.ReoGrid.IO.Additional.Excel.FloatingObjects
 
         private CT_ShapeProperties spPrField;
 
-        private CT_Marker markerField;
+        // private CT_Marker markerField;
 
         private CT_DPt[] dPtField;
 
@@ -24761,18 +24761,19 @@ namespace unvell.ReoGrid.IO.Additional.Excel.FloatingObjects
             }
         }
 
-        /// <remarks/>
-        public CT_Marker marker
-        {
-            get
-            {
-                return this.markerField;
-            }
-            set
-            {
-                this.markerField = value;
-            }
-        }
+        // удалено
+        ///// <remarks/>
+        //public CT_Marker marker
+        //{
+        //    get
+        //    {
+        //        return this.markerField;
+        //    }
+        //    set
+        //    {
+        //        this.markerField = value;
+        //    }
+        //}
 
         /// <remarks/>
         [System.Xml.Serialization.XmlElementAttribute("dPt")]

@@ -28,6 +28,7 @@ using unvell.ReoGrid.Actions;
 using unvell.ReoGrid.Events;
 using unvell.ReoGrid.Views;
 using unvell.ReoGrid.Interaction;
+using unvell.ReoGrid.IO;
 
 #if WINFORM
 using RGFloat = System.Single;
@@ -301,9 +302,9 @@ namespace unvell.ReoGrid
 		/// </summary>
 		/// <param name="path">Full file path to save workbook</param>
 		/// <param name="fileFormat">Specified file format used to save workbook</param>
-		public void Save(string path)
+		public void Save(string path, ExportOptions options = null)
 		{
-			this.Save(path, IO.FileFormat._Auto);
+			this.Save(path, IO.FileFormat._Auto, options);
 		}
 
 		/// <summary>
@@ -311,9 +312,9 @@ namespace unvell.ReoGrid
 		/// </summary>
 		/// <param name="path">Full file path to save workbook</param>
 		/// <param name="fileFormat">Specified file format used to save workbook</param>
-		public void Save(string path, IO.FileFormat fileFormat)
+		public void Save(string path, IO.FileFormat fileFormat, ExportOptions options = null)
 		{
-			this.Save(path, fileFormat, Encoding.Default);
+			this.Save(path, fileFormat, Encoding.Default, options);
 		}
 
 		/// <summary>
@@ -322,9 +323,9 @@ namespace unvell.ReoGrid
 		/// <param name="path">Full file path to save workbook</param>
 		/// <param name="fileFormat">Specified file format used to save workbook</param>
 		/// <param name="encoding">Encoding used to read plain-text from resource. (Optional)</param>
-		public void Save(string path, IO.FileFormat fileFormat, Encoding encoding)
+		public void Save(string path, IO.FileFormat fileFormat, Encoding encoding, ExportOptions options = null)
 		{
-			this.workbook.Save(path, fileFormat, encoding);
+			this.workbook.Save(path, fileFormat, encoding, options);
 		}
 
 		/// <summary>
@@ -332,9 +333,9 @@ namespace unvell.ReoGrid
 		/// </summary>
 		/// <param name="stream">Stream to output data of workbook</param>
 		/// <param name="fileFormat">Specified file format used to save workbook</param>
-		public void Save(Stream stream, unvell.ReoGrid.IO.FileFormat fileFormat)
+		public void Save(Stream stream, unvell.ReoGrid.IO.FileFormat fileFormat, ExportOptions options = null)
 		{
-			this.workbook.Save(stream, fileFormat, Encoding.Default);
+			this.workbook.Save(stream, fileFormat, Encoding.Default, options);
 		}
 
 		/// <summary>
@@ -343,9 +344,9 @@ namespace unvell.ReoGrid
 		/// <param name="stream">Stream to output data of workbook</param>
 		/// <param name="fileFormat">Specified file format used to save workbook</param>
 		/// <param name="encoding">Encoding used to read plain-text from resource. (Optional)</param>
-		public void Save(Stream stream, unvell.ReoGrid.IO.FileFormat fileFormat, Encoding encoding)
+		public void Save(Stream stream, unvell.ReoGrid.IO.FileFormat fileFormat, Encoding encoding, ExportOptions options = null)
 		{
-			this.workbook.Save(stream, fileFormat, encoding);
+			this.workbook.Save(stream, fileFormat, encoding, options);
 		}
 
 		/// <summary>

@@ -158,6 +158,32 @@ namespace unvell.ReoGrid.Formula
 			}
 			return result;
 		}
+		
+		public static string ConcatAddress(Worksheet worksheet, string address) =>
+			ConcatAddress(worksheet.Name, address);
+
+		private static string ConcatAddress(string rawWorksheetName, string address) 
+			=> $"{FixWorksheetName(rawWorksheetName)}!{address}";
+        
+
+		private static string FixWorksheetName(string rawWorksheetName)
+		{
+			if (!IsWorksheetNameValid(rawWorksheetName))
+			{
+				throw new ArgumentException(@"Invalid name entered for sheet or chart", nameof(rawWorksheetName));
+			}
+			return $"'{rawWorksheetName}'";
+		}
+
+		public static bool IsWorksheetNameValid(string worksheetName)
+		{
+			var forbidden = new[] { '\\', '/', '?', '*', '[', ']' };
+			if (worksheetName.IndexOfAny(forbidden) >= 0)
+			{
+				return false;
+			}
+			return true;
+		}
 	}
 }
 

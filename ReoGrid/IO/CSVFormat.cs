@@ -180,7 +180,7 @@ namespace unvell.ReoGrid.IO
 			CSVFormat.Read(stream, sheet, targetRange, encoding, bufferLines, autoSpread);
 		}
 
-		public void Save(IWorkbook workbook, Stream stream, Encoding encoding, object arg)
+		public void Save(IWorkbook workbook, Stream stream, Encoding encoding, object arg, ExportOptions options = null)
 		{
 			throw new NotSupportedException("Saving entire workbook as CSV is not supported, use Worksheet.ExportAsCSV instead.");
 			//int fromRow = 0, fromCol = 0, toRow = 0, toCol = 0;

@@ -37,10 +37,7 @@ namespace unvell.ReoGrid.Chart
 	/// </summary>
 	public class ChartLegend : DrawingComponent
 	{
-		/// <summary>
-		/// Get the instance of owner chart.
-		/// </summary>
-		public virtual IChart Chart { get; protected set; }
+		#region Конструктор
 
 		/// <summary>
 		/// Create chart legend view.
@@ -48,87 +45,78 @@ namespace unvell.ReoGrid.Chart
 		/// <param name="chart">Instance of owner chart.</param>
 		public ChartLegend(IChart chart)
 		{
-			this.Chart = chart;
+			Chart = chart;
 
-			this.LineColor = SolidColor.Transparent;
-			this.FillColor = SolidColor.Transparent;
-			this.FontSize *= 0.8f;
+			LineColor = SolidColor.Transparent;
+			FillColor = SolidColor.Transparent;
+			FontSize *= 0.8f;
 		}
+
+		#endregion
+
+		#region Свойства
 
 		/// <summary>
 		/// Get or set type of legend.
 		/// </summary>
 		public LegendType LegendType { get; set; }
 
-		private LegendPosition legendPosition;
+
 
 		/// <summary>
 		/// Get or set the display position of legend.
 		/// </summary>
 		public LegendPosition LegendPosition
 		{
-			get { return this.legendPosition; }
+			get => _legendPosition;
 			set
 			{
-				if (this.legendPosition != value)
+				if (_legendPosition != value)
 				{
-					this.legendPosition = value;
+					_legendPosition = value;
 
-					if (this.Chart is Chart)
+					if (Chart is Chart)
 					{
-						var chart = (Chart)this.Chart;
+						var chart = (Chart)Chart;
 						chart.DirtyLayout();
 					}
 				}
 			}
 		}
 
-		/*
+		#endregion
+
+		#region Переопределенные методы
+
 		/// <summary>
-		/// Render chart legend view.
+		/// Get measured legend view size.
 		/// </summary>
-		/// <param name="dc">Platform no-associated drawing context instance.</param>
-		protected override void OnPaint(DrawingContext dc)
+		/// <returns>Measured size of legend view.</returns>
+		// ReSharper disable once InheritdocConsiderUsage
+		public override Size GetPreferredSize()
 		{
-			base.OnPaint(dc);
-		
-			var g = dc.Graphics;
-			//var ds = this.Chart.DataSource;
-			var clientRect = this.ClientBounds;
-
-			int dataCount = this.Chart.GetSerialCount();
-
-			Rectangle itemRect = new Rectangle(0, 0, this.ItemSize.Width, ItemSize.Height);
-			Size smybolSize = this.GetSymbolSize();
-
-			for (int index = 0; index < dataCount; index++)
-			{
-				string itemTitle = this.Chart.GetSerialName(index);
-
-				Rectangle symbolRect = new Rectangle(itemRect.Left + 3, itemRect.Top + (itemRect.Height - smybolSize.Height) / 2,
-					smybolSize.Width, smybolSize.Height);
-
-				this.DrawSymbol(dc, index, symbolRect);
-
-				if (itemTitle != null)
-				{
-					Rectangle textRect = new Rectangle(symbolRect.Right + 3, itemRect.Top,
-						itemRect.Width - symbolRect.Width - 3, itemRect.Height);
-
-					g.DrawText(itemTitle, this.FontName, this.FontSize, this.ForeColor, textRect, ReoGridHorAlign.Left, ReoGridVerAlign.Middle);
-				}
-
-				itemRect.X += itemRect.Width;
-
-				if (itemRect.X + itemRect.Width > clientRect.Right)
-				{
-					itemRect.X = 0;
-					itemRect.Y += ItemSize.Height;
-				}
-			}
+			return _layoutedSize;
 		}
-		*/
-		
+
+		#endregion
+
+		#region Переопределяемые методы и свойства
+
+		protected virtual int GetLegendItemsCount()
+		{
+			return Chart?.DataSource?.SerialCount ?? 0;
+		}
+
+		public virtual string GetLegendLabel(int index)
+		{
+			return Chart.DataSource[index].Label;
+		}
+
+		/// <summary>
+		/// Get the instance of owner chart.
+		/// </summary>
+		public virtual IChart Chart { get; protected set; }
+
 		/// <summary>
 		/// Get default symbol size of chart legend.
 		/// </summary>
@@ -146,53 +134,44 @@ namespace unvell.ReoGrid.Chart
 		/// <returns>Measured size for serial label.</returns>
 		protected virtual Size GetLabelSize(int index)
 		{
-			var ds = this.Chart.DataSource;
+			var ds = Chart.DataSource;
 
 			if (ds == null) return Size.Zero;
 
-			string label = ds[index].Label;
+			string label = /*ds[index].Label*/GetLegendLabel(index);
 
-			return PlatformUtility.MeasureText(null, label, this.FontName, this.FontSize, this.FontStyles);
+			return PlatformUtility.MeasureText(null, label, FontName, FontSize, FontStyles);
 		}
 
-		private Size layoutedSize = Size.Zero;
-
-		/// <summary>
-		/// Get measured legend view size.
-		/// </summary>
-		/// <returns>Measured size of legend view.</returns>
-		public override Size GetPreferredSize()
-		{
-			return this.layoutedSize;
-		}
 
 		/// <summary>
 		/// Layout all legned items.
 		/// </summary>
 		public virtual void MeasureSize(Rectangle parentClientRect)
 		{
-			var ds = this.Chart.DataSource;
+			var ds = Chart.DataSource;
 			if (ds == null) return;
 
-			int dataCount = ds.SerialCount;
+			int dataCount = /*ds.SerialCount*/GetLegendItemsCount();
 
-			this.Children.Clear();
+			Children.Clear();
 
-			RGFloat maxSymbolWidth = 0, maxSymbolHeight = 0, maxLabelWidth = 0, maxLabelHeight = 0;
+			Double maxSymbolWidth = 0, maxSymbolHeight = 0, maxLabelWidth = 0, maxLabelHeight = 0;
 
 			#region Measure Sizes
+
 			for (int index = 0; index < dataCount; index++)
 			{
 				var legendItem = new ChartLegendItem(this, index);
 
-				var symbolSize = this.GetSymbolSize(index);
+				var symbolSize = GetSymbolSize(index);
 
 				if (maxSymbolWidth < symbolSize.Width) maxSymbolWidth = symbolSize.Width;
 				if (maxSymbolHeight < symbolSize.Height) maxSymbolHeight = symbolSize.Height;
 
 				legendItem.SymbolBounds = new Rectangle(new Point(0, 0), symbolSize);
 
-				var labelSize = this.GetLabelSize(index);
+				var labelSize = GetLabelSize(index);
 
 				// should +6, don't know why
 				labelSize.Width += 6;
@@ -202,22 +181,24 @@ namespace unvell.ReoGrid.Chart
 
 				legendItem.LabelBounds = new Rectangle(new Point(0, 0), labelSize);
 
-				this.Children.Add(legendItem);
+				Children.Add(legendItem);
 			}
+
 			#endregion // Measure Sizes
 
 			#region Layout
-			const RGFloat symbolLabelSpacing = 4;
+
+			const Double symbolLabelSpacing = 4;
 
 			var itemWidth = maxSymbolWidth + symbolLabelSpacing + maxLabelWidth;
 			var itemHeight = Math.Max(maxSymbolHeight, maxLabelHeight);
 
 			var clientRect = parentClientRect;
-			RGFloat x = 0, y = 0, right = 0, bottom = 0;
+			Double x = 0, y = 0, right = 0, bottom = 0;
 
 			for (int index = 0; index < dataCount; index++)
 			{
-				var legendItem = this.Children[index] as ChartLegendItem;
+				var legendItem = Children[index] as ChartLegendItem;
 
 				if (legendItem != null)
 				{
@@ -232,9 +213,9 @@ namespace unvell.ReoGrid.Chart
 
 				x += itemWidth;
 
-				const RGFloat itemSpacing = 10;
+				const Double itemSpacing = 10;
 
-				if (this.LegendPosition == LegendPosition.Left || this.LegendPosition == LegendPosition.Right)
+				if (LegendPosition == LegendPosition.Left || LegendPosition == LegendPosition.Right)
 				{
 					x = 0;
 					y += itemHeight + itemSpacing;
@@ -250,11 +231,20 @@ namespace unvell.ReoGrid.Chart
 					}
 				}
 			}
+
 			#endregion // Layout
 
-			this.layoutedSize = new Size(right+10, bottom);
+			_layoutedSize = new Size(right + 10, bottom);
 		}
 
+		#endregion
+
+		#region Поля
+
+		private LegendPosition _legendPosition;
+		private Size _layoutedSize = Size.Zero;
+
+		#endregion
 	}
 
 	/// <summary>
@@ -262,30 +252,40 @@ namespace unvell.ReoGrid.Chart
 	/// </summary>
 	public class ChartLegendItem : DrawingObject
 	{
-		private Rectangle symbolBounds;
-		public virtual Rectangle SymbolBounds { get { return this.symbolBounds; } set { this.symbolBounds = value; } }
+		private Rectangle _symbolBounds;
 
-		private Rectangle labelBounds;
-		public virtual Rectangle LabelBounds { get { return this.labelBounds; } set { this.labelBounds = value; } }
-
-		public virtual void SetSymbolLocation(RGFloat x, RGFloat y)
+		public virtual Rectangle SymbolBounds
 		{
-			this.symbolBounds.X = x;
-			this.symbolBounds.Y = y;
+			get => _symbolBounds;
+			set => _symbolBounds = value;
 		}
 
-		public virtual void SetLabelLocation(RGFloat x, RGFloat y)
+		private Rectangle _labelBounds;
+
+		public virtual Rectangle LabelBounds
 		{
-			this.labelBounds.X = x;
-			this.labelBounds.Y = y;
+			get => _labelBounds;
+			set => _labelBounds = value;
+		}
+
+		public virtual void SetSymbolLocation(Double x, Double y)
+		{
+			_symbolBounds.X = x;
+			_symbolBounds.Y = y;
+		}
+
+		public virtual void SetLabelLocation(Double x, Double y)
+		{
+			_labelBounds.X = x;
+			_labelBounds.Y = y;
 		}
 
 		public virtual ChartLegend ChartLegend { get; protected set; }
 
 		public ChartLegendItem(ChartLegend chartLegend, int legendIndex)
 		{
-			this.ChartLegend = chartLegend;
-			this.LegendIndex = legendIndex;
+			ChartLegend = chartLegend;
+			LegendIndex = legendIndex;
 		}
 
 		public virtual int LegendIndex { get; set; }
@@ -296,14 +296,14 @@ namespace unvell.ReoGrid.Chart
 			//dc.Graphics.FillRectangle(this.ClientBounds, SolidColor.LightSteelBlue);
 #endif // DEBUG
 
-			if (this.symbolBounds.Width > 0 && this.symbolBounds.Height > 0)
+			if (_symbolBounds.Width > 0 && _symbolBounds.Height > 0)
 			{
-				this.OnPaintSymbol(dc);
+				OnPaintSymbol(dc);
 			}
 
-			if (this.labelBounds.Width > 0 && this.labelBounds.Height > 0)
+			if (_labelBounds.Width > 0 && _labelBounds.Height > 0)
 			{
-				this.OnPaintLabel(dc);
+				OnPaintLabel(dc);
 			}
 		}
 
@@ -315,9 +315,9 @@ namespace unvell.ReoGrid.Chart
 		{
 			var g = dc.Graphics;
 
-			if (this.ChartLegend != null)
+			if (ChartLegend != null)
 			{
-				var legend = this.ChartLegend;
+				var legend = ChartLegend;
 
 				if (legend.Chart != null)
 				{
@@ -327,7 +327,7 @@ namespace unvell.ReoGrid.Chart
 					{
 						var dsStyle = dss[LegendIndex];
 
-						g.DrawAndFillRectangle(this.symbolBounds, dsStyle.LineColor, dsStyle.FillColor);
+						g.DrawAndFillRectangle(_symbolBounds, dsStyle.LineColor, dsStyle.FillColor);
 					}
 				}
 			}
@@ -339,15 +339,15 @@ namespace unvell.ReoGrid.Chart
 		/// <param name="dc">Platform no-associated drawing context instance.</param>
 		public virtual void OnPaintLabel(DrawingContext dc)
 		{
-			if (this.ChartLegend != null)
+			if (ChartLegend != null)
 			{
-				var legend = this.ChartLegend;
+				var legend = ChartLegend;
 
 				if (legend.Chart != null && legend.Chart.DataSource != null)
 				{
-					var ds = legend.Chart.DataSource;
-
-					string itemTitle = ds[LegendIndex].Label;
+					// var ds = legend.Chart.DataSource;
+					// string itemTitle = ds[LegendIndex].Label;
+					string itemTitle = ChartLegend.GetLegendLabel(LegendIndex);
 
 					if (!string.IsNullOrEmpty(itemTitle))
 					{
@@ -355,7 +355,7 @@ namespace unvell.ReoGrid.Chart
 						//dc.Graphics.FillRectangle(this.labelBounds, SolidColor.LightCoral);
 #endif // DEBUG
 
-						dc.Graphics.DrawText(itemTitle, this.FontName, this.FontSize, this.ForeColor, this.labelBounds,
+						dc.Graphics.DrawText(itemTitle, FontName, FontSize, ForeColor, _labelBounds,
 							ReoGridHorAlign.Left, ReoGridVerAlign.Middle);
 					}
 				}

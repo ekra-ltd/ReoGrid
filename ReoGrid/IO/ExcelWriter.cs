@@ -37,7 +37,7 @@ namespace unvell.ReoGrid.IO.OpenXML
 
 	internal sealed class ExcelWriter
 	{
-		public static void WriteStream(RGWorkbook rgWorkbook, Stream stream)
+		public static void WriteStream(RGWorkbook rgWorkbook, Stream stream, ExportOptions options)
 		{
 			//Document doc = new Document();
 			var doc = Document.CreateOnStream(stream);
@@ -48,7 +48,7 @@ namespace unvell.ReoGrid.IO.OpenXML
 
 			foreach (var rgSheet in rgWorkbook.Worksheets)
 			{
-				WriteWorksheet(doc, rgSheet);
+				WriteWorksheet(doc, rgSheet, options);
 
 				if (rgSheet.NamedRanges.Count > 0)
 				{
@@ -1067,7 +1067,7 @@ namespace unvell.ReoGrid.IO.OpenXML
 		#region Worksheet
 		internal static readonly System.Globalization.CultureInfo EnglishCulture = System.Globalization.CultureInfo.GetCultureInfo("en-US");
 
-		private static void WriteWorksheet(Document doc, RGWorksheet rgSheet)
+		private static void WriteWorksheet(Document doc, RGWorksheet rgSheet, ExportOptions options)
 		{
 			if (rgSheet.Rows == 0 || rgSheet.Columns == 0)
 			{
@@ -1507,8 +1507,8 @@ namespace unvell.ReoGrid.IO.OpenXML
 				foreach (var obj in rgSheet.FloatingObjects)
 				{
 					DrawingObjectExporters
-						.FirstOrDefault(exporter => exporter.CanExport(obj))
-						?.Export(doc, sheet, drawing, rgSheet, obj);
+						.FirstOrDefault(exporter => exporter.CanExport(obj, options))
+						?.Export(doc, sheet, drawing, rgSheet, obj, options);
 				}
 			}
 #endif // DRAWING
@@ -1522,6 +1522,9 @@ namespace unvell.ReoGrid.IO.OpenXML
 		{
 			new ImageObjectExporter(),
 			new Pie2DChartExporter(),
+			new LineChartExporter(),
+			new ColumnChartExporter(),
+			new AreaChartExporter(),
 		};
 #endif
 
@@ -2019,9 +2022,12 @@ namespace unvell.ReoGrid.IO.OpenXML
 					}
 #endregion // Floating Images
 #region Charts
-					if (drawing._chartSpace != null)
+					if (drawing._chartSpaces != null)
 					{
-						WriteOpenXMLFile(drawing._chartSpace);
+						foreach (var chartSpace in drawing._chartSpaces)
+						{
+							WriteOpenXMLFile(chartSpace);
+						}
 					}
 #endregion
 				}

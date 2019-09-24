@@ -21,8 +21,9 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
-
+using System.Diagnostics;
 using unvell.ReoGrid.Data;
+using unvell.ReoGrid.Events;
 
 namespace unvell.ReoGrid.Chart
 {
@@ -56,255 +57,276 @@ namespace unvell.ReoGrid.Chart
 		string Label { get; }
 	}
 
-	/// <summary>
-	/// Data source from given worksheet
-	/// </summary>
-	public class WorksheetChartDataSource : IChartDataSource<WorksheetChartDataSerial>
-	{
-		private Worksheet worksheet;
+/// <summary>
+    /// Data source from given worksheet
+    /// </summary>
+    public class WorksheetChartDataSource : IChartDataSource<WorksheetChartDataSerial>
+    {
+        #region Constructor
 
-		/// <summary>
-		/// Get instance of worksheet
-		/// </summary>
-		public Worksheet Worksheet { get; protected set; }
+        /// <summary>
+        /// Create data source instance with specified worksheet instance
+        /// </summary>
+        /// <param name="worksheet">Instance of worksheet to read titles and data of plot serial.</param>
+        public WorksheetChartDataSource(Worksheet worksheet)
+        {
+            _worksheet = worksheet;
+        }
 
-		#region Ranges
+        /// <summary>
+        /// Create data source instance with specified worksheet instance
+        /// </summary>
+        /// <param name="worksheet">Instance of worksheet to read titles and data of plot serial.</param>
+        /// <param name="serialNamesRange">Names for serial data from this range.</param>
+        /// <param name="serialsRange">Serial data from this range.</param>
+        /// <param name="serialPerRowOrColumn">Add serials by this specified direction. Default is Row.</param>
+        public WorksheetChartDataSource(
+            Worksheet worksheet,
+            string serialNamesRange,
+            string serialsRange,
+            RowOrColumn serialPerRowOrColumn = RowOrColumn.Row)
+            : this(worksheet)
+        {
+            if (worksheet == null)
+            {
+                throw new ArgumentNullException(nameof(worksheet));
+            }
 
-		private int categoryCount;
+            if (!worksheet.TryGetRangeByAddressOrName(serialNamesRange, out var snRange))
+            {
+                throw new InvalidAddressException("cannot determine the serial names range by specified range address or name.");
+            }
 
-		#endregion // Ranges
+            if (!worksheet.TryGetRangeByAddressOrName(serialsRange, out var sRange))
+            {
+                throw new InvalidAddressException("cannot determine the serials range by specified range address or name.");
+            }
 
-		#region Constructor
+            AddSerialsFromRange(snRange, sRange, serialPerRowOrColumn);
+        }
 
-		/// <summary>
-		/// Create data source instance with specified worksheet instance
-		/// </summary>
-		/// <param name="worksheet">Instance of worksheet to read titles and data of plot serial.</param>
-		public WorksheetChartDataSource(Worksheet worksheet)
-		{
-			this.worksheet = worksheet;
-		}
+        /// <summary>
+        /// Create data source instance with specified worksheet instance and serial data range.
+        /// </summary>
+        /// <param name="worksheet">Instance of worksheet to read titles and data of plot serial.</param>
+        /// <param name="serialNamesRange">Range to read labels of data serial.</param>
+        /// <param name="serialsRange">Range to read serial data.</param>
+        /// <param name="serialPerRowOrColumn">Add serials by this specified direction. Default is Row.</param>
+        public WorksheetChartDataSource(Worksheet worksheet, 
+            RangePosition serialNamesRange, 
+            RangePosition serialsRange,
+            RowOrColumn serialPerRowOrColumn = RowOrColumn.Row)
+            : this(worksheet)
+        {
+            if (worksheet == null)
+            {
+                throw new ArgumentNullException(nameof(worksheet));
+            }
 
-		/// <summary>
-		/// Create data source instance with specified worksheet instance
-		/// </summary>
-		/// <param name="worksheet">Instance of worksheet to read titles and data of plot serial.</param>
-		/// <param name="serialNamesRange">Names for serial data from this range.</param>
-		/// <param name="serialsRange">Serial data from this range.</param>
-		/// <param name="serialPerRowOrColumn">Add serials by this specified direction. Default is Row.</param>
-		public WorksheetChartDataSource(Worksheet worksheet, string serialNamesRange, string serialsRange,
-			RowOrColumn serialPerRowOrColumn = RowOrColumn.Row)
-			: this(worksheet)
-		{
-			if (worksheet == null)
-			{
-				throw new ArgumentNullException("worksheet");
-			}
+            AddSerialsFromRange(serialNamesRange, serialsRange, serialPerRowOrColumn);
+        }
 
-			if (!worksheet.TryGetRangeByAddressOrName(serialNamesRange, out var snRange))
-			{
-				throw new InvalidAddressException("cannot determine the serial names range by specified range address or name.");
-			}
+        private void AddSerialsFromRange(
+            RangePosition serialNamesRange,
+            RangePosition serialsRange,
+            RowOrColumn serialPerRowOrColumn = RowOrColumn.Row)
+        {
+            if (serialPerRowOrColumn == RowOrColumn.Row)
+            {
+                var offset = 0;
+                for (var r = serialsRange.Row; r <= serialsRange.EndRow; r++, offset++)
+                {
+                    var labelPosiotion = new CellPosition(serialNamesRange.Row + offset, serialNamesRange.Col);
+                    var label = new WorksheetedCellPosition(_worksheet, labelPosiotion);
+                    var valuesPosition = new RangePosition(r, serialsRange.Col, 1, serialsRange.Cols);
+                    AddSerial(label, new WorksheetedRangePosition(_worksheet, valuesPosition));
+                }
+            }
+            else
+            {
+                var offset = 0;
+                for (var c = serialsRange.Col; c <= serialsRange.EndCol; c++, offset++)
+                {
+                    var labelPosition = new CellPosition(serialNamesRange.Row, serialNamesRange.Col + offset);
+                    var label = new WorksheetedCellPosition(_worksheet, labelPosition);
+                    var valuesPosition = new RangePosition(serialsRange.Row, c, serialsRange.Rows, 1);
+                    AddSerial(label, new WorksheetedRangePosition(_worksheet, valuesPosition));
+                }
+            }
+        }
 
-			if (!worksheet.TryGetRangeByAddressOrName(serialsRange, out var sRange))
-			{
-				throw new InvalidAddressException("cannot determine the serials range by specified range address or name.");
-			}
+        #endregion // Constructor
 
-			this.AddSerialsFromRange(snRange, sRange, serialPerRowOrColumn);
-		}
+        [Obsolete("Данное свойство ни имеет смысла")]
+        /// <summary>
+        /// Get instance of worksheet
+        /// </summary>
+        public Worksheet Worksheet { get; protected set; }
 
-		/// <summary>
-		/// Create data source instance with specified worksheet instance and serial data range.
-		/// </summary>
-		/// <param name="worksheet">Instance of worksheet to read titles and data of plot serial.</param>
-		/// <param name="serialNamesRange">Range to read labels of data serial.</param>
-		/// <param name="serialsRange">Range to read serial data.</param>
-		/// <param name="serialPerRowOrColumn">Add serials by this specified direction. Default is Row.</param>
-		public WorksheetChartDataSource(Worksheet worksheet, RangePosition serialNamesRange, RangePosition serialsRange,
-			RowOrColumn serialPerRowOrColumn = RowOrColumn.Row)
-			: this(worksheet)
-		{
-			if (worksheet == null)
-			{
-				throw new ArgumentNullException("worksheet");
-			}
+        #region Ranges
 
-			this.AddSerialsFromRange(serialNamesRange, serialsRange, serialPerRowOrColumn);
-		}
+        /// <summary>
+        /// Get or set the range to read row serial titles.
+        /// </summary>
+        [Obsolete("use AddSerial method to add data serial instead")]
+        public virtual RangePosition RowTitleRange { get; set; }
 
-		private void AddSerialsFromRange(RangePosition serialNamesRange, RangePosition serialsRange, 
-			RowOrColumn serialPerRowOrColumn = RowOrColumn.Row)
-		{
-			if (serialPerRowOrColumn == RowOrColumn.Row)
-			{
-				for (int r = serialsRange.Row; r <= serialsRange.EndRow; r++)
-				{
-					var label = new CellPosition(r, serialNamesRange.Col);
-					this.AddSerial(worksheet, label, new RangePosition(r, serialsRange.Col, 1, serialsRange.Cols));
-				}
-			}
-			else
-			{
-				for (int c = serialsRange.Col; c <= serialsRange.EndCol; c++)
-				{
-					var label = new CellPosition(serialNamesRange.Row, c);
-					this.AddSerial(worksheet, label, new RangePosition(serialsRange.Row, c, serialsRange.Rows, 1));
-				}
-			}
-		}
+        /// <summary>
+        /// Get or set the range to read column serial titles.
+        /// </summary>
+        [Obsolete("use CategoryNameRange instead")]
+        public virtual RangePosition ColTitleRange { get; set; }
 
-		#endregion // Constructor
 
-		#region Changes
-		/// <summary>
-		/// This method will be invoked when any data from the serial data range changed.
-		/// </summary>
-		public virtual void OnDataChanged()
-		{
-			if (this.DataChanged != null)
-			{
-				this.DataChanged(this, null);
-			}
-		}
+        #endregion // Ranges
 
-		///// <summary>
-		///// This method will be invoked when the serial data range changed.
-		///// </summary>
-		//public virtual void OnDataRangeChanged()
-		//{
-		//	if (this.DataRangeChanged != null)
-		//	{
-		//		this.DataRangeChanged(this, null);
-		//	}
-		//}
+        #region Changes
+        /// <summary>
+        /// This method will be invoked when any data from the serial data range changed.
+        /// </summary>
+        public virtual void OnDataChanged()
+        {
+            DataChanged?.Invoke(this, null);
+        }
 
-		/// <summary>
-		/// This event will be raised when data from the serial data range changed.
-		/// </summary>
-		public event EventHandler DataChanged;
+        ///// <summary>
+        ///// This method will be invoked when the serial data range changed.
+        ///// </summary>
+        //public virtual void OnDataRangeChanged()
+        //{
+        //	if (this.DataRangeChanged != null)
+        //	{
+        //		this.DataRangeChanged(this, null);
+        //	}
+        //}
 
-		///// <summary>
-		///// This event will be raised when the serial data range changed.
-		///// </summary>
-		//public event EventHandler DataRangeChanged;
+        /// <summary>
+        /// This event will be raised when data from the serial data range changed.
+        /// </summary>
+        public event EventHandler DataChanged;
 
-		#endregion // Changes
+        ///// <summary>
+        ///// This event will be raised when the serial data range changed.
+        ///// </summary>
+        //public event EventHandler DataRangeChanged;
 
-		#region Category
+        #endregion // Changes
 
-		/// <summary>
-		/// Get or set the range that contains the category names.
-		/// </summary>
-		public RangePosition CategoryNameRange { get; set; }
+        #region Category
 
-		/// <summary>
-		/// Return the title of specified column.
-		/// </summary>
-		/// <param name="index">Zero-based number of column.</param>
-		/// <returns>Return the title that will be displayed on chart.</returns>
-		public string GetCategoryName(int index)
-		{
-			if (this.CategoryNameRange.IsEmpty)
-			{
-				return null;
-			}
-			else
-			{
-                if(CategoryNameRange.Cols == 1 && CategoryNameRange.Rows > 1)
-                    return this.worksheet.GetCellData<string>(this.CategoryNameRange.Row + index, this.CategoryNameRange.Col );
-                return this.worksheet.GetCellData<string>(this.CategoryNameRange.Row, this.CategoryNameRange.Col + index);
-			}
-		}
+        /// <summary>
+        /// Get or set the range that contains the category names.
+        /// </summary>
+        public WorksheetedRangePosition CategoryNameRange { get; set; }
 
-		#endregion // Category
+        /// <summary>
+        /// Return the title of specified column.
+        /// </summary>
+        /// <param name="index">Zero-based number of column.</param>
+        /// <returns>Return the title that will be displayed on chart.</returns>
+        public string GetCategoryName(int index)
+        {
+            if (CategoryNameRange?.Position.IsEmpty != false)
+            {
+                return null;
+            }
+            if(CategoryNameRange.Position.Cols == 1 && CategoryNameRange.Position.Rows > 1)
+                return _worksheet.GetCellData<string>(CategoryNameRange.Position.Row + index, CategoryNameRange.Position.Col );
+            return _worksheet.GetCellData<string>(CategoryNameRange.Position.Row, CategoryNameRange.Position.Col + index);
+        }
 
-		#region Serials
-		/// <summary>
-		/// Get number of data serials.
-		/// </summary>
-		public virtual int SerialCount { get { return this.serials.Count; } }
+        #endregion // Category
 
-		/// <summary>
-		/// Get number of categories.
-		/// </summary>
-		public virtual int CategoryCount { get { return this.categoryCount; } }
+        #region Serials
+        /// <summary>
+        /// Get number of data serials.
+        /// </summary>
+        public virtual int SerialCount => serials.Count;
 
-		internal List<WorksheetChartDataSerial> serials = new List<WorksheetChartDataSerial>();
+        /// <summary>
+        /// Get number of categories.
+        /// </summary>
+        public virtual int CategoryCount => _categoryCount;
 
-		public WorksheetChartDataSerial this[int index]
-		{
-			get
-			{
-				if (index < 0 || index >= this.serials.Count)
-				{
-					throw new ArgumentOutOfRangeException("index");
-				}
+        internal List<WorksheetChartDataSerial> serials = new List<WorksheetChartDataSerial>();
 
-				return this.serials[index];
-			}
-		}
+        public WorksheetChartDataSerial this[int index]
+        {
+            get
+            {
+                if (index < 0 || index >= serials.Count)
+                {
+                    throw new ArgumentOutOfRangeException(nameof(index));
+                }
 
-		/// <summary>
-		/// Add serial data into data source.
-		/// </summary>
-		/// <param name="serial">Serial data source.</param>
-		public void Add(WorksheetChartDataSerial serial)
-		{
-			this.serials.Add(serial);
+                return serials[index];
+            }
+        }
 
-			this.UpdateCategoryCount(serial);
-		}
+        /// <summary>
+        /// Add serial data into data source.
+        /// </summary>
+        /// <param name="serial">Serial data source.</param>
+        public void Add(WorksheetChartDataSerial serial)
+        {
+            serials.Add(serial);
 
-		internal void UpdateCategoryCount(WorksheetChartDataSerial serial)
-		{
-			this.categoryCount = Math.Max(this.categoryCount, Math.Max(serial.DataRange.Cols, serial.DataRange.Rows));
-		}
+            UpdateCategoryCount(serial);
+        }
 
-		/// <summary>
-		/// Add serial data into data source from a range, set the name as the label of serial.
-		/// </summary>
-		/// <param name="worksheet">Worksheet instance to read serial data.</param>
-		/// <param name="name">Name for serial to be added.</param>
-		/// <param name="serialRange">Range to read serial data from worksheet.</param>
-		/// <returns>Instance of chart serial has been added.</returns>
-		public WorksheetChartDataSerial AddSerial(Worksheet worksheet, CellPosition labelAddress, RangePosition serialRange)
-		{
-			var serial = new WorksheetChartDataSerial(this, worksheet, labelAddress, serialRange);
-			this.Add(serial);
-			return serial;
-		}
+        internal void UpdateCategoryCount(WorksheetChartDataSerial serial)
+        {
+            if (serial.DataRange is null)
+            {
+                Debug.Fail($"Ожидается, что {nameof(serial)}.{nameof(serial.DataRange)} будет не null");
+                return;
+            }
+            _categoryCount = Math.Max(_categoryCount, Math.Max(serial.DataRange.Position.Cols, serial.DataRange.Position.Rows));
+        }
 
-		public WorksheetChartDataSerial GetSerial(int index)
-		{
-			if (index < 0 || index >= this.serials.Count)
-			{
-				throw new ArgumentOutOfRangeException("index");
-			}
+        /// <summary>
+        /// Add serial data into data source from a range, set the name as the label of serial.
+        /// </summary>
+        /// <param name="name">Name for serial to be added.</param>
+        /// <param name="serialRange">Range to read serial data from worksheet.</param>
+        /// <returns>Instance of chart serial has been added.</returns>
+        public WorksheetChartDataSerial AddSerial(WorksheetedCellPosition labelAddress, WorksheetedRangePosition serialRange)
+        {
+            var serial = new WorksheetChartDataSerial(this, labelAddress, serialRange);
+            Add(serial);
+            return serial;
+        }
 
-			return this.serials[index];
-		}
+        public WorksheetChartDataSerial GetSerial(int index)
+        {
+            if (index < 0 || index >= serials.Count)
+            {
+                throw new ArgumentOutOfRangeException(nameof(index));
+            }
 
-		private WorksheetChartDataSerialCollection collection;
+            return serials[index];
+        }
+        
+        /// <summary>
+        /// Get collection of data serials.
+        /// </summary>
+        public WorksheetChartDataSerialCollection Serials 
+            => _collection ?? (_collection = new WorksheetChartDataSerialCollection(this));
 
-		/// <summary>
-		/// Get collection of data serials.
-		/// </summary>
-		public WorksheetChartDataSerialCollection Serials
-		{
-			get
-			{
-				if (this.collection == null)
-				{
-					this.collection = new WorksheetChartDataSerialCollection(this);
-				}
-				return this.collection;
-			}
-		}
-		#endregion // Serials
-	}
+        #endregion // Serials
 
-	#region WorksheetChartDataSerialCollection
+        #region Приватные поля
+
+        private readonly Worksheet _worksheet;
+
+        private WorksheetChartDataSerialCollection _collection;
+
+        private int _categoryCount;
+
+        #endregion
+    }
+
+#region WorksheetChartDataSerialCollection
 	/// <summary>
 	/// Represents collection of data serial.
 	/// </summary>
@@ -395,198 +417,344 @@ namespace unvell.ReoGrid.Chart
 	#endregion // WorksheetChartDataSerialCollection
 
 	#region WorksheetChartDataSerial
+	
 	/// <summary>
-	/// Represents implementation of chart data serial.
-	/// </summary>
-	public class WorksheetChartDataSerial : IChartDataSerial
-	{
-		private WorksheetChartDataSource dataSource;
+    /// Represents implementation of chart data serial.
+    /// </summary>
+    // ReSharper disable once InheritdocConsiderUsage
+    public class WorksheetChartDataSerial : IChartDataSerial
+    {
+        #region Конструктор
 
-		private Worksheet worksheet;
+        /// <param name="dataSource">Data source to read chart data from worksheet.</param>
+        /// <param name="worksheet">Instance of worksheet that contains the data to be read.</param>
+        /// <param name="labelAddress">The address to locate label of serial on worksheet.</param>
+        /// <param name="dataRange">Serial data range to read serial data for chart from worksheet.</param>
+        public WorksheetChartDataSerial(
+            WorksheetChartDataSource dataSource,
+            // Worksheet worksheet,
+            WorksheetedCellPosition labelAddress,
+            WorksheetedRangePosition dataRange)
+            : this(dataSource, /*worksheet,*/ labelAddress)
+        {
+            _dataRange = dataRange;
+        }
 
-		/// <summary>
-		/// Get instance of worksheet
-		/// </summary>
-		public Worksheet Worksheet { get; protected set; }
+        /// <summary>
+        /// Create data serial by specified worksheet instance and data range.
+        /// </summary>
+        /// <param name="dataSource">Data source to read chart data from worksheet.</param>
+        /// <param name="worksheet">Instance of worksheet that contains the data to be read.</param>
+        /// <param name="labelAddress">The address to locate label of serial on worksheet.</param>
+        /// <param name="addressOrName">Serial data specified by address position or range's name.</param>
+        public WorksheetChartDataSerial(
+            WorksheetChartDataSource dataSource,
+            Worksheet worksheet,
+            string labelAddress,
+            string addressOrName)
+            : this(dataSource, /*worksheet,*/ new WorksheetedCellPosition(worksheet, labelAddress))
+        {
+            if (RangePosition.IsValidAddress(addressOrName))
+            {
+                _dataRange = new WorksheetedRangePosition(worksheet, addressOrName);
+            }
+            else if (NamedRange.IsValidName(addressOrName))
+            {
+                if (worksheet != null)
+                {
+                    if (worksheet.TryGetNamedRange(addressOrName, out var range))
+                    {
+                        _dataRange = new WorksheetedRangePosition(worksheet, range);
+                    }
+                    else
+                    {
+                        throw new InvalidAddressException(addressOrName);
+                    }
+                }
+                else
+                {
+                    throw new ReferenceObjectNotAssociatedException("Data source must associate to valid worksheet instance.");
+                }
+            }
+            else
+            {
+                throw new InvalidAddressException(addressOrName);
+            }
+        }
 
-		private RangePosition dataRange;
+        protected WorksheetChartDataSerial(WorksheetChartDataSource dataSource, /*Worksheet worksheet,*/ WorksheetedCellPosition labelAddress)
+        {
+            if (dataSource == null)
+            {
+                throw new ArgumentNullException(nameof(dataSource));
+            }
+            _dataSource = dataSource;
+            LabelAddress = labelAddress;
+            AddEventHandlers();
+        }
 
-		/// <summary>
-		/// Determine the range to read data from worksheet
-		/// </summary>
-		public virtual RangePosition DataRange
-		{
-			get { return dataRange; }
-			set
-			{
-				if (this.dataRange != value)
-				{
-					this.dataRange = value;
 
-					//this.dataSource.OnDataRangeChanged();
-					this.dataSource.OnDataChanged();
-				}
-			}
-		}
 
-		//private string name;
-		public CellPosition LabelAddress { get; set; }
+        #endregion
 
-		protected WorksheetChartDataSerial(WorksheetChartDataSource dataSource, Worksheet worksheet, CellPosition labelAddress)
-		{
-			if (dataSource == null)
-			{
-				throw new ArgumentNullException("dataSource");
-			}
+        #region Деструктор
 
-			if (worksheet == null)
-			{
-				throw new ArgumentNullException("worksheet");
-			}
+        /// <summary>
+        /// Destroy the worksheet data serial and release all event handlers to data source.
+        /// </summary>
+        ~WorksheetChartDataSerial()
+        {
+            RemoveEventHandlers();
+        }
 
-			this.dataSource = dataSource;
-			this.worksheet = worksheet;
-			this.LabelAddress = labelAddress;
+        #endregion
 
-			if (this.worksheet != null)
-			{
-				this.worksheet.CellDataChanged += worksheet_CellDataChanged;
-				this.worksheet.RangeDataChanged += worksheet_RangeDataChanged;
-			}
-		}
+        #region Методы
 
-		/// <summary>
-		/// Destroy the worksheet data serial and release all event handlers to data source.
-		/// </summary>
-		~WorksheetChartDataSerial()
-		{
-			if (this.worksheet != null)
-			{
-				this.worksheet.CellDataChanged -= worksheet_CellDataChanged;
-				this.worksheet.RangeDataChanged -= worksheet_RangeDataChanged;
-			}
-		}
+        private void AddEventHandlers()
+        {
+            if (LabelAddress?.Worksheet != null)
+            {
+                AddCellDataChangedEventHandlers(LabelAddress.Worksheet);
+                RangeDataChangedEventHandlers(LabelAddress.Worksheet);
+            }
+            if (DataRange?.Worksheet != null)
+            {
+                AddCellDataChangedEventHandlers(DataRange.Worksheet);
+                RangeDataChangedEventHandlers(DataRange.Worksheet);
+            }
+        }
 
-		/// <param name="dataSource">Data source to read chart data from worksheet.</param>
-		/// <param name="worksheet">Instance of worksheet that contains the data to be read.</param>
-		/// <param name="labelAddress">The address to locate label of serial on worksheet.</param>
-		/// <param name="dataRange">Serial data range to read serial data for chart from worksheet.</param>
-		public WorksheetChartDataSerial(WorksheetChartDataSource dataSource, Worksheet worksheet, CellPosition labelAddress, RangePosition dataRange)
-			: this(dataSource, worksheet, labelAddress)
-		{
-			this.dataRange = dataRange;
-		}
+        private void AddCellDataChangedEventHandlers(Worksheet worksheet)
+        {
+            if (worksheet is null) return;
+            if (!_cellDataChangedHanlders.ContainsKey(worksheet))
+            {
+                _cellDataChangedHanlders[worksheet] = (sender, args) =>
+                {
+                    worksheet_CellDataChanged(args, worksheet);
+                };
+                worksheet.CellDataChanged +=  _cellDataChangedHanlders[worksheet];
+            }
+        }
 
-		/// <summary>
-		/// Create data serial by specified worksheet instance and data range.
-		/// </summary>
-		/// <param name="dataSource">Data source to read chart data from worksheet.</param>
-		/// <param name="worksheet">Instance of worksheet that contains the data to be read.</param>
-		/// <param name="labelAddress">The address to locate label of serial on worksheet.</param>
-		/// <param name="addressOrName">Serial data specified by address position or range's name.</param>
-		public WorksheetChartDataSerial(WorksheetChartDataSource dataSource, Worksheet worksheet, string labelAddress, string addressOrName)
-			: this(dataSource, worksheet, new CellPosition(labelAddress))
-		{
-			if (RangePosition.IsValidAddress(addressOrName))
-			{
-				this.dataRange = new RangePosition(addressOrName);
-			}
-			else if (NamedRange.IsValidName(addressOrName))
-			{
-				if (this.worksheet != null)
-				{
-					if (worksheet.TryGetNamedRange(addressOrName, out var range))
-					{
-						this.dataRange = range;
-					}
-					else
-					{
-						throw new InvalidAddressException(addressOrName);
-					}
-				}
-				else
-				{
-					throw new ReferenceObjectNotAssociatedException("Data source must associate to valid worksheet instance.");
-				}
-			}
-			else
-			{
-				throw new InvalidAddressException(addressOrName);
-			}
-		}
+        private void RangeDataChangedEventHandlers(Worksheet worksheet)
+        {
+            if (worksheet is null) return;
+            if (!_rangeEventArgsDataChangedHanlders.ContainsKey(worksheet))
+            {
+                _rangeEventArgsDataChangedHanlders[worksheet] = (sender, args) =>
+                {
+                    worksheet_RangeDataChanged(args, worksheet);
+                };
+                worksheet.RangeDataChanged += _rangeEventArgsDataChangedHanlders[worksheet];
+            }
+        }
 
-		#region Events
-		void worksheet_CellDataChanged(object sender, Events.CellEventArgs e)
-		{
-			var pos = e.Cell.Position;
+        private void RemoveEventHandlers()
+        {
+            foreach (var worksheet in _cellDataChangedHanlders.Keys)
+            {
+                try
+                {
+                    worksheet.CellDataChanged -= _cellDataChangedHanlders[worksheet];
+                }
+                catch (Exception exc)
+                {
+                    Debug.Fail(exc.Message);
+                    // ignore
+                }
+            }
+            foreach (var worksheet in _rangeEventArgsDataChangedHanlders.Keys)
+            {
+                try
+                {
+                    worksheet.RangeDataChanged -= _rangeEventArgsDataChangedHanlders[worksheet];
+                }
+                catch (Exception exc)
+                {
+                    Debug.Fail(exc.Message);
+                    // ignore
+                }
+            }
+        }
 
-			if (dataRange.Contains(pos) || this.LabelAddress == pos)
-			{
-				this.dataSource.OnDataChanged();
-			}
-		}
+        #endregion
 
-		void worksheet_RangeDataChanged(object sender, Events.RangeEventArgs e)
-		{
-			var range = e.Range;
+        #region Свойства
 
-			if (dataRange.IntersectWith(range) || range.Contains(this.LabelAddress))
-			{
-				this.dataSource.OnDataChanged();
-			}
-		}
-		#endregion // Events
 
-		/// <summary>
-		/// Get label text of serial.
-		/// </summary>
-		public string Label
-		{
-			get { return this.worksheet == null || this.LabelAddress.IsEmpty ? string.Empty
-					: this.worksheet.GetCellText(this.LabelAddress); }
-		}
+        /// <summary>
+        /// Get instance of worksheet
+        /// </summary>
+        [Obsolete("Данное свойство ни имеет смысла")]
+        public Worksheet Worksheet { get; protected set; }
 
-		/// <summary>
-		/// Get number of data items of current serial.
-		/// </summary>
-		public int Count
-		{
-			get { return dataRange.Cols; }
-		}
 
-		/// <summary>
-		/// Get data from serial by specified index position.
-		/// </summary>
-		/// <param name="index">Zero-based index position in serial to get data.</param>
-		/// <returns>Data in double type to be get from specified index of serial.
-		/// If index is out of range, or data in worksheet is null, then return null.
-		/// </returns>
-		public double? this[int index]
-		{
-			get
-			{
-				object data;
+        /// <summary>
+        /// Determine the range to read data from worksheet
+        /// </summary>
+        public virtual WorksheetedRangePosition DataRange
+        {
+            get => _dataRange;
+            set
+            {
+                if (_dataRange != value)
+                {
+                    _dataRange = value;
 
-				if (this.dataRange.Rows > this.dataRange.Cols)
-				{
-					data = worksheet.GetCellData(this.dataRange.Row + index, this.dataRange.Col);
-				}
-				else
-				{
-					data = worksheet.GetCellData(this.dataRange.Row, this.dataRange.Col + index);
-				}
+                    //this.dataSource.OnDataRangeChanged();
+                    _dataSource.OnDataChanged();
+                }
+            }
+        }
 
-				if (unvell.ReoGrid.Utility.CellUtility.TryGetNumberData(data, out var val))
-				{
-					return val;
-				}
-				else
-				{
-					return null;
-				}
-			}
-		}
-	}
+        //private string name;
+        public WorksheetedCellPosition LabelAddress { get; set; }
+
+        /// <summary>
+        /// Get label text of serial.
+        /// </summary>
+        public string Label => LabelAddress.GetCellText();
+
+        /// <summary>
+        /// Get number of data items of current serial.
+        /// </summary>
+        // ReSharper disable once InheritdocConsiderUsage
+        public int Count
+        {
+            get
+            {
+                if (_dataRange is null)
+                {
+                    Debug.Fail($"Ожидается что {nameof(_dataRange)} будет заполнен");
+                    return 0;
+                }
+                var result = 0;
+                if (DataRange.Position.Rows > DataRange.Position.Cols)
+                {
+                    result = DataRange.Position.Rows;
+                }
+                else
+                {
+                    result = DataRange.Position.Cols;
+                }
+                return result;
+            }
+        }
+
+        /// <summary>
+        /// Get data from serial by specified index position.
+        /// </summary>
+        /// <param name="index">Zero-based index position in serial to get data.</param>
+        /// <returns>Data in double type to be get from specified index of serial.
+        /// If index is out of range, or data in worksheet is null, then return null.
+        /// </returns>
+        // ReSharper disable once InheritdocConsiderUsage
+        public double? this[int index]
+        {
+            get
+            {
+                if (DataRange is null)
+                {
+                    Debug.Fail($"Ожидается что {nameof(DataRange)} будет заполнен");
+                    return null;
+                }
+                if (DataRange.Worksheet is null)
+                {
+                    Debug.Fail($"Ожидается что {nameof(DataRange)}.{nameof(DataRange.Worksheet)} будет заполнен");
+                    return null;
+                }
+
+
+                object data;
+                if (_dataRange.Position.Rows > _dataRange.Position.Cols)
+                {
+                    data = DataRange.Worksheet.GetCellData(_dataRange.Position.Row + index, _dataRange.Position.Col);
+                }
+                else
+                {
+                    data = DataRange.Worksheet.GetCellData(_dataRange.Position.Row, _dataRange.Position.Col + index);
+                }
+
+                if (Utility.CellUtility.TryGetNumberData(data, out var val))
+                {
+                    return val;
+                }
+                return null;
+            }
+        }
+
+        #endregion
+
+        #region Events
+
+        void worksheet_CellDataChanged(CellEventArgs e, Worksheet worksheet)
+        {
+            var cell = e.Cell;
+            if (DataRange != null)
+            {
+                if (worksheet == DataRange.Worksheet)
+                {
+                    if(DataRange.Position.Contains(cell.Position))
+                        _dataSource.OnDataChanged();
+                }
+            }
+            else if (LabelAddress != null)
+            {
+                if (worksheet == LabelAddress.Worksheet)
+                {
+                    if (LabelAddress.Position == cell.Position)
+                        _dataSource.OnDataChanged();
+                }
+            }
+            else
+            {
+                Debug.Fail($"Ожидается что {nameof(_dataRange)} будет заполнен");
+            }
+        }
+
+        void worksheet_RangeDataChanged(RangeEventArgs e, Worksheet worksheet)
+        {
+            var range = e.Range;
+            if (DataRange != null)
+            {
+                if (worksheet == DataRange.Worksheet)
+                {
+                    if (DataRange.Position.IntersectWith(range))
+                        _dataSource.OnDataChanged();
+                }
+            }
+            else if (LabelAddress != null)
+            {
+                if (worksheet == LabelAddress.Worksheet)
+                {
+                    if (range.Contains(LabelAddress.Position))
+                        _dataSource.OnDataChanged();
+                }
+            }
+            else
+            {
+                Debug.Fail($"Ожидается что {nameof(_dataRange)} будет заполнен");
+            }
+        }
+
+
+        #endregion // Events
+
+        #region Приватные поля
+
+        private readonly WorksheetChartDataSource _dataSource;
+
+        private WorksheetedRangePosition _dataRange;
+
+        private readonly Dictionary<Worksheet, EventHandler<CellEventArgs>> _cellDataChangedHanlders = new Dictionary<Worksheet, EventHandler<CellEventArgs>>();
+
+        private readonly Dictionary<Worksheet, EventHandler<RangeEventArgs>> _rangeEventArgsDataChangedHanlders = new Dictionary<Worksheet, EventHandler<RangeEventArgs>>();
+
+        #endregion
+    }
+	
 	#endregion // WorksheetChartDataSerial
 
 }

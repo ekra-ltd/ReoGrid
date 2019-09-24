@@ -1702,6 +1702,9 @@ namespace unvell.ReoGrid.IO.OpenXML.Schema
 
 		[XmlElement("legend")]
 		public Legend legend;
+
+		[XmlElement("title")]
+		public CT_Title Title { get; set; }
 	}
 
 	public class PlotArea
@@ -1769,6 +1772,7 @@ namespace unvell.ReoGrid.IO.OpenXML.Schema
 	{
 		ChartText ChartLabel { get; }
 		ChartDataValues Values { get; }
+		CT_AxDataSource Categories { get; }
 	}
 
 	public class LineChartSerial : IChartSerial
@@ -1784,6 +1788,9 @@ namespace unvell.ReoGrid.IO.OpenXML.Schema
 
 		[XmlIgnore]
 		public ChartDataValues Values { get { return this.values; } }
+
+		[XmlElement("cat")]
+		public CT_AxDataSource Categories { get; set; }
 	}
 
 	public class BarChartSerial : IChartSerial
@@ -1799,6 +1806,9 @@ namespace unvell.ReoGrid.IO.OpenXML.Schema
 
 		[XmlIgnore]
 		public ChartDataValues Values { get { return this.values; } }
+
+		[XmlElement("cat")]
+		public CT_AxDataSource Categories { get; set; }
 	}
 
 	public class PieChartSerial : IChartSerial
@@ -1814,6 +1824,9 @@ namespace unvell.ReoGrid.IO.OpenXML.Schema
 
 		[XmlIgnore]
 		public ChartDataValues Values { get { return this.values; } }
+
+		[XmlElement("cat")]
+		public CT_AxDataSource Categories { get; set; }
 	}
 
 	public class AreaChartSerial : IChartSerial
@@ -1829,6 +1842,9 @@ namespace unvell.ReoGrid.IO.OpenXML.Schema
 
 		[XmlIgnore]
 		public ChartDataValues Values { get { return this.values; } }
+
+		[XmlElement("cat")]
+		public CT_AxDataSource Categories { get; set; }
 	}
 
 	public class ChartText
@@ -1893,22 +1909,22 @@ namespace unvell.ReoGrid.IO.OpenXML.Schema
 	public class DataLabels
 	{
 		[XmlElement("showLegendKey")]
-		public ElementValue<int> ShowLegendKey;
+		public ElementValue<bool> ShowLegendKey;
 
 		[XmlElement("showVal")]
-		public ElementValue<int> showVal;
+		public ElementValue<bool> showVal;
 
 		[XmlElement("showCatName")]
-		public ElementValue<int> showCatName;
+		public ElementValue<bool> showCatName;
 
 		[XmlElement("showSerName")]
-		public ElementValue<int> showSerName;
+		public ElementValue<bool> showSerName;
 
 		[XmlElement("showPercent")]
-		public ElementValue<int> showPercent;
+		public ElementValue<bool> showPercent;
 
 		[XmlElement("showBubbleSize")]
-		public ElementValue<int> showBubbleSize;
+		public ElementValue<bool> showBubbleSize;
 	}
 
 	public class Scaling
