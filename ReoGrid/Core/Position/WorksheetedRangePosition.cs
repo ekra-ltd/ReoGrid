@@ -86,7 +86,7 @@ namespace unvell.ReoGrid
                         var ws = worksheet.Workbook?.GetWorksheetByName(worksheetName);
                         if (ws != null)
                         {
-                            result = new WorksheetedRangePosition(worksheet, s);
+                            result = new WorksheetedRangePosition(ws, s);
                         }
                     }
                 }

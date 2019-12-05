@@ -99,7 +99,16 @@ namespace unvell.ReoGrid.IO.OpenXML
             {
                 sheet.RecalcConditionalFormats();
             }
-
+            foreach (var sheet in rgWorkbook.Worksheets)
+            {
+                foreach (var floatingObjects in sheet.FloatingObjects)
+                {
+                    if (floatingObjects is Chart.Chart chart)
+                    {
+                        chart.UpdateLayoutInternal();
+                    }
+                }
+            }
 #if DEBUG
             sw.Stop();
             long ms = sw.ElapsedMilliseconds;
@@ -2833,6 +2842,18 @@ switch (graphic.graphicData.uri)
                 if (!string.IsNullOrEmpty(strRef?.f))
                 {
                     catRange = WorksheetedRangePosition.TryCreateFromFormula(rgSheet, strRef.f);
+                    if (catRange != null)
+                    {
+                        dataSource.CategoryNameRange = catRange;
+                    }
+                }
+
+            }
+            if (dataSource.CategoryNameRange is null && serial.Categories?.Item is CT_NumRef numRef)
+            {
+                if (!string.IsNullOrEmpty(numRef?.f))
+                {
+                    catRange = WorksheetedRangePosition.TryCreateFromFormula(rgSheet, numRef.f);
                     if (catRange != null)
                     {
                         dataSource.CategoryNameRange = catRange;

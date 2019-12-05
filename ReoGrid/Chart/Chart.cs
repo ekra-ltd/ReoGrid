@@ -101,6 +101,11 @@ namespace unvell.ReoGrid.Chart
 			this.layoutDirty = true;
 		}
 
+		internal virtual void UpdateLayoutInternal()
+		{
+			UpdateLayout();
+		}
+		
 		/// <summary>
 		/// Update children view bounds.
 		/// </summary>
@@ -975,6 +980,13 @@ namespace unvell.ReoGrid.Chart
 
 		#region Layout
 
+		internal override void UpdateLayoutInternal()
+		{
+			base.UpdateLayoutInternal();
+			UpdatePlotData();
+			UpdateDrawPoints();
+		}
+		
 		/// <summary>
 		/// Update all children bounds.
 		/// </summary>

@@ -230,9 +230,10 @@ namespace unvell.ReoGrid.Chart
             {
                 return null;
             }
+            var worksheet = CategoryNameRange?.Worksheet ?? _worksheet;
             if(CategoryNameRange.Position.Cols == 1 && CategoryNameRange.Position.Rows > 1)
-                return _worksheet.GetCellData<string>(CategoryNameRange.Position.Row + index, CategoryNameRange.Position.Col );
-            return _worksheet.GetCellData<string>(CategoryNameRange.Position.Row, CategoryNameRange.Position.Col + index);
+                return worksheet.GetCellData<string>(CategoryNameRange.Position.Row + index, CategoryNameRange.Position.Col );
+            return worksheet.GetCellData<string>(CategoryNameRange.Position.Row, CategoryNameRange.Position.Col + index);
         }
 
         #endregion // Category
