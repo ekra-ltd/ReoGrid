@@ -84,9 +84,9 @@ namespace unvell.ReoGrid.DataFormat
 
 				if (isNumeric) cell.InnerData = value;
 			}
-			else if (data is DateTime)
+			else if (data is DateTime dateTime)
 			{
-				value = ((DateTime)data - new DateTime(1900, 1, 1)).TotalDays;
+				value = dateTime.ToOADate();
 				isNumeric = true;
 			}
 

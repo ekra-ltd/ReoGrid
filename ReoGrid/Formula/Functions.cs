@@ -21,6 +21,7 @@
 using System;
 using System.Collections.Generic;
 
+using unvell.ReoGrid.DataFormat;
 using unvell.ReoGrid.Utility;
 
 namespace unvell.ReoGrid.Formula
@@ -400,9 +401,9 @@ namespace unvell.ReoGrid.Formula
 		#region Min/Max
 		public static FormulaValue Min(Cell cell, FormulaValue[] args)
 		{
-			double min = 0;
+			var min = double.PositiveInfinity;
 			double data;
-			bool first = true;
+			bool isAllDateTime = true;
 
 			foreach (var arg in args)
 			{
@@ -417,18 +418,10 @@ namespace unvell.ReoGrid.Formula
 						var sheetRange = arg.GetSheetRangePosition();
 						(sheetRange.Worksheet ?? cell.Worksheet).IterateCells(sheetRange.Position, (r, c, inCell) =>
 						{
-							if (CellUtility.TryGetNumberData(inCell.InnerData, out data))
-							{
-								if (first)
-								{
-									min = data;
-									first = false;
-								}
-								else if (min > data)
-								{
-									min = data;
-								}
-							}
+							if (!(inCell.InnerData is DateTime))
+								isAllDateTime = false;
+							if (CellUtility.TryGetNumberData(inCell.InnerData, out data) && data < min)
+								min = data;
 
 							return true;
 						});
@@ -436,31 +429,26 @@ namespace unvell.ReoGrid.Formula
 
 					case FormulaValueType.Number:
 						data = (double)arg.value;
-
-						if (first)
-						{
+						isAllDateTime = false;
+						if (data < min)
 							min = data;
-							first = false;
-						}
-						else if (min > data)
-						{
-							min = data;
-						}
 						break;
 
 					default:
 						return null;
 				}
 			}
+			if (isAllDateTime)
+				cell.DataFormat = CellDataFormatFlag.DateTime;
 
-			return min;
+			return double.IsPositiveInfinity(min) ? 0 : min;
 		}
 
 		public static FormulaValue Max(Cell cell, FormulaValue[] args)
 		{
-			double max = 0;
+			var max = double.NegativeInfinity;
 			double data;
-			bool first = true;
+			bool isAllDateTime = true;
 
 			foreach (var arg in args)
 			{
@@ -475,18 +463,10 @@ namespace unvell.ReoGrid.Formula
 						var sheetRange = arg.GetSheetRangePosition();
 						(sheetRange.Worksheet ?? cell.Worksheet).IterateCells(sheetRange.Position, (r, c, inCell) =>
 						{
-							if (CellUtility.TryGetNumberData(inCell.InnerData, out data))
-							{
-								if (first)
-								{
-									max = data;
-									first = false;
-								}
-								else if (max < data)
-								{
-									max = data;
-								}
-							}
+							if (!(inCell.InnerData is DateTime))
+								isAllDateTime = false;
+							if (CellUtility.TryGetNumberData(inCell.InnerData, out data) && data > max)
+								max = data;
 
 							return true;
 						});
@@ -494,15 +474,9 @@ namespace unvell.ReoGrid.Formula
 
 					case FormulaValueType.Number:
 						data = (double)arg.value;
-						if (first)
-						{
+						isAllDateTime = false;
+						if (data > max)
 							max = data;
-							first = false;
-						}
-						else if (max < data)
-						{
-							max = data;
-						}
 						break;
 
 					default:
@@ -510,7 +484,10 @@ namespace unvell.ReoGrid.Formula
 				}
 			}
 
-			return max;
+			if (isAllDateTime)
+				cell.DataFormat = CellDataFormatFlag.DateTime;
+
+			return double.IsNegativeInfinity(max) ? 0 : max;
 		}
 
 		#endregion // Min/Max

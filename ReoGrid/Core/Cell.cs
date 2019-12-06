@@ -1394,6 +1394,11 @@ namespace unvell.ReoGrid.Utility
 					;
 
 			}
+			else if (data is DateTime dateTime)
+			{
+				value = dateTime.ToOADate();
+				return true;
+			}
 			else
 			{
 				value = 0;

@@ -1349,7 +1349,7 @@ namespace unvell.ReoGrid.IO.OpenXML
 							else if (data is DateTime)
 							{
 								var dt = (DateTime)data;
-								double days = (dt - DateTimeDataFormatter.BaseStartDate).TotalDays + 1;
+								double days = (dt - Constants.ExcelZeroDatePoint).TotalDays + 1;
 								if (days > 59) days++;
 
 								cell.value = new ElementText(Convert.ToString(days, EnglishCulture));

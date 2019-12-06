@@ -28,9 +28,9 @@ namespace unvell.ReoGrid.DataFormat
 				isFormat = true;
 				digits = 9;
 			}
-			else if (data is DateTime)
+			else if (data is DateTime dateTime)
 			{
-				percent = ((DateTime)data - new DateTime(1900, 1, 1)).TotalDays;
+				percent = dateTime.ToOADate();
 				isFormat = true;
 				digits = 0;
 			}
@@ -74,7 +74,7 @@ namespace unvell.ReoGrid.DataFormat
 						DateTime date = new DateTime(1900, 1, 1);
 						if (DateTime.TryParse(str, out date))
 						{
-							percent = (date - new DateTime(1900, 1, 1)).TotalDays;
+							percent = date.ToOADate();
 							isFormat = true;
 						}
 					}

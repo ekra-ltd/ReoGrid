@@ -33,12 +33,12 @@ namespace unvell.ReoGrid.DataFormat
 	/// </summary>
 	public class DateTimeDataFormatter : IDataFormatter
 	{
-		private static DateTime baseStartDate = new DateTime(1900, 1, 1);
+		// private static DateTime baseStartDate = new DateTime(1900, 1, 1);
 
 		/// <summary>
 		/// Base start time used to calculcate the date from a number value
 		/// </summary>
-		public static DateTime BaseStartDate { get { return baseStartDate; } set { baseStartDate = value; } }
+		// public static DateTime BaseStartDate { get { return baseStartDate; } set { baseStartDate = value; } }
 
 		/// <summary>
 		/// Format cell
@@ -51,7 +51,7 @@ namespace unvell.ReoGrid.DataFormat
 
 			bool isFormat = false;
 			double number;
-			DateTime value = baseStartDate;
+			DateTime value = Constants.ExcelZeroDatePoint;
 			string formattedText = null;
 
 			if (data is DateTime)
@@ -66,9 +66,9 @@ namespace unvell.ReoGrid.DataFormat
 					// Excel/Lotus 2/29/1900 bug   
 					// original post: http://stackoverflow.com/questions/4538321/reading-datetime-value-from-excel-sheet
 					value = DateTime.FromOADate(number);
-					if (value < baseStartDate)
+					if (value < Constants.ExcelZeroDatePoint)
 					{
-						value = baseStartDate + value.TimeOfDay;
+						value = Constants.ExcelZeroDatePoint + value.TimeOfDay;
 					}
 					isFormat = true;
 				}

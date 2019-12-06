@@ -50,7 +50,7 @@ namespace unvell.ReoGrid.DataFormat
 			}
 			else if (data is DateTime)
 			{
-				currency = (new DateTime(1900, 1, 1) - (DateTime)data).TotalDays;
+				currency = (Constants.ExcelZeroDatePoint - (DateTime)data).TotalDays;
 				isFormat = true;
 			}
 			else

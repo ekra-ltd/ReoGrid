@@ -21,6 +21,7 @@
 using System;
 using System.Collections.Generic;
 
+using unvell.ReoGrid.DataFormat;
 using unvell.ReoGrid.Utility;
 
 namespace unvell.ReoGrid.Formula
@@ -783,7 +784,8 @@ namespace unvell.ReoGrid.Formula
 						throw new FormulaParameterMismatchException(cell);
 					}
 
-					dt = new DateTime(1900, 1, 1, (int)(double)args[0].value, (int)(double)args[1].value, (int)(double)args[2].value);
+					dt = new DateTime(Constants.ExcelZeroDatePoint.Year, Constants.ExcelZeroDatePoint.Month, Constants.ExcelZeroDatePoint.Day,
+					(int)(double)args[0].value, (int)(double)args[1].value, (int)(double)args[2].value);
 
 					if (cell.DataFormat == DataFormat.CellDataFormatFlag.General)
 					{
@@ -1270,7 +1272,7 @@ namespace unvell.ReoGrid.Formula
 		#region DateTime
 		public static implicit operator DateTime(FormulaValue value)
 		{
-			return value.type != FormulaValueType.DateTime ? new DateTime(1900, 1, 1) : (DateTime)value.value;
+			return value.type != FormulaValueType.DateTime ? Constants.ExcelZeroDatePoint : (DateTime)value.value;
 		}
 
 		public static implicit operator FormulaValue(DateTime b)
