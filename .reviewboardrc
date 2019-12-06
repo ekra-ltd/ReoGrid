@@ -1,0 +1,3 @@
+REVIEWBOARD_URL = "https://soft-scm.ekra.local/rb/"
+REPOSITORY = "third-party-ReoGrid.git"
+DISABLE_SSL_VERIFICATION = "Y"
