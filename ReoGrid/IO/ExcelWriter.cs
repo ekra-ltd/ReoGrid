@@ -21,8 +21,10 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
 using System.Linq;
+using System.Reflection;
 using System.Text;
 using unvell.ReoGrid.DataFormat;
+using unvell.ReoGrid.Formula;
 using unvell.ReoGrid.Graphics;
 using unvell.ReoGrid.IO.Additional.Excel.FloatingObjects;
 using unvell.ReoGrid.IO.OpenXML.Schema;
@@ -1067,6 +1069,65 @@ namespace unvell.ReoGrid.IO.OpenXML
 		#region Worksheet
 		internal static readonly System.Globalization.CultureInfo EnglishCulture = System.Globalization.CultureInfo.GetCultureInfo("en-US");
 
+		        private class CultureData
+        {
+            public string RU;
+            public string EN;
+        }
+
+        private static void DescendantsNodes(StringBuilder formula, Dictionary<string, CultureData> dictionary, STFunctionNode root)
+        {
+            if (root?.Type != STNodeType.FUNCTION_CALL)
+                return;
+            foreach (var child in root.Children.OfType<STFunctionNode>().OrderByDescending(i => i.Start))
+                DescendantsNodes(formula, dictionary, child);
+            var replacer = dictionary.Values.FirstOrDefault(i => i.RU == root.Name);
+            if (replacer != null)
+                formula.Replace(replacer.RU, replacer.EN, root.Start, replacer.RU.Length);
+        }
+
+        private static string LocalizeFormula(Cell formula)
+        {
+            var fieldsInfos = typeof(BuiltinFunctionNames)
+                .GetFields(BindingFlags.Static | BindingFlags.Public | BindingFlags.FlattenHierarchy)
+                .Where(i => i.IsLiteral && !i.IsInitOnly)
+                .OrderBy(i => i.Name)
+                .ToArray();
+
+            var cultureDictionary = new Dictionary<string, CultureData>();
+            for (var i = 0; i < fieldsInfos.Length; i += 2)
+            {
+                var enParts = fieldsInfos[i].Name.Split('_');
+                var ruParts = fieldsInfos[i + 1].Name.Split('_');
+                if (enParts.Length != 2 || ruParts.Length != 2)
+                    throw new ArgumentException("Error declaration: <Name>_<culture>");
+                var key = enParts[0].ToUpper();
+                if (key != ruParts[0].ToUpper())
+                    throw new ArgumentException("Messed pair with equal keys");
+                if (enParts[1].ToUpper() != @"EN")
+                    throw new ArgumentException("Messed 'EN' culture");
+                if (ruParts[1].ToUpper() != @"RU")
+                    throw new ArgumentException("Messed 'RU' culture");
+                if (cultureDictionary.ContainsKey(key))
+                    throw new ArgumentException("To many declaration of culture keys");
+
+                cultureDictionary[key] = new CultureData();
+                if (fieldsInfos[i].GetRawConstantValue() is string enValue)
+                    cultureDictionary[key].EN = enValue;
+                else
+                    throw new ArgumentException("Error culture: Expected const string for 'EN'");
+
+                if (fieldsInfos[i + 1].GetRawConstantValue() is string ruValue)
+                    cultureDictionary[key].RU = ruValue;
+                else
+                    throw new ArgumentException("Error culture: Expected const string for 'RU'");
+            }
+
+            var builder = new StringBuilder(formula.InnerFormula);
+            DescendantsNodes(builder, cultureDictionary, formula.FormulaTree as STFunctionNode);
+            return builder.ToString();
+        }
+        
 		private static void WriteWorksheet(Document doc, RGWorksheet rgSheet, ExportOptions options)
 		{
 			if (rgSheet.Rows == 0 || rgSheet.Columns == 0)
@@ -1380,7 +1441,7 @@ namespace unvell.ReoGrid.IO.OpenXML
 							// formula
 							if (hasFormula)
 							{
-								cell.formula = new Schema.Formula { val = rgCell.InnerFormula };
+								cell.formula = new Schema.Formula { val = LocalizeFormula(rgCell) };
 							}
 #endregion // Formula
 

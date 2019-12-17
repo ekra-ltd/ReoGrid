@@ -33,12 +33,27 @@ namespace unvell.ReoGrid.DataFormat
 	/// </summary>
 	public class DateTimeDataFormatter : IDataFormatter
 	{
-		// private static DateTime baseStartDate = new DateTime(1900, 1, 1);
+		private class DateTimeFormats
+		{
+			public DateTimeFormats(CultureInfo culture)
+			{
+				Formats = culture.DateTimeFormat.GetAllDateTimePatterns().Distinct().ToArray();
+			}
 
-		/// <summary>
-		/// Base start time used to calculcate the date from a number value
-		/// </summary>
-		// public static DateTime BaseStartDate { get { return baseStartDate; } set { baseStartDate = value; } }
+			public string[] Formats { get; }
+		}
+
+		private static DateTimeFormats CurrentCultureDateTimeFormats { get; } = new DateTimeFormats(Thread.CurrentThread.CurrentCulture);
+
+		private static DateTimeFormats InvariantCultureDateTimeFormats { get; } = new DateTimeFormats(CultureInfo.InvariantCulture);
+
+		private static bool TryParseDateTime(DateTimeFormats data, string src, out DateTime value)
+		{
+			var result = Constants.ExcelZeroDatePoint;
+			var parseResult = data.Formats.Any(format => DateTime.TryParseExact(src, format, Thread.CurrentThread.CurrentCulture, DateTimeStyles.None, out result));
+			value = result;
+			return parseResult;
+		}
 
 		/// <summary>
 		/// Format cell
@@ -90,7 +105,9 @@ namespace unvell.ReoGrid.DataFormat
 				}
 				else
 				{
-					isFormat = (DateTime.TryParse(strdata, out value));
+					isFormat = DateTime.TryParse(strdata, out value)
+								|| TryParseDateTime(CurrentCultureDateTimeFormats, strdata, out value) 
+								|| TryParseDateTime(InvariantCultureDateTimeFormats, strdata, out value);
 				}
 			}
 
