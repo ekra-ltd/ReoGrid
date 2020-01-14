@@ -184,7 +184,7 @@ namespace unvell.ReoGrid.Formula
 				throw new InvalidOperationException("cannot found formula from specified position, try reset formula for the cell again");
 			}
 
-			if (cell.formulaStatus != Formula.FormulaStatus.Normal)
+			if (cell.formulaStatus != Formula.FormulaStatus.Normal && cell.formulaStatus != FormulaStatus.InvalidValue)
 			{
 				throw new InvalidOperationException("formula in specified cell contains errors, correct the formula firstly");
 			}
