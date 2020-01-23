@@ -1407,7 +1407,7 @@ namespace unvell.ReoGrid
         /// <summary>
         /// Get or set the styles flag that indicates what styles are contained in this style set
         /// </summary>
-        public PlainStyleFlag Flag { get; set; }
+        public PlainStyleFlag Flag { get; set; } = Worksheet.GetDefaultStyleFlag();
 
         /// <summary>
         /// Get or set background color 
@@ -1434,12 +1434,12 @@ namespace unvell.ReoGrid
         /// <summary>
         /// Get or set font name
         /// </summary>
-        public string FontName { get; set; }
+        public string FontName { get; set; } = Worksheet.GetDefaultStyleFontName();
 
         /// <summary>
         /// Get or set font size
         /// </summary>
-        public float FontSize { get; set; }
+        public float FontSize { get; set; } = Worksheet.GetDefaultStyleFontSize();
 
         internal Drawing.Text.FontStyles fontStyles = Drawing.Text.FontStyles.Regular;
 
@@ -1506,12 +1506,12 @@ namespace unvell.ReoGrid
         /// <summary>
         /// Get or set horizontal alignment
         /// </summary>
-        public ReoGridHorAlign HAlign { get; set; }
+        public ReoGridHorAlign HAlign { get; set; } = Worksheet.GetDefaultStyleHAlign();
 
         /// <summary>
         /// Get or set vertical alignment
         /// </summary>
-        public ReoGridVerAlign VAlign { get; set; }
+        public ReoGridVerAlign VAlign { get; set; } = Worksheet.GetDefaultStyleVAlign();
 
         /// <summary>
         /// Get or set text-wrap mode

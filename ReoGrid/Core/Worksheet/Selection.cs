@@ -252,7 +252,34 @@ namespace unvell.ReoGrid
 
 		#endregion // Focus & Hover
 
-		internal RangePosition selectionRange = new RangePosition(0, 0, 1, 1);
+		private RangePosition _selectionRange = new RangePosition(0, 0, 1, 1);
+
+		internal RangePosition selectionRange
+		{
+			get => _selectionRange;
+			set
+			{
+				_selectionRange = value;
+
+				if (operationStatus == OperationStatus.RangeSelect)
+				{
+					SelectionRangeChanging?.Invoke(this, new RangeEventArgs(selectionRange));
+
+#if EX_SCRIPT
+					// comment out this if you get performance problem when using script extension
+					RaiseScriptEvent("onselectionchanging");
+#endif
+				}
+				else
+				{
+					RaiseSelectionRangeChanged(new RangeEventArgs(selectionRange));
+#if EX_SCRIPT
+					RaiseScriptEvent("onselectionchange");
+#endif
+				}
+			}
+		}
+
 
 		/// <summary>
 		/// Current selection range of entire grid. If SelectionMode is None, the value of this property will be Empty.
@@ -711,24 +738,6 @@ namespace unvell.ReoGrid
 
 				// update focus return column
 				this.focusReturnColumn = end.Col;
-				
-				if (this.operationStatus == OperationStatus.RangeSelect)
-				{
-					this.SelectionRangeChanging?.Invoke(this, new RangeEventArgs(this.selectionRange));
-
-#if EX_SCRIPT
-					// comment out this if you get performance problem when using script extension
-					RaiseScriptEvent("onselectionchanging");
-#endif
-				}
-				else
-				{
-					this.SelectionRangeChanged?.Invoke(this, new RangeEventArgs(this.selectionRange));
-
-#if EX_SCRIPT
-					RaiseScriptEvent("onselectionchange");
-#endif
-				}
 
 				RequestInvalidate();
 			}

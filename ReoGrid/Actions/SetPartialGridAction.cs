@@ -64,7 +64,6 @@ namespace unvell.ReoGrid.Actions
 			{
 				Worksheet.SetPartialGrid(Range, data, PartialGridCopyFlag.CellData, ExPartialGridCopyFlag.BorderOutsideOwner);
 			}
-			Worksheet.SelectRange(base.Range);
 		}
 
 		/// <summary>

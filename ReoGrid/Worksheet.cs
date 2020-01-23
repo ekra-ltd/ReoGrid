@@ -126,12 +126,23 @@ namespace unvell.ReoGrid
 		/// </summary>
 		public static readonly WorksheetRangeStyle DefaultStyle = new WorksheetRangeStyle
 		{
-			Flag = PlainStyleFlag.FontName | PlainStyleFlag.FontSize | PlainStyleFlag.AlignAll,
-			FontName = "Calibri",
-			FontSize = 10.25f,
-			HAlign = ReoGridHorAlign.General,
-			VAlign = ReoGridVerAlign.General,
+			Flag = GetDefaultStyleFlag(),
+			FontName = GetDefaultStyleFontName(),
+			FontSize = GetDefaultStyleFontSize(),
+			HAlign = GetDefaultStyleHAlign(),
+			VAlign = GetDefaultStyleVAlign(),
 		};
+		
+		public static PlainStyleFlag GetDefaultStyleFlag() => PlainStyleFlag.FontName | PlainStyleFlag.FontSize | PlainStyleFlag.AlignAll;
+
+		public static string GetDefaultStyleFontName() => @"Calibri";
+
+		public static float GetDefaultStyleFontSize() => 10.25f;
+
+		public static ReoGridHorAlign GetDefaultStyleHAlign() => ReoGridHorAlign.General;
+
+		public static ReoGridVerAlign GetDefaultStyleVAlign() => ReoGridVerAlign.General;
+		
 		#endregion
 
 		#region Workbook Relation

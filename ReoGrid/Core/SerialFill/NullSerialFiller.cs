@@ -17,7 +17,7 @@ namespace unvell.ReoGrid.Core.SerialFill
 
         protected override object GetSerialValueInternal(int toIndex)
         {
-            return null;
+            return string.Empty;
         }
     }
 }
