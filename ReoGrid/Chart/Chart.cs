@@ -20,6 +20,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
 
 #if WINFORM || ANDROID
 using RGFloat = System.Single;
@@ -1017,7 +1018,9 @@ namespace unvell.ReoGrid.Chart
 			const RGFloat spacing = 10;
 
 			this.VerticalAxisInfoView.Bounds = new Rectangle(this.ClientBounds.X, plotRect.Y - 5, 30, plotRect.Height + 10);
-			this.HorizontalAxisInfoView.Bounds = new Rectangle(plotRect.X, plotRect.Bottom + spacing, plotRect.Width, 10);
+
+			var height = GetHorizontalAxisLabelHeight(plotRect.Height);
+			HorizontalAxisInfoView.Bounds = new Rectangle(plotRect.X, plotRect.Bottom + spacing, plotRect.Width, height);
 		}
 
 		protected override Rectangle GetPlotViewBounds(Rectangle bodyBounds)
@@ -1026,9 +1029,37 @@ namespace unvell.ReoGrid.Chart
 
 			const RGFloat spacing = 10;
 
-			return new Rectangle(rect.X + 30 + spacing, rect.Y, rect.Width - 30 - spacing, rect.Height - 10);
+			var offset = GetHorizontalAxisLabelHeight(rect.Height);
+			return new Rectangle(rect.X + 30 + spacing, rect.Y, rect.Width - 30 - spacing, rect.Height - offset);
 		}
 
+		protected virtual RGFloat GetHorizontalAxisLabelHeight(RGFloat diagramHeight)
+		{
+			double result;
+			var titles = GetCategoryNames() ?? new List<string>();
+			var boxes = GetCategoryNamesWidths(titles);
+			if (HorizontalAxisInfoView.TextDirection == AxisTextDirection.Horizontal)
+				result = 10;
+			else if (HorizontalAxisInfoView.TextDirection == AxisTextDirection.Column)
+				result = (titles.Max(s => s?.Length ?? 0)-1) * boxes.FirstOrDefault().Height;
+			else
+				result = boxes.Max(b => b.Width);
+			result = Math.Min(result, diagramHeight / 2);
+			return result < 1 ? 10 : result;
+		}
+		private IList<string> GetCategoryNames()
+		{
+			var titles = new List<string>();
+			for (var i = 0; i < DataSource.CategoryCount; i++)
+				titles.Add(DataSource.GetCategoryName(i));
+			return titles;
+		}
+
+		private IList<Size> GetCategoryNamesWidths(IList<string> titles)
+			=> titles.Select(title => !string.IsNullOrEmpty(title)
+				? PlatformUtility.MeasureText(new WPFRenderer(), title, FontName, FontSize, Drawing.Text.FontStyles.Regular)
+				: new Size(0, 0)).ToList();
+		
 		#endregion // Layout
 	}
 

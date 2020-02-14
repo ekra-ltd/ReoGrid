@@ -700,6 +700,14 @@ namespace unvell.ReoGrid.Chart
                     if(DataRange.Position.Contains(cell.Position))
                         _dataSource.OnDataChanged();
                 }
+                if (_dataSource.CategoryNameRange != null)
+                {
+                    if (worksheet == _dataSource.CategoryNameRange.Worksheet)
+                    {
+                        if (_dataSource.CategoryNameRange.Position.Contains(cell.Position))
+                            _dataSource.OnDataChanged();
+                    }
+                }
             }
             else if (LabelAddress != null)
             {

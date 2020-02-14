@@ -1562,6 +1562,12 @@ namespace unvell.ReoGrid.IO.OpenXML.Schema
 
 		[XmlAttribute("anchor")]
 		public string anchor;
+
+		[XmlAttribute("rot")]
+		public string rot;
+
+		[XmlAttribute("vert")]
+		public string vert;
 	}
 
 	public class Paragraph
@@ -1726,6 +1732,12 @@ namespace unvell.ReoGrid.IO.OpenXML.Schema
 
 		[XmlElement("valAx")]
 		public ValueAxis valueAxis;
+
+		[XmlElement("catAx")]
+		public CategoryAxis categoryAxis;
+
+		[XmlElement("dateAx")]
+		public DateAxis dateAxis;
 	}
 
 #region PlotArea
@@ -1873,6 +1885,14 @@ namespace unvell.ReoGrid.IO.OpenXML.Schema
 
 	public class CategoryAxis
 	{
+		[XmlElement("txPr")]
+		public CT_TextBody txPr;
+	}
+
+	public class DateAxis
+	{
+		[XmlElement("txPr")]
+		public CT_TextBody txPr;
 	}
 
 	public class CategoryAxisData

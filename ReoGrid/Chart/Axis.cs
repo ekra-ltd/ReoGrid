@@ -19,6 +19,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text.RegularExpressions;
 
 #if WINFORM || ANDROID
 using RGFloat = System.Single;
@@ -111,6 +112,14 @@ namespace unvell.ReoGrid.Chart
 		Vertical,
 	}
 
+	public enum AxisTextDirection
+	{
+		Horizontal,
+		Up,
+		Down,
+		Column
+	}
+
 	internal struct PlotPointRow : IEnumerable<PlotPointColumn>
 	{
 		public PlotPointColumn[] columns;
@@ -159,6 +168,8 @@ namespace unvell.ReoGrid.Chart
 		public AxisChart Chart { get; protected set; }
 
 		public AxisTypes AxisType { get; protected set; }
+
+		public AxisTextDirection TextDirection { get; set; } = AxisTextDirection.Horizontal;
 
 		public AxisInfoView(AxisChart chart, AxisTypes axisType)
 		{
@@ -256,6 +267,12 @@ namespace unvell.ReoGrid.Chart
 		protected override void OnPaint(DrawingContext dc)
 		{
 			base.OnPaint(dc);
+			
+			var rotateAngle = TextDirection == AxisTextDirection.Down
+				? 90
+				: TextDirection == AxisTextDirection.Up
+					? -90
+					: 0;
 
 			if (this.Chart == null) return;
 
@@ -295,22 +312,73 @@ namespace unvell.ReoGrid.Chart
 				RGFloat columnWidth = (clientRect.Width) / dataCount;
 
 				var maxWidth = 1.0;
-				if(boxes.Any())
+				if (boxes.Any())
 					maxWidth = boxes.Max(b => b.Width);
-				var showableColumns = clientRect.Width / maxWidth;
-
-				int showTitleStride = (int)Math.Ceiling(dataCount / showableColumns);
-				if (showTitleStride < 1) showTitleStride = 1;
-
-				RGFloat stepX = clientRect.Width / dataCount;
-
-				for (int i = 0; i < dataCount; i += showTitleStride)
+				if (TextDirection == AxisTextDirection.Horizontal)
 				{
-					if (titles.TryGetValue(i, out var text) && !string.IsNullOrEmpty(text))
+					var showableColumns = clientRect.Width / maxWidth;
+
+					int showTitleStride = (int)Math.Ceiling(dataCount / showableColumns);
+					if (showTitleStride < 1) showTitleStride = 1;
+
+					RGFloat stepX = clientRect.Width / dataCount;
+
+					for (int i = 0; i < dataCount; i += showTitleStride)
 					{
-						var size = boxes[i];
-						var textRect = new Rectangle(columnWidth * i, 0, columnWidth, clientRect.Height*2);
-						g.DrawText(text, this.FontName, this.FontSize, this.ForeColor, textRect, ReoGridHorAlign.Center, ReoGridVerAlign.Middle);
+						if (titles.TryGetValue(i, out var text) && !string.IsNullOrEmpty(text))
+						{
+							var size = boxes[i];
+							var textRect = new Rectangle(columnWidth * i, 0, columnWidth, clientRect.Height * 2);
+							g.DrawText(text, this.FontName, this.FontSize, this.ForeColor, textRect, ReoGridHorAlign.Center, ReoGridVerAlign.Middle);
+						}
+					}
+				}
+				else
+				{
+					var defaultClientRectHeight = 10;
+					var showableColumns = clientRect.Width / defaultClientRectHeight * 2;
+					var showTitleStride = (int)Math.Ceiling(dataCount / showableColumns);
+					if (showTitleStride < 1) showTitleStride = 1;
+
+					for (var i = 0; i < dataCount; i += showTitleStride)
+					{
+						if (titles.TryGetValue(i, out var text) && !string.IsNullOrEmpty(text))
+						{
+							var size = boxes[i];
+							var width = clientRect.Height * 2 < size.Width + 1 ? clientRect.Height * 2 : size.Width + 1;
+							double height = defaultClientRectHeight * 2;
+							if (TextDirection == AxisTextDirection.Column)
+							{
+								width = columnWidth;
+								height = size.Height * text.Length < clientRect.Height * 2 ? size.Height * text.Length : clientRect.Height * 2;
+								var symbolCount = (int)Math.Round(height / size.Height);
+								if (symbolCount < text.Length)
+								{
+									text = text.Substring(0, symbolCount);
+									text = $@"{text}…";
+								}
+
+								text = Regex.Replace(text, "(.{" + 1 + "})", "$1" + Environment.NewLine);
+							}
+
+							var textRect = new Rectangle(columnWidth * i, 0, width, height);
+
+							if (rotateAngle != 0)
+							{
+								g.PushTransform();
+								g.TranslateTransform(textRect.X, textRect.Y);
+								g.RotateTransform(rotateAngle);
+								if (rotateAngle > 0)
+									g.TranslateTransform(0, columnWidth * (i - 0.5) - defaultClientRectHeight + size.Height / 2);
+								else
+									g.TranslateTransform(-width, -columnWidth * i + (columnWidth / 2 - defaultClientRectHeight));
+							}
+
+							g.DrawText(text, FontName, FontSize, ForeColor, textRect, ReoGridHorAlign.Center, ReoGridVerAlign.Top);
+
+							if (rotateAngle != 0)
+								g.PopTransform();
+						}
 					}
 				}
 			}

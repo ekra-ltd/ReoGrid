@@ -35,6 +35,7 @@ using RGWorkbook = unvell.ReoGrid.IWorkbook;
 using RGWorksheet = unvell.ReoGrid.Worksheet;
 
 using unvell.Common;
+using unvell.ReoGrid.Chart;
 using unvell.ReoGrid.Core.Worksheet.Additional;
 using unvell.ReoGrid.Rendering;
 using unvell.ReoGrid.DataFormat;
@@ -2814,6 +2815,13 @@ switch (graphic.graphicData.uri)
                 };
 #endregion // Area Chart Plot Area
             }
+            if (rgChart is AxisChart axisChart)
+            {
+                if (plot.categoryAxis != null)
+                    axisChart.HorizontalAxisInfoView.TextDirection = GetAxisTextDirection(plot.categoryAxis.txPr.bodyPr.rot, plot.categoryAxis.txPr.bodyPr.vert);
+                else if (plot.dateAxis != null)
+                    axisChart.HorizontalAxisInfoView.TextDirection = GetAxisTextDirection(plot.dateAxis.txPr.bodyPr.rot, plot.dateAxis.txPr.bodyPr.vert);
+            }
 
             bool showLegend = false;
 
@@ -2830,6 +2838,26 @@ switch (graphic.graphicData.uri)
             return rgChart;
         }
 
+        private static AxisTextDirection GetAxisTextDirection(int rot, ST_TextVerticalType vert)
+        {
+            var direction = AxisTextDirection.Horizontal;
+            switch (rot)
+            {
+                case 0:
+                    direction = vert == ST_TextVerticalType.wordArtVert
+                        ? AxisTextDirection.Column
+                        : AxisTextDirection.Horizontal;
+                    break;
+                case -5400000:
+                    direction = AxisTextDirection.Up;
+                    break;
+                case 5400000:
+                    direction = AxisTextDirection.Down;
+                    break;
+            }
+            return direction;
+        }
+        
         private static Chart.WorksheetChartDataSerial ReadDataSerial(Chart.WorksheetChartDataSource dataSource,
             RGWorksheet rgSheet, IChartSerial serial)
         {

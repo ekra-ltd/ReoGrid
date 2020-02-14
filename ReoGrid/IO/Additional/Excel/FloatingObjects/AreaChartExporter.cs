@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
+using unvell.ReoGrid.Chart;
 using unvell.ReoGrid.Drawing;
 using unvell.ReoGrid.Formula;
 using unvell.ReoGrid.IO.OpenXML;
@@ -117,7 +118,7 @@ namespace unvell.ReoGrid.IO.Additional.Excel.FloatingObjects
 #warning  пропущен <mc:AlternateContent xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006">
             var axId = new CT_UnsignedInt { val = 170480784 };
             var valId = new CT_UnsignedInt { val = 170479216 };
-            var catAx = CreateCatAx(axId, valId, chart.DataSource.CategoryNameRange  == null);
+            var catAx = CreateCatAx(axId, valId, chart.DataSource.CategoryNameRange  == null, chart.HorizontalAxisInfoView.TextDirection);
             var valAx = CreateValAx(valId, axId);
 
             space.chart = new CT_Chart
@@ -452,7 +453,7 @@ namespace unvell.ReoGrid.IO.Additional.Excel.FloatingObjects
             return null;
         }
 
-        private static CT_CatAx CreateCatAx(CT_UnsignedInt id, CT_UnsignedInt crossId, bool delete)
+        private static CT_CatAx CreateCatAx(CT_UnsignedInt id, CT_UnsignedInt crossId, bool delete, AxisTextDirection direction)
         {
             CT_ShapeProperties shapePr = null;
             CT_TextBody textPr = null;
@@ -488,13 +489,13 @@ namespace unvell.ReoGrid.IO.Additional.Excel.FloatingObjects
                 {
                     bodyPr = new CT_TextBodyProperties
                     {
-                        rot = -60000000,
+                        rot = direction == AxisTextDirection.Horizontal ? 0 : (direction == AxisTextDirection.Column ? 0 : (direction == AxisTextDirection.Down ? 5400000 : direction == AxisTextDirection.Up ? -5400000 : 0)),
                         rotSpecified = true,
                         spcFirstLastPara = true,
                         spcFirstLastParaSpecified = true,
                         vertOverflow = ST_TextVertOverflowType.ellipsis,
                         vertOverflowSpecified = true,
-                        vert = ST_TextVerticalType.horz,
+                        vert = direction == AxisTextDirection.Column ? ST_TextVerticalType.wordArtVert : ST_TextVerticalType.horz,
                         vertSpecified = true,
                         wrap = ST_TextWrappingType.square,
                         wrapSpecified = true,

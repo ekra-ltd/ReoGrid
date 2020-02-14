@@ -90,6 +90,8 @@ namespace unvell.ReoGrid.Chart
 			};
 		}
 
+		protected override double GetHorizontalAxisLabelHeight(double diagramHeight) => 10;
+
 		protected override void UpdateAxisLabelViewLayout(Rectangle plotRect)
 		{
 			const RGFloat spacing = 10;
