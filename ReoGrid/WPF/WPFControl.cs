@@ -765,6 +765,9 @@ namespace unvell.ReoGrid
 				Canvas.SetLeft(this.editTextbox, bounds.X);
 				Canvas.SetTop(this.editTextbox, bounds.Y);
 
+				editTextbox.IsUndoEnabled = false;
+				editTextbox.IsUndoEnabled = true;
+
 				this.editTextbox.Width = bounds.Width;
 				this.editTextbox.Height = bounds.Height;
 				this.editTextbox.RenderSize = bounds.Size;

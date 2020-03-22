@@ -51,7 +51,7 @@ namespace unvell.Common
 			get { return redoStack; }
 		}
 
-		private int capacity = 30;
+		private int capacity = 10000;
 
 		public void DoAction(IAction action)
 		{
