@@ -899,7 +899,18 @@ namespace unvell.ReoGrid
 
             if (cell.InnerStyle.TextWrapMode != TextWrapMode.NoWrap)
             {
-                cell.formattedText.MaxTextWidth = cellWidth;
+                double textWidth = cellWidth; 
+                var rotateAngle = Math.Abs(cell.Style.RotationAngle);
+                if ( rotateAngle == 90 )
+                    textWidth = cell.Height;
+                else if ( rotateAngle != 0 )
+                {
+                    var radianAngle = Math.PI * rotateAngle / 180.0;
+                    var hypotenuse = cellWidth / Math.Cos(radianAngle);
+                    var height = cellWidth * Math.Tan(radianAngle);
+                    textWidth = height > cell.Height ? cell.Height : hypotenuse;
+                }   
+                cell.formattedText.MaxTextWidth = textWidth;
             }
 
 #endif // WPF
