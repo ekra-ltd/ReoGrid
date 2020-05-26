@@ -921,8 +921,17 @@ namespace unvell.ReoGrid.IO.OpenXML.Schema
 		internal float _size;
 	}
 
-	public class Bold { }
-	public class Italic { }
+	public class Bold
+	{
+		[XmlAttribute("val")]
+		public string val { get; set; }
+	}
+
+	public class Italic
+	{
+		[XmlAttribute("val")]
+		public string val { get; set; }
+	}
 
     public class Strikethrough
     {

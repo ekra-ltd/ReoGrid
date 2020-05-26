@@ -471,6 +471,8 @@ namespace unvell.ReoGrid
 						DoAction(new SetCellDataAction(currentEditingCell.InternalRow, currentEditingCell.InternalCol, data));
 					}
 
+					RecalcConditionalFormats();
+
 					break;
 			}
 

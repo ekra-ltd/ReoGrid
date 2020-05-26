@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;
@@ -7,7 +6,6 @@ using System.Globalization;
 using System.Linq;
 using System.Windows;
 using System.Xml;
-using unvell.Common;
 using unvell.ReoGrid.Core;
 using unvell.ReoGrid.Core.Worksheet.Additional;
 using unvell.ReoGrid.Formula;
@@ -64,7 +62,7 @@ namespace unvell.ReoGrid
             }
         }
 
-        internal void RecalcConditionalFormats()
+        public void RecalcConditionalFormats()
         {
             if (ConditionalFormats != null)
                 foreach (var format in ConditionalFormats)
@@ -119,7 +117,7 @@ namespace unvell.ReoGrid
                     for (int r = 0; r < pos.Rows; r++)
                     for (int c = 0; c < pos.Cols; c++)
                     {
-                        if (cfAdder.CanApplyFormat(cell, c, r, rule))
+                        if (cfAdder.CanApplyFormat(Cells[cell.Row + r, cell.Column + c], c, r, rule))
                         {
                             ApplyDifferencialFormat(pos, c, r, dxFormat);
                         }
@@ -466,12 +464,16 @@ namespace unvell.ReoGrid
 
             private static bool IsBetweenAsDouble(object a, object b, object c)
             {
-                return IsGreaterThanOrEqualAsDouble(a, b) && IsLessThanOrEqualAsDouble(a, c);
+                return IsLessThenAsDouble(b, c)
+                    ? IsGreaterThanOrEqualAsDouble(a, b) && IsLessThanOrEqualAsDouble(a, c)
+                    : IsLessThanOrEqualAsDouble(a, b) && IsGreaterThanOrEqualAsDouble(a, c);
             }
 
             private static bool IsNotBetweenAsDouble(object a, object b, object c)
             {
-                return IsLessThenAsDouble(a, b) || IsGreaterThanAsDouble(a, c);
+                return IsLessThenAsDouble(b, c)
+                    ? IsLessThenAsDouble(a, b) || IsGreaterThanAsDouble(a, c)
+                    : IsGreaterThanAsDouble(a, b) || IsLessThenAsDouble(a, c);
             }
 
             private static bool AsDouble(object o, out double d)
@@ -502,6 +504,8 @@ namespace unvell.ReoGrid
             {
                 Style.BackColor = _cfSaveStyle.BackColor;
                 Style.TextColor = _cfSaveStyle.TextColor;
+                Style.Bold = _cfSaveStyle.Bold;
+                Style.Italic = _cfSaveStyle.Italic;
             }
         }
 
@@ -515,6 +519,8 @@ namespace unvell.ReoGrid
                 {
                     BackColor = Style.BackColor,
                     TextColor = Style.TextColor,
+                    Bold = Style.Bold,
+                    Italic = Style.Italic,
                 };
 
             if (format is null)
@@ -523,8 +529,10 @@ namespace unvell.ReoGrid
             }
             else
             {
-                var bkColor = format?.Fill?.PatternFill?.BackgroundColor;
-                var txtColor = format?.Font?.Color;
+                var bkColor = format.Fill?.PatternFill?.BackgroundColor;
+                var txtColor = format.Font?.Color;
+                var sBold = format.Font?.Bold?.Value ?? false;
+                var sItalic = format.Font?.Italic?.Value ?? false;
 
                 SolidColor? sBackColor = bkColor?.RgbColorValue != null
                     ? (SolidColor?) new SolidColor(
@@ -545,6 +553,8 @@ namespace unvell.ReoGrid
                 {
                     BackColor = sBackColor,
                     TextColor = sTextColor,
+                    Bold = sBold,
+                    Italic = sItalic,
                 };
             }
 
@@ -552,6 +562,8 @@ namespace unvell.ReoGrid
             {
                 Style.BackColor = _cfSaveStyle.BackColor;
                 Style.TextColor = _cfSaveStyle.TextColor;
+                Style.Bold = _cfSaveStyle.Bold;
+                Style.Italic = _cfSaveStyle.Italic;
                 if (true == InnerStyle?.HasStyle(PlainStyleFlag.TextColor))
                 {
                     InnerStyle.TextColor = Style.TextColor;
@@ -571,6 +583,8 @@ namespace unvell.ReoGrid
                     }
                     Worksheet?.UpdateCellFont(this, UpdateFontReason.TextColorChanged);
                 }
+                Style.Bold = _cfOverrideStyle.Bold;
+                Style.Italic = _cfOverrideStyle.Italic;
             }
 
             // if (_cfOverrideStyle.BackColor != null)
@@ -599,6 +613,8 @@ namespace unvell.ReoGrid
         {
             public SolidColor BackColor { get; set; }
             public SolidColor TextColor { get; set; }
+            public bool Bold { get; set; }
+            public bool Italic { get; set; }
         }
 
         [Serializable]
@@ -606,6 +622,8 @@ namespace unvell.ReoGrid
         {
             public SolidColor? BackColor { get; set; }
             public SolidColor? TextColor { get; set; }
+            public bool Bold { get; set; }
+            public bool Italic { get; set; }
         }
 
     }
@@ -1177,10 +1195,12 @@ namespace unvell.ReoGrid.Core.Worksheet.Additional
             Font result = null;
             if (value != null)
             {
-                bool strike = value?.strikethrough?.val != null && value?.strikethrough?.val != "0";
+                bool strike = value.strikethrough?.val != null && value.strikethrough?.val != "0";
+                bool bold = value.bold != null && value.bold.val != "0";
+                bool italic = value.italic != null && value.italic.val != "0";
                 result = new Font
                 {
-                    Bold = ToBooleanProperty(value.bold),
+                    Bold = bold ? new BooleanProperty {Value = true} : null,
                     Color = From2006(value.color),
                     Outline = ToBooleanProperty(null),
                     Charset = null,
@@ -1189,7 +1209,7 @@ namespace unvell.ReoGrid.Core.Worksheet.Additional
                     Family = From2006FontFamily(value.family),
                     FontScheme = null,
                     FontSize = From2006FontSize(value.size),
-                    Italic = ToBooleanProperty(value.italic),
+                    Italic = italic ? new BooleanProperty {Value = true} : null,
                     Name = From2006FontName(value.name),
                     Shadow = ToBooleanProperty(null),
                     Strike = strike ? new BooleanProperty {Value = true} : null,
@@ -1359,7 +1379,7 @@ namespace unvell.ReoGrid.Core.Worksheet.Additional
                 bool themeColorParsed = uint.TryParse(value.theme, out themeColor);
 
                 double tint;
-                bool timtParsed = double.TryParse(value.tint, out tint);
+                bool timtParsed = double.TryParse(value.tint?.Replace(".", ","), out tint);
 
                 result = new Color
                 {
@@ -3088,7 +3108,7 @@ namespace unvell.ReoGrid.Core.Worksheet.Additional
             {
                 result = new E2006.CT_Color
                 {
-                    tint = value.TInt??0D,
+                    tint = value.RgbColorValue != null ? 0D : value.TInt ?? 0D,
                     rgb = ToExcel2009ArgbToRgb(value.RgbColorValue),
                     indexed = value.Indexed??0,
                     indexedSpecified = value.Indexed != null,

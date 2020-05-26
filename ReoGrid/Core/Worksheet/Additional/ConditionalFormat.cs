@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Xml.Serialization;
 using unvell.ReoGrid.Formula;
 
@@ -31,7 +32,7 @@ namespace unvell.ReoGrid.Core.Worksheet.Additional
 		internal STNode FormulaTree { get; set; }
 	}
 
-	public class ConditionalFormatRule
+	public class ConditionalFormatRule : ICloneable
 	{
 		/// <summary>
 		/// &lt;xsd:element ref="xm:f" minOccurs="0" maxOccurs="3"/&gt;
@@ -130,6 +131,31 @@ namespace unvell.ReoGrid.Core.Worksheet.Additional
 
 		[XmlIgnore]
 		public string Ext2009Id { get; set; }
+
+		public object Clone()
+			=> new ConditionalFormatRule
+			{
+				Formula = new List<FormulaItem>(Formula),
+				ColorScale = ColorScale,
+				DataBar = DataBar,
+				IconSet = IconSet,
+				DifferentialFormat = DifferentialFormat,
+				Type = Type,
+				Priority = Priority,
+				StopIfTrue = StopIfTrue,
+				AboveAverage = AboveAverage,
+				Percent = Percent,
+				Bottom = Bottom,
+				Operator = Operator,
+				Text = Text,
+				TimePeriod = TimePeriod,
+				Rank = Rank,
+				StdDev = StdDev,
+				EqualAverage = EqualAverage,
+				ActivePercent = ActivePercent,
+				SGuid = SGuid,
+				Ext2009Id = Ext2009Id
+			};
 	}
 
 	/// <summary>
