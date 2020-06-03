@@ -45,6 +45,8 @@ namespace unvell.ReoGrid
         private static readonly string ClipBoardDataFormatIdentify = "{CB3BE3D1-2BF9-4fa6-9B35-374F6A0412CE}";
 
         private RangePosition currentCopingRange = RangePosition.Empty;
+        
+        public static Worksheet CopySourceWorksheet;
 
 		public string StringifyRange(string addressOrName)
 		{
@@ -232,6 +234,7 @@ namespace unvell.ReoGrid
                     {
                         AfterCopy(this, new RangeEventArgs(this.selectionRange));
                     }
+                    CopySourceWorksheet = this;
                 }
                 catch (Exception ex)
                 {

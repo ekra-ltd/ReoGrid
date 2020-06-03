@@ -1158,7 +1158,6 @@ namespace unvell.ReoGrid.IO.OpenXML
 				{
 					new Schema.CT_Extension {uri = @"{78C0D931-6437-407d-A8EE-F0AAD7539E65}", ConditionalFormattings = item},
 				};
-				rgSheet.RecalcConditionalFormats();
 			}
 
 			#endregion

@@ -4,6 +4,7 @@ using System.ComponentModel;
 using System.Diagnostics;
 using System.Globalization;
 using System.Linq;
+using System.Text.RegularExpressions;
 using System.Windows;
 using System.Xml;
 using unvell.ReoGrid.Core;
@@ -3583,6 +3584,52 @@ namespace unvell.ReoGrid.Core.Worksheet.Additional
         }
 
         #endregion
+    }
 
+    public static class CopyConditionalFormatsHelper
+    {
+        public static void CopyConditionalFormatting(ReoGrid.Worksheet source, Cell src, Cell dst)
+        {
+            dst.Worksheet.ConditionalFormats = dst.Worksheet.ConditionalFormats ?? new List<ConditionalFormat>();
+            var conditionalFormatsSrc = source.ConditionalFormats;
+            var conditionalFormatting = conditionalFormatsSrc?.Where(arg => AddressInRangePosition(src.Address, arg.Sqref.Text)).ToArray();
+            if (conditionalFormatting != null)
+                foreach (var cf in conditionalFormatting)
+                {
+                    var conditionalFormat = new ConditionalFormat
+                    {
+                        Pivot = cf.Pivot,
+                        Sqref = new Sqref { Text = dst.Address }
+                    };
+                    foreach (var rule in cf.Rules)
+                    {
+                        var newRule = (ConditionalFormatRule)rule.Clone();
+                        newRule.Formula.Clear();
+                        foreach (var formula in rule.Formula)
+                            newRule.Formula.Add(new FormulaItem
+                            {
+                                Value = CellAddressRegex.Replace(formula.Value, m =>
+                                {
+                                    var address = m.Value;
+                                    if (!CellPosition.IsValidAddress(address)) return address;
+                                    var position = new CellPosition(address);
+                                    position.Col += position.ColumnProperty == PositionProperty.Absolute ? 0 : dst.Column - src.Column;
+                                    position.Row += position.RowProperty == PositionProperty.Absolute ? 0 : dst.Row - src.Row;
+                                    return position.ToString();
+                                })
+                            });
+                        conditionalFormat.Rules.Add(newRule);
+                    }
+                    dst.Worksheet.ConditionalFormats.Add(conditionalFormat);
+                }
+        }
+
+        private static bool AddressInRangePosition(string address, string range)
+        {
+            var rangePos = new RangePosition(range);
+            return rangePos.Contains(new CellPosition(address));
+        }
+
+        private static readonly Regex CellAddressRegex = new Regex(@"[A-Z]+[0-9]+(:[A-Z]+[0-9]+)?");
     }
 }

@@ -41,6 +41,7 @@ using unvell.Common;
 
 using unvell.ReoGrid.Core;
 using unvell.ReoGrid.CellTypes;
+using unvell.ReoGrid.Core.Worksheet.Additional;
 using unvell.ReoGrid.DataFormat;
 using unvell.ReoGrid.Events;
 
@@ -1297,12 +1298,16 @@ namespace unvell.ReoGrid.Utility
 		public static void CopyCellContent(Cell toCell, Cell fromCell)
 		{
 			// style & render
+			fromCell.Worksheet?.ResetConditionalFormatting();
 			toCell.InnerStyle = new WorksheetRangeStyle(fromCell.InnerStyle);
 			toCell.StyleParentKind = fromCell.StyleParentKind;
 			toCell.TextBounds = fromCell.TextBounds;
 			toCell.RenderHorAlign = fromCell.RenderHorAlign;
 			toCell.RenderColor = fromCell.RenderColor;
 			toCell.DistributedIndentSpacing = fromCell.DistributedIndentSpacing;
+			fromCell.Worksheet?.RecalcConditionalFormats();
+			if (fromCell.Worksheet == null)
+				CopyConditionalFormatsHelper.CopyConditionalFormatting(Worksheet.CopySourceWorksheet, fromCell, toCell);
 
 #if WINFORM
 			toCell.RenderFont = fromCell.RenderFont;
