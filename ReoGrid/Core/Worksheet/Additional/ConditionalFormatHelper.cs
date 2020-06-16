@@ -3630,6 +3630,6 @@ namespace unvell.ReoGrid.Core.Worksheet.Additional
             return rangePos.Contains(new CellPosition(address));
         }
 
-        private static readonly Regex CellAddressRegex = new Regex(@"[A-Z]+[0-9]+(:[A-Z]+[0-9]+)?");
+        private static readonly Regex CellAddressRegex = new Regex(@"\$?[A-Z]+\$?[0-9]+(:\$?[A-Z]+\$?[0-9]+)?");
     }
 }
