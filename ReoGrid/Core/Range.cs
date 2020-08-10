@@ -140,7 +140,7 @@ namespace unvell.ReoGrid
 			{
 				for (int c = fixedRange.Col, c2 = 0; c <= fixedRange.EndCol; c++, c2++)
 				{
-					data[r2, c2] = (cells[r, c] == null) ? null : cells[r, c].InnerData;
+					data[r2, c2] = cells[r, c] == null ? null : (cells[r,c].HasFormula ? $@"={cells[r, c].Formula}" : cells[r, c].InnerData);
 				}
 			}
 			return data;
