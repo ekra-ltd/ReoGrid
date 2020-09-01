@@ -152,7 +152,7 @@ namespace unvell.ReoGrid
                 CfCells.Add(cell);
         }
 
-        private  List<Cell> CfCells = new List<Cell>();
+        private  HashSet<Cell> CfCells = new HashSet<Cell>();
 
         #region Вспомогательные методы
 
