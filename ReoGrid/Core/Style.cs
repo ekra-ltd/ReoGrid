@@ -2684,7 +2684,7 @@ namespace unvell.ReoGrid
 
                 this.Worksheet.SetCellStyleOwn(this.Cell, new WorksheetRangeStyle
                 {
-                    Flag = PlainStyleFlag.FontStyleBold,
+                    Flag = value ? PlainStyleFlag.FontStyleBold : PlainStyleFlag.None,
                     Bold = value,
                 });
 
@@ -2708,7 +2708,7 @@ namespace unvell.ReoGrid
 
                 this.Worksheet.SetCellStyleOwn(this.Cell, new WorksheetRangeStyle
                 {
-                    Flag = PlainStyleFlag.FontStyleItalic,
+                    Flag =value ? PlainStyleFlag.FontStyleItalic : PlainStyleFlag.None,
                     Italic = value,
                 });
 
@@ -2732,7 +2732,7 @@ namespace unvell.ReoGrid
 
                 this.Worksheet.SetCellStyleOwn(this.Cell, new WorksheetRangeStyle
                 {
-                    Flag = PlainStyleFlag.FontStyleStrikethrough,
+                    Flag =  value ? PlainStyleFlag.FontStyleStrikethrough : PlainStyleFlag.None,
                     Strikethrough = value,
                 });
 
@@ -2756,7 +2756,7 @@ namespace unvell.ReoGrid
 
                 this.Worksheet.SetCellStyleOwn(this.Cell, new WorksheetRangeStyle
                 {
-                    Flag = PlainStyleFlag.FontStyleUnderline,
+                    Flag = value ? PlainStyleFlag.FontStyleUnderline : PlainStyleFlag.None,
                     Underline = value,
                 });
             }
