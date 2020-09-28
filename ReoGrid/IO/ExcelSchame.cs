@@ -911,6 +911,9 @@ namespace unvell.ReoGrid.IO.OpenXML.Schema
 			this.strikethrough = ((rgStyle.Flag & PlainStyleFlag.FontStyleStrikethrough) == PlainStyleFlag.FontStyleStrikethrough && rgStyle.Strikethrough)
 				? new Strikethrough() : null;
 
+			underline = ((rgStyle.Flag & PlainStyleFlag.FontStyleUnderline) == PlainStyleFlag.FontStyleUnderline && rgStyle.Underline)
+				? new Underline() : null;
+
 			if ((rgStyle.Flag & PlainStyleFlag.TextColor) == PlainStyleFlag.TextColor && rgStyle.TextColor.A > 0)
 			{
 				this.color = new ColorValue(rgStyle.TextColor) { _rgColor = rgStyle.TextColor };
