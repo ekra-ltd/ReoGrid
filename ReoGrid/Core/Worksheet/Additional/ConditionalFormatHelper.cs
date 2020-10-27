@@ -385,10 +385,20 @@ namespace unvell.ReoGrid
 
                 switch (op)
                 {
-                    case ConditionalFormattingOperator.LessThan: return IsLessThenAsDouble(cellvalue, evaluatedValues[0].value);
-                    case ConditionalFormattingOperator.LessThanOrEqual: return IsLessThanOrEqualAsDouble(cellvalue, evaluatedValues[0].value);
-                    case ConditionalFormattingOperator.Equal: return IsEqualAsDouble(cellvalue, evaluatedValues[0].value);
-                    case ConditionalFormattingOperator.NotEqual: return IsNotEqualAsDouble(cellvalue, evaluatedValues[0].value);
+                    case ConditionalFormattingOperator.LessThan:
+                        return IsLessThenAsDouble(cellvalue, evaluatedValues[0].value) ;
+                    case ConditionalFormattingOperator.LessThanOrEqual:
+                        return IsLessThanOrEqualAsDouble(cellvalue, evaluatedValues[0].value);
+                    case ConditionalFormattingOperator.Equal:
+                        return
+                            IsEqualAsDouble(cellvalue, evaluatedValues[0].value) ??
+                            IsEqualAsString(cellvalue, evaluatedValues[0].value) ??
+                            IsEqualConvertString(cellvalue, evaluatedValues[0].value);
+                    case ConditionalFormattingOperator.NotEqual:
+                        return 
+                            IsNotEqualAsDouble(cellvalue, evaluatedValues[0].value) ??
+                            IsNotEqualAsString(cellvalue, evaluatedValues[0].value) ??
+                            IsNotEqualConvertString(cellvalue, evaluatedValues[0].value);
                     case ConditionalFormattingOperator.GreaterThanOrEqual: return IsGreaterThanOrEqualAsDouble(cellvalue, evaluatedValues[0].value);
                     case ConditionalFormattingOperator.GreaterThan: return IsGreaterThanAsDouble(cellvalue, evaluatedValues[0].value);
                     case ConditionalFormattingOperator.Between:
@@ -409,16 +419,21 @@ namespace unvell.ReoGrid
 
             private static bool IsLessThenAsDouble(object a, object b)
             {
-                if (AsDouble(a, out var dA) && AsDouble(b, out var dB))
+                if (As<double>(a, out var dA) && As<double>(b, out var dB))
                 {
-                    return dA < dB;
+                    return IsLessThen(dA, dB);
                 }
                 return false;
             }
 
+            private static bool IsLessThen(double a, double b)
+            {
+                return a < b;
+            }
+
             private static bool IsLessThanOrEqualAsDouble(object a, object b)
             {
-                if (AsDouble(a, out var dA) && AsDouble(b, out var dB))
+                if (As<double>(a, out var dA) && As<double>(b, out var dB))
                 {
                     return dA <= dB;
                 }
@@ -427,16 +442,21 @@ namespace unvell.ReoGrid
 
             private static bool IsGreaterThanOrEqualAsDouble(object a, object b)
             {
-                if (AsDouble(a, out var dA) && AsDouble(b, out var dB))
+                if (As<double>(a, out var dA) && As<double>(b, out var dB))
                 {
-                    return dA >= dB;
+                    return IsGreaterThanOrEqual(dA, dB);
                 }
                 return false;
             }
 
+            private static bool IsGreaterThanOrEqual(double a, double b)
+            {
+                return a >= b;
+            }
+
             private static bool IsGreaterThanAsDouble(object a, object b)
             {
-                if (AsDouble(a, out var dA) && AsDouble(b, out var dB))
+                if (As<double>(a, out var dA) && As<double>(b, out var dB))
                 {
                     return dA > dB;
                 }
@@ -445,20 +465,58 @@ namespace unvell.ReoGrid
 
             private static double Epsilon => 0.00001;
 
-            private static bool IsEqualAsDouble(object a, object b)
+            private static bool? IsEqualAsDouble(object a, object b)
             {
-                if (AsDouble(a, out var dA) && AsDouble(b, out var dB))
+                if (As<double>(a, out var dA) && As<double>(b, out var dB))
                 {
-                    return Math.Abs(dA - dB) < Epsilon;
+                    return IsEqual(dA, dB);
+                }
+                return null;
+            }
+
+            private static bool IsEqual(double a, double b)
+            {
+                return Math.Abs(a - b) < Epsilon;
+            }
+
+            private static bool? IsEqualAsString(object a, object b)
+            {
+                if (As<string>(a, out var sA) && As<string>(b, out var sB))
+                {
+                    return IsEqual(sA, sB);
+                }
+                return null;
+            }
+
+            private static bool IsEqual(string a, string b)
+            {
+                return string.Equals(a, b);
+            }
+
+            private static bool IsEqualConvertString(object a, object b)
+            {
+                if (ConvertToString(a, out var sA) && ConvertToString(b, out var sB))
+                {
+                    return IsEqual(sA, sB);
                 }
                 return false;
             }
 
-            private static bool IsNotEqualAsDouble(object a, object b)
+            private static bool? IsNotEqualAsDouble(object a, object b)
             {
-                if (AsDouble(a, out var dA) && AsDouble(b, out var dB))
+                return !IsEqualAsDouble(a, b);
+            }
+
+            private static bool? IsNotEqualAsString(object a, object b)
+            {
+                return !IsEqualAsString(a, b);
+            }
+
+            private static bool IsNotEqualConvertString(object a, object b)
+            {
+                if (ConvertToString(a, out var sA) && ConvertToString(b, out var sB))
                 {
-                    return !(Math.Abs(dA - dB) < Epsilon);
+                    return !IsEqual(sA, sB);
                 }
                 return false;
             }
@@ -477,17 +535,35 @@ namespace unvell.ReoGrid
                     : IsGreaterThanAsDouble(a, b) || IsLessThenAsDouble(a, c);
             }
 
-            private static bool AsDouble(object o, out double d)
+            private static bool As<T>(object o, out T value)
             {
-                if (o is double doubleValue)
+                if (o is T tValue)
                 {
-                    d = doubleValue;
+                    value = tValue;
                     return true;
                 }
-                d = double.NaN;
+                value = default(T);
                 return false;
             }
 
+            private static bool ConvertToString(object o, out string value)
+            {
+
+                if (As<string>(o, out var s))
+                {
+                    value = s;
+                    return true;
+                }
+                if (As<double>(o, out var dA))
+                {
+                    value = Math.Abs(dA) < Epsilon ? 
+                        string.Empty : 
+                        dA.ToString(CultureInfo.InvariantCulture);
+                    return true;
+                }
+                value = null;
+                return false;
+            }
         }
 
         #endregion
