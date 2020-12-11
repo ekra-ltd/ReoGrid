@@ -91,6 +91,8 @@ namespace unvell.ReoGrid.Formula
 		public const string LOG10_RU = "LOG10";
 		public const string MOD_EN = "MOD";
 		public const string MOD_RU = "ОСТАТ";
+		public const string INT_EN = "INT";
+		public const string INT_RU = "ЦЕЛОЕ";
 
 		public const string NOW_EN = "NOW";
 		public const string NOW_RU = "ТДАТА";
@@ -114,6 +116,10 @@ namespace unvell.ReoGrid.Formula
 		public const string MILLISECOND_RU = "МИЛЛИСЕКУНДЫ";
 		public const string DAYS_EN = "DAYS";
 		public const string DAYS_RU = "ДНЕЙ";
+		public const string DATE_EN = "DATE";
+		public const string DATE_RU = "ДАТА";
+		public const string WEEKDAY_EN = "WEEKDAY";
+		public const string WEEKDAY_RU = "ДЕНЬНЕД";
 
 		public const string LEFT_EN = "LEFT";
 		public const string LEFT_RU = "ЛЕВСИМВ";

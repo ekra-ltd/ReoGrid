@@ -689,7 +689,7 @@
 		}
 
 		/// <remarks/>
-		[System.Xml.Serialization.XmlAttributeAttribute(Form = System.Xml.Schema.XmlSchemaForm.Qualified)]
+		[System.Xml.Serialization.XmlAttributeAttribute(Form = System.Xml.Schema.XmlSchemaForm.Unqualified)]
 		[System.ComponentModel.DefaultValueAttribute(ST_BorderStyle.none)]
 		public ST_BorderStyle style
 		{
@@ -1226,7 +1226,8 @@
 		}
 
 		/// <remarks/>
-		[System.Xml.Serialization.XmlAttributeAttribute(Form = System.Xml.Schema.XmlSchemaForm.Qualified)]
+		// Сохраняет в несовместимом с excel форматом (добавляет namespace)
+		[System.Xml.Serialization.XmlAttributeAttribute(Form = System.Xml.Schema.XmlSchemaForm.Unqualified)]
 		public double position
 		{
 			get { return this.positionField; }

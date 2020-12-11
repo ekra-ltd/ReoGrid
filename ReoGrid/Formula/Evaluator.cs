@@ -278,7 +278,7 @@ namespace unvell.ReoGrid.Formula
 						FormulaValue v2 = Evaluate(workbook, cell, node[1]);
 
 						if ((v1.type == FormulaValueType.Number || v1.type == FormulaValueType.Nil) &&
-						    (v2.type == FormulaValueType.Number || v2.type == FormulaValueType.Nil))
+							(v2.type == FormulaValueType.Number || v2.type == FormulaValueType.Nil))
 						{
 							double d1 = 0;
 							if (v1.type == FormulaValueType.Number)
@@ -319,7 +319,7 @@ namespace unvell.ReoGrid.Formula
 						FormulaValue v2 = Evaluate(workbook, cell, node[1]);
 
 						if ((v1.type == FormulaValueType.Number || v1.type == FormulaValueType.Nil) &&
-						    (v2.type == FormulaValueType.Number || v2.type == FormulaValueType.Nil))
+							(v2.type == FormulaValueType.Number || v2.type == FormulaValueType.Nil))
 						{
 							double d1 = 0;
 							if (v1.type == FormulaValueType.Number)
@@ -361,7 +361,7 @@ namespace unvell.ReoGrid.Formula
 						FormulaValue v2 = Evaluate(workbook, cell, node[1]);
 
 						if ((v1.type == FormulaValueType.Number || v1.type == FormulaValueType.Nil) &&
-						    (v2.type == FormulaValueType.Number || v2.type == FormulaValueType.Nil))
+							(v2.type == FormulaValueType.Number || v2.type == FormulaValueType.Nil))
 						{
 							double d1 = 0;
 							if (v1.type == FormulaValueType.Number)
@@ -412,7 +412,7 @@ namespace unvell.ReoGrid.Formula
 						FormulaValue v2 = Evaluate(workbook, cell, node[1]);
 
 						if ((v1.type == FormulaValueType.Number || v1.type == FormulaValueType.Nil) &&
-						    (v2.type == FormulaValueType.Number || v2.type == FormulaValueType.Nil))
+							(v2.type == FormulaValueType.Number || v2.type == FormulaValueType.Nil))
 						{
 							double d1 = 0;
 							if (v1.type == FormulaValueType.Number)
@@ -737,7 +737,15 @@ namespace unvell.ReoGrid.Formula
 
 					return (FormulaValue)((double)args[0].value % (double)args[1].value);
 					#endregion // MOD
-
+			   case BuiltinFunctionNames.INT_EN:
+				case BuiltinFunctionNames.INT_RU:
+					#region INT
+					args = GetFunctionArgs(cell, funNode.Children, 1);
+					return (args[0].type != FormulaValueType.Number) ?
+						(FormulaValue) null:
+						(FormulaValue)Math.Floor((double)args[0].value);
+					#endregion
+					
 				#endregion // Math
 
 				#region Datetime
@@ -800,6 +808,52 @@ namespace unvell.ReoGrid.Formula
 					return dt;
 				#endregion // TIME
 
+				case BuiltinFunctionNames.DATE_EN:
+				case BuiltinFunctionNames.DATE_RU:
+					#region DATE
+					args = GetFunctionArgs(cell, funNode.Children, 3);
+
+					if (args[0].type != FormulaValueType.Number
+						|| args[1].type != FormulaValueType.Number
+						|| args[2].type != FormulaValueType.Number)
+					{
+						throw new FormulaParameterMismatchException(cell);
+					}
+
+					dt = new DateTime((int)(double)args[0].value, (int)(double)args[1].value, (int)(double)args[2].value);
+
+					return Math.Floor((dt.Date - Constants.ExcelZeroDatePoint).TotalDays) + 2; // TODO надо конвертацию времени вынести в отдельные методы
+				#endregion // DATE
+
+				case BuiltinFunctionNames.WEEKDAY_EN:
+				case BuiltinFunctionNames.WEEKDAY_RU:
+					{
+						#region WEEKDAY
+
+						args = GetFunctionArgs(cell, funNode.Children, 1);
+						DateTime? dtArg = null;
+						if (args[0].type == FormulaValueType.DateTime)
+						{
+							dtArg = args[0].value as DateTime?;
+						}
+						if (args[0].type == FormulaValueType.Number)
+						{
+							if (args[0].value is double d)
+							{
+								dtArg = Constants.ExcelZeroDatePoint.AddDays(d - 2); // TODO надо конвертацию времени вынести в отдельные методы
+							}
+						}
+						// 
+						if (dtArg.HasValue)
+						{
+							return (double) ((int) dtArg.Value.DayOfWeek + 1); // Зависит от второго параметра, по умолчанию excel возвращает: 1 - вск
+						}
+					}
+					return (double) 0.0;
+
+
+				#endregion // WEEKDAY
+				
 				case BuiltinFunctionNames.YEAR_EN:
 				case BuiltinFunctionNames.YEAR_RU:
 					dt = (DateTime)GetFunctionArg(cell, funNode.Children, FormulaValueType.DateTime);
@@ -817,18 +871,75 @@ namespace unvell.ReoGrid.Formula
 
 				case BuiltinFunctionNames.HOUR_EN:
 				case BuiltinFunctionNames.HOUR_RU:
-					dt = (DateTime)GetFunctionArg(cell, funNode.Children, FormulaValueType.DateTime);
-					return dt.Hour;
+					{
+					args = GetFunctionArgs(cell, funNode.Children, 1);
+					DateTime? dtArg = null;
+					if (args[0].type == FormulaValueType.DateTime)
+					{
+						dtArg = args[0].value as DateTime?;
+					}
+					if (args[0].type == FormulaValueType.Number)
+					{
+						if (args[0].value is double d)
+						{
+							dtArg = Constants.ExcelZeroDatePoint.AddDays(d - 2); // TODO надо конвертацию времени вынести в отдельные методы
+						}
+					}
+					// 
+					if (dtArg.HasValue)
+					{
+						return (double) (dtArg.Value.Hour);
+					}
+					}
+					return (double) 0.0;
 
 				case BuiltinFunctionNames.MINUTE_EN:
 				case BuiltinFunctionNames.MINUTE_RU:
-					dt = (DateTime)GetFunctionArg(cell, funNode.Children, FormulaValueType.DateTime);
-					return dt.Minute;
+				{
+					args = GetFunctionArgs(cell, funNode.Children, 1);
+					DateTime? dtArg = null;
+					if (args[0].type == FormulaValueType.DateTime)
+					{
+						dtArg = args[0].value as DateTime?;
+					}
+					if (args[0].type == FormulaValueType.Number)
+					{
+						if (args[0].value is double d)
+						{
+							dtArg = Constants.ExcelZeroDatePoint.AddDays(d - 2); // TODO надо конвертацию времени вынести в отдельные методы
+						}
+					}
+					// 
+					if (dtArg.HasValue)
+					{
+						return (double)(dtArg.Value.Minute);
+					}
+				}
+					return (double)0.0;
 
 				case BuiltinFunctionNames.SECOND_EN:
 				case BuiltinFunctionNames.SECOND_RU:
-					dt = (DateTime)GetFunctionArg(cell, funNode.Children, FormulaValueType.DateTime);
-					return dt.Second;
+				{
+					args = GetFunctionArgs(cell, funNode.Children, 1);
+					DateTime? dtArg = null;
+					if (args[0].type == FormulaValueType.DateTime)
+					{
+						dtArg = args[0].value as DateTime?;
+					}
+					if (args[0].type == FormulaValueType.Number)
+					{
+						if (args[0].value is double d)
+						{
+							dtArg = Constants.ExcelZeroDatePoint.AddDays(d - 2); // TODO надо конвертацию времени вынести в отдельные методы
+						}
+					}
+					// 
+					if (dtArg.HasValue)
+					{
+						return (double)(dtArg.Value.Second);
+					}
+				}
+					return (double)0.0;
 
 				case BuiltinFunctionNames.MILLISECOND_EN:
 				case BuiltinFunctionNames.MILLISECOND_RU:
@@ -1049,7 +1160,7 @@ namespace unvell.ReoGrid.Formula
 							val *= (double) t.value;
 						}else if(t.type == FormulaValueType.Cell)
 						{
-                            
+							
 						}else if (t.type == FormulaValueType.Range)
 						{
 							var range = (SheetRangePosition)t.value;
@@ -1499,6 +1610,11 @@ namespace unvell.ReoGrid.Formula
 		/// Create the exception instance
 		/// </summary>
 		public FormulaTypeMismatchException(Cell cell) : base(cell, "Value type does not match in cell " + cell.Address) { }
+
+		/// <summary>
+		/// Create the exception instance
+		/// </summary>
+		public FormulaTypeMismatchException(Cell cell, string additional) : base(cell, "Value type does not match in cell " + cell.Address + additional) { }
 	}
 
 	/// <summary>

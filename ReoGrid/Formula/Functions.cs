@@ -875,9 +875,18 @@ namespace unvell.ReoGrid.Formula
 				throw new FormulaParameterMismatchException(cell, "At least one parameter is needed, but nothing specified.");
 			}
 
+			int itemNumber = 0;
+			string itemContent = null;
+			FormulaValueType itemType = FormulaValueType.Nil;
+			
 			foreach (var node in list)
 			{
+				++itemNumber;
+				itemContent = node.ToString();
+				
 				FormulaValue val = Evaluator.Evaluate(cell, node);
+
+				itemType = val.type;
 
 				if (val.type == FormulaValueType.Boolean)
 				{
@@ -895,7 +904,7 @@ namespace unvell.ReoGrid.Formula
 				}
 				else
 				{
-					throw new FormulaTypeMismatchException(cell);
+					throw new FormulaTypeMismatchException(cell, $" itemNumber={itemNumber}, content={itemContent}, itemType={itemType}");
 				}
 			}
 
