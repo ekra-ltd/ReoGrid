@@ -35,6 +35,7 @@ namespace unvell.ReoGrid.Drawing.Text
 	/// <summary>
 	/// Font style
 	/// </summary>
+	[Flags]
 	public enum FontStyles : byte
 	{
 		/// <summary>

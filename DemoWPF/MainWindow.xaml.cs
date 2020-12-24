@@ -546,5 +546,87 @@ namespace unvell.ReoGrid.WPFDemo
 	                Format = "dd/MM/yyyy"
 	            });
 	    }
-	}
+
+        private void MenuItem_SetBold(object sender, RoutedEventArgs e)
+        {
+            ApplyStyle(new BoldApplyer(true));
+        }
+
+        private void MenuItem_ResetBold(object sender, RoutedEventArgs e)
+        {
+            ApplyStyle(new BoldApplyer(false));
+}
+
+        private void MenuItem_SetItalic(object sender, RoutedEventArgs e)
+        {
+            ApplyStyle(new ItalicApplyer(true));
+        }
+
+        private void MenuItem_ResetItalic(object sender, RoutedEventArgs e)
+        {
+            ApplyStyle(new ItalicApplyer(false));
+        }
+
+        interface IStyleApplyer
+        {
+            WorksheetRangeStyle GetRangeStyle();
+        }
+
+        private void ApplyStyle(IStyleApplyer applyer)
+        {
+            var range = grid?.CurrentWorksheet?.SelectionRange;
+            if (range.HasValue)
+            {
+                grid?.DoAction(new SetRangeStyleAction(range.Value, applyer?.GetRangeStyle() ?? WorksheetRangeStyle.Empty));
+            }
+        }
+
+
+        class BoldApplyer: IStyleApplyer
+        {
+            public BoldApplyer(bool value)
+            {
+                _value = value;
+            }
+
+            public WorksheetRangeStyle GetRangeStyle()
+            {
+                return new WorksheetRangeStyle
+                {
+                    Flag = PlainStyleFlag.FontStyleBold,
+                    Bold = _value
+                };
+            }
+
+            private readonly bool _value;
+        }
+
+        class ItalicApplyer : IStyleApplyer
+        {
+            public ItalicApplyer(bool value)
+            {
+                _value = value;
+            }
+
+            public WorksheetRangeStyle GetRangeStyle()
+            {
+                return new WorksheetRangeStyle
+                {
+                    Flag = PlainStyleFlag.FontStyleItalic,
+                    Italic = _value
+                };
+            }
+
+            private readonly bool _value;
+        }
+
+        private void MenuItem_ShowStyle(object sender, RoutedEventArgs e)
+        {
+            var range = grid?.CurrentWorksheet?.SelectionRange;
+            if (range.HasValue)
+            {
+                MessageBox.Show(grid?.CurrentWorksheet.Cells[range.Value.StartPos].GetStyle());
+            }
+        }
+    }
 }

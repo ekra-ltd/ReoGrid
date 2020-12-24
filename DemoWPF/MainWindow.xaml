@@ -22,13 +22,21 @@
 				<MenuItem x:Name="viewVerticalScrollbarVisible" IsCheckable="true" IsChecked="true" Header="Vertical Scrollbar" Click="View_VerticalScrollbar_Click"/>
 				<MenuItem x:Name="viewPageBreaksVisible" IsCheckable="true" IsChecked="true" Header="Print Page Breakes" Click="View_PageBreaks_Click"/>
                 <MenuItem Header="Установить ячейке формат: Дата/время" Click="ONCHANGEFORMATTODATETIME_OnClick"/>
+				<Separator/>
+				<MenuItem Header="Стиль" Click="MenuItem_ShowStyle"/>
+				<MenuItem Header="Жирный">
+					<MenuItem Header="Установить" Click="MenuItem_SetBold"/>
+					<MenuItem Header="Сбросить"   Click="MenuItem_ResetBold"/>
+				</MenuItem>
+				<MenuItem Header="Курсив">
+					<MenuItem Header="Установить" Click="MenuItem_SetItalic"/>
+					<MenuItem Header="Сбросить"   Click="MenuItem_ResetItalic"/>
+				</MenuItem>
             </MenuItem>
 			<MenuItem Header="_Sheet">
 				<MenuItem x:Name="freezeToCell" Header="Freeze To Cell" Click="freezeToCell_Click"/>
 				<MenuItem x:Name="append100Rows" Header="Append 100 Rows" Click="Sheet_Append_100_Rows_Click"/>
-
 			</MenuItem>
-
 		</Menu>
 
 		<Border x:Name="border" Background="LightBlue" BorderBrush="Black" Padding="8">

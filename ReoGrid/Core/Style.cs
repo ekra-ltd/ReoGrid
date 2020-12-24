@@ -345,7 +345,7 @@ namespace unvell.ReoGrid
             StyleParentKind parentKind, WorksheetRangeStyle parentStyle = null)
         {
             // do nothing if cell is a part of merged range
-            if (cell.Rowspan == 0 || cell.Colspan == 0) return;
+            if (cell.IsPartOfMergedRange()) return;
 
             if (cell.StyleParentKind == StyleParentKind.Own
             || parentKind == StyleParentKind.Own)
@@ -897,7 +897,7 @@ namespace unvell.ReoGrid
 
 #elif WPF
 
-            if (cell.InnerStyle.TextWrapMode != TextWrapMode.NoWrap)
+            if (cell.InnerStyleDisplay().TextWrapMode != TextWrapMode.NoWrap)
             {
                 double textWidth = cellWidth; 
                 var rotateAngle = Math.Abs(cell.Style.RotationAngle);
@@ -919,7 +919,7 @@ namespace unvell.ReoGrid
             RGFloat x = 0;
             RGFloat y = 0;
 
-            float indent = cell.InnerStyle.Indent;
+            float indent = cell.InnerStyleDisplay().Indent;
 
             switch (cell.RenderHorAlign)
             {
@@ -937,7 +937,7 @@ namespace unvell.ReoGrid
                     break;
             }
 
-            switch (cell.InnerStyle.VAlign)
+            switch (cell.InnerStyleDisplay().VAlign)
             {
                 case ReoGridVerAlign.Top:
                     y = cellBounds.Top * scaleFactor + 1;

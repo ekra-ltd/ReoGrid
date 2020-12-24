@@ -237,6 +237,82 @@ namespace unvell.ReoGrid.Utility
 			targetStyle.Flag |= flag;
 		}
 
+		        internal static void CopyStyleByGroup(WorksheetRangeStyle sourceStyle, WorksheetRangeStyle targetStyle, PlainStyleFlag flag)
+        {
+            if (flag.Has(PlainStyleFlag.BackColor))
+                targetStyle.BackColor = sourceStyle.BackColor;
+
+            if (flag.Has(PlainStyleFlag.FillPatternColor))
+                targetStyle.FillPatternColor = sourceStyle.FillPatternColor;
+
+            if (flag.Has(PlainStyleFlag.FillPatternStyle))
+                targetStyle.FillPatternStyle = sourceStyle.FillPatternStyle;
+
+            if (flag.Has(PlainStyleFlag.TextColor))
+                targetStyle.TextColor = sourceStyle.TextColor;
+
+            if (flag.Has(PlainStyleFlag.FontName))
+            {
+                targetStyle.FontName = sourceStyle.FontName;
+                System.Diagnostics.Debug.Assert(!string.IsNullOrEmpty(targetStyle.FontName));
+            }
+
+            if (flag.Has(PlainStyleFlag.FontSize))
+                targetStyle.FontSize = sourceStyle.FontSize;
+
+            if (flag.Has(PlainStyleFlag.FontStyleBold))
+            {
+                targetStyle.Bold = sourceStyle.Bold;
+
+                if (!flag.HasFlag(PlainStyleFlag.FontStyleItalic))
+                {
+                    targetStyle.Flag |= PlainStyleFlag.FontStyleItalic;
+                    targetStyle.Italic = false;
+                }
+            }
+
+            if (flag.Has(PlainStyleFlag.FontStyleItalic))
+            {
+                targetStyle.Italic = sourceStyle.Italic;
+
+                if (!flag.HasFlag(PlainStyleFlag.FontStyleBold))
+                {
+                    targetStyle.Flag |= PlainStyleFlag.FontStyleBold;
+                    targetStyle.Bold = false;
+                }
+            }
+
+            if (flag.Has(PlainStyleFlag.FontStyleStrikethrough))
+            {
+                targetStyle.Strikethrough = sourceStyle.Strikethrough;
+            }
+
+            if (flag.Has(PlainStyleFlag.FontStyleUnderline))
+            {
+                targetStyle.Underline = sourceStyle.Underline;
+            }
+
+            if (flag.Has(PlainStyleFlag.HorizontalAlign))
+                targetStyle.HAlign = sourceStyle.HAlign;
+
+            if (flag.Has(PlainStyleFlag.VerticalAlign))
+                targetStyle.VAlign = sourceStyle.VAlign;
+
+            if (flag.Has(PlainStyleFlag.TextWrap))
+                targetStyle.TextWrapMode = sourceStyle.TextWrapMode;
+
+            if (flag.Has(PlainStyleFlag.Indent))
+                targetStyle.Indent = sourceStyle.Indent;
+
+            if (flag.Has(PlainStyleFlag.Padding))
+                targetStyle.Padding = sourceStyle.Padding;
+
+            if (flag.Has(PlainStyleFlag.RotationAngle))
+                targetStyle.RotationAngle = sourceStyle.RotationAngle;
+
+            targetStyle.Flag |= flag;
+        }
+
 		internal static WorksheetRangeStyle CreateMergedStyle(WorksheetRangeStyle style1, WorksheetRangeStyle style2)
 		{
 			var style = new WorksheetRangeStyle()

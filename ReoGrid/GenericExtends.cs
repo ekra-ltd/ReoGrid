@@ -51,9 +51,9 @@ namespace unvell.ReoGrid
 		/// </summary>
 		/// <param name="flag">flags container to save the value after set</param>
 		/// <param name="target">target flags to be set</param>
-		public static void Set(this PlainStyleFlag flag, PlainStyleFlag target)
+		public static PlainStyleFlag Set(this PlainStyleFlag flag, PlainStyleFlag target)
 		{
-			flag |= target;
+			return flag | target;
 		}
 
 		/// <summary>
@@ -61,9 +61,9 @@ namespace unvell.ReoGrid
 		/// </summary>
 		/// <param name="flag">flags container to be removed from</param>
 		/// <param name="target">target flags to be removed</param>
-		public static void Unset(this PlainStyleFlag flag, PlainStyleFlag target)
+		public static PlainStyleFlag Unset(this PlainStyleFlag flag, PlainStyleFlag target)
 		{
-			flag &= ~target;
+			return flag & ~target;
 		}
 
 		/// <summary>

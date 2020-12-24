@@ -773,6 +773,11 @@ namespace unvell.ReoGrid
 		/// </summary>
 		/// <returns></returns>
 		public short GetRowspan() { return rowspan; }
+
+		public bool IsPartOfMergedRange()
+		{
+			return Rowspan == 0 || Colspan == 0;
+		}
 		#endregion // Rowspan & Colspan
 
 		#region Location & Size
@@ -1050,6 +1055,62 @@ namespace unvell.ReoGrid
 #endif // DEBUG
 		}
 
+		private WorksheetRangeStyle _innerStyleOverride = null;
+        
+        /// <summary>
+        /// Получить стиль ячейки для отображения, 
+        /// </summary>
+        /// <returns>
+        /// Возвращает либо стиль ячейки либо стиль условного форматирования, примененного к ячейке
+        /// </returns>
+        public WorksheetRangeStyle InnerStyleDisplay()
+        {
+            if (_innerStyleOverride is null)
+            {
+                return InnerStyle;
+            }
+            if (InnerStyle is null)
+            {
+                return null;
+            }
+            var result = WorksheetRangeStyle.Clone(InnerStyle);
+            StyleUtility.CopyStyleByGroup(_innerStyleOverride, result, _innerStyleOverride.Flag);    // Применяем новый стиль к обновляемому
+            return result;
+        }
+
+        /// <summary>
+        /// Применяет к ячейки стиль условного форматирования
+        /// </summary>
+        internal void ApplyConditionalFormattingStyle(WorksheetRangeStyle style)
+        {
+            // Если требуется очистить переопределенный стиль
+            if (style is null)
+            {
+                var updateFont = true == InnerStyle?.Flag.HasAny(PlainStyleFlag.FontAll);
+
+                // очистка стиля и выход
+                _innerStyleOverride = null;
+                if (updateFont)
+                    Worksheet?.UpdateCellFont(this, UpdateFontReason.TextColorChanged);
+                return;
+            }
+
+            if (_innerStyleOverride != null)
+            {
+                StyleUtility.CopyStyleByGroup(style, _innerStyleOverride, style.Flag); // Применяем новый стиль к обновляемому
+            }
+            else
+            {
+                _innerStyleOverride = style;
+            }
+
+            if (style.Flag.HasAny(PlainStyleFlag.FontAll)) // Если стиль меняет шрифт
+            {
+                Worksheet?.UpdateCellFont(this, UpdateFontReason.TextColorChanged); // Перерисовка шрифта: цвета текста, bold, italic, ...
+            }
+        }
+
+        
 		[NonSerialized]
 		private ReferenceCellStyle referenceStyle;
 
@@ -1298,7 +1359,6 @@ namespace unvell.ReoGrid.Utility
 		public static void CopyCellContent(Cell toCell, Cell fromCell)
 		{
 			// style & render
-			fromCell.Worksheet?.ResetConditionalFormatting();
 			toCell.InnerStyle = new WorksheetRangeStyle(fromCell.InnerStyle);
 			toCell.StyleParentKind = fromCell.StyleParentKind;
 			toCell.TextBounds = fromCell.TextBounds;

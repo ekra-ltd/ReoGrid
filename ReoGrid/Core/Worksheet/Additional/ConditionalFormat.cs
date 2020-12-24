@@ -279,6 +279,11 @@ namespace unvell.ReoGrid.Core.Worksheet.Additional
 	public class Argb
 	{
 		public byte[] Value { get; set; } = new byte[4];
+		
+		public Graphics.SolidColor ToSolidColor()
+		{
+			return new Graphics.SolidColor(Value[0], Value[1], Value[2], Value[3]);
+		}
 	}
 
 	/// <summary>

@@ -112,22 +112,7 @@ namespace unvell.ReoGrid.IO.OpenXML
 			var fontName = rgStyle.FontName;
 			var fontSize = rgStyle.FontSize;
 
-			var existedIndex = styles.fonts.FindIndex(f =>
-				((flag & PlainStyleFlag.FontName) == PlainStyleFlag.FontName
-				&& f.name != null && string.Equals(f.name.value, fontName, StringComparison.CurrentCultureIgnoreCase))
-				&& ((flag & PlainStyleFlag.FontSize) == PlainStyleFlag.FontSize && f.size != null && f._size == fontSize)
-				&& (((flag & PlainStyleFlag.FontStyleBold) == PlainStyleFlag.FontStyleBold && f.bold != null && f.bold != null)
-					|| ((flag & PlainStyleFlag.FontStyleBold) != PlainStyleFlag.FontStyleBold && f.bold == null))
-				&& (((flag & PlainStyleFlag.FontStyleItalic) == PlainStyleFlag.FontStyleItalic && f.italic != null && f.italic != null)
-					|| ((flag & PlainStyleFlag.FontStyleItalic) != PlainStyleFlag.FontStyleItalic && f.italic == null))
-				&& (((flag & PlainStyleFlag.FontStyleStrikethrough) == PlainStyleFlag.FontStyleStrikethrough && f.strikethrough != null && f.strikethrough != null)
-					|| ((flag & PlainStyleFlag.FontStyleStrikethrough) != PlainStyleFlag.FontStyleStrikethrough && f.strikethrough == null))
-				&& (((flag & PlainStyleFlag.FontStyleUnderline) == PlainStyleFlag.FontStyleUnderline && f.underline != null && f.underline != null)
-					|| ((flag & PlainStyleFlag.FontStyleUnderline) != PlainStyleFlag.FontStyleUnderline && f.underline == null))
-				&& (((flag & PlainStyleFlag.TextColor) == PlainStyleFlag.TextColor && f.color != null
-					&& f.color._rgColor != null && f.color._rgColor.Value == rgStyle.TextColor)
-					|| ((flag & PlainStyleFlag.TextColor) != PlainStyleFlag.TextColor && f.color == null))
-				);
+			var existedIndex = styles.fonts.FindIndex(f => FontStyleComparer?.IsSame(f, rgStyle) ?? false);
 
 			if (existedIndex >= 0)
 			{
@@ -139,6 +124,133 @@ namespace unvell.ReoGrid.IO.OpenXML
 			return styles.fonts.Count - 1;
 		}
 
+		/// <summary>
+        /// Выполняет сравнение стиля excel <see cref="Font"/> и стиля reogrid <see cref="WorksheetRangeStyle"/>
+        /// </summary>
+        interface IFontStyleComparer
+        {
+            bool IsSame(Font f, WorksheetRangeStyle rgStyle);
+        }
+
+        private static readonly IFontStyleComparer FontStyleComparer = new FontStyleComparerImpl();
+
+        class FontStyleComparerImpl : IFontStyleComparer
+        {
+
+            public bool IsSame(Font f, WorksheetRangeStyle rgStyle)
+            {
+                return _comparers.All(comparer => comparer.IsSame(f, rgStyle));
+            }
+
+            private readonly List<IFontStyleComparer> _comparers = new List<IFontStyleComparer>
+            {
+                new FontStyleComparerFontName(),
+                new FontStyleComparerFontSize(),
+                new FontStyleComparerFontStyleBold(),
+                new FontStyleComparerFontStyleItalic(),
+                new FontStyleComparerFontStyleStrikethrough(),
+                new FontStyleComparerFontStyleUnderline(),
+                new FontStyleComparerFontStyleTextColor(),
+            };
+        }
+
+        class FontStyleComparerFontName : IFontStyleComparer
+        {
+            public bool IsSame(Font f, WorksheetRangeStyle rgStyle)
+            {
+                var flag = rgStyle.Flag;
+                var fontName = rgStyle.FontName;
+
+                return flag.Has(PlainStyleFlag.FontName)
+                       && f.name != null && string.Equals(f.name.value, fontName, StringComparison.CurrentCultureIgnoreCase);
+            }
+        }
+
+        class FontStyleComparerFontSize : IFontStyleComparer
+        {
+            public bool IsSame(Font f, WorksheetRangeStyle rgStyle)
+            {
+                var flag = rgStyle.Flag;
+                var fontSize = rgStyle.FontSize;
+
+                return flag.Has(PlainStyleFlag.FontSize) && f.size != null && f._size == fontSize;
+            }
+        }
+
+        class FontStyleComparerFontStyleBold : IFontStyleComparer
+        {
+            public bool IsSame(Font f, WorksheetRangeStyle rgStyle)
+            {
+                var flag = rgStyle.Flag;
+
+                return flag.Has(PlainStyleFlag.FontStyleBold) && IsSameBold(f.bold, rgStyle.Bold)
+                       || !flag.Has(PlainStyleFlag.FontStyleBold) && IsSameBold(f.bold, false);
+            }
+
+            private static bool IsSameBold(Bold bold, bool value)
+            {
+                return bold != null && value || bold == null && !value;
+            }
+        }
+
+        class FontStyleComparerFontStyleItalic : IFontStyleComparer
+        {
+            public bool IsSame(Font f, WorksheetRangeStyle rgStyle)
+            {
+                var flag = rgStyle.Flag;
+
+                return flag.Has(PlainStyleFlag.FontStyleItalic) && IsSameItalic(f.italic, rgStyle.Italic)
+                       || !flag.Has(PlainStyleFlag.FontStyleItalic) && IsSameItalic(f.italic, false);
+            }
+
+            private static bool IsSameItalic(Italic italic, bool value)
+            {
+                return italic != null && value || italic == null && !value;
+            }
+        }
+
+        class FontStyleComparerFontStyleStrikethrough : IFontStyleComparer
+        {
+            public bool IsSame(Font f, WorksheetRangeStyle rgStyle)
+            {
+                var flag = rgStyle.Flag;
+
+                return flag.Has(PlainStyleFlag.FontStyleStrikethrough) && IsSameStrikethrough(f.strikethrough, rgStyle.Strikethrough)
+                       || !flag.Has(PlainStyleFlag.FontStyleStrikethrough) && IsSameStrikethrough(f.strikethrough, false);
+            }
+
+            private static bool IsSameStrikethrough(Strikethrough strikethrough, bool value)
+            {
+                return strikethrough != null && value || strikethrough == null && !value;
+            }
+        }
+
+        class FontStyleComparerFontStyleUnderline : IFontStyleComparer
+        {
+            public bool IsSame(Font f, WorksheetRangeStyle rgStyle)
+            {
+                var flag = rgStyle.Flag;
+
+                return flag.Has(PlainStyleFlag.FontStyleUnderline) && IsSameUnderline(f.underline, rgStyle.Underline)
+                       || !flag.Has(PlainStyleFlag.FontStyleUnderline) && IsSameUnderline(f.underline, false);
+            }
+
+            private static bool IsSameUnderline(Underline underline, bool value)
+            {
+                return underline != null && value || underline == null && !value;
+            }
+        }
+
+        class FontStyleComparerFontStyleTextColor : IFontStyleComparer
+        {
+            public bool IsSame(Font f, WorksheetRangeStyle rgStyle)
+            {
+                var flag = rgStyle.Flag;
+
+                return (flag.Has(PlainStyleFlag.TextColor) && f.color != null && f.color._rgColor != null && f.color._rgColor.Value == rgStyle.TextColor)
+                       || (!flag.Has(PlainStyleFlag.TextColor) && f.color == null);
+            }
+        }
 		#endregion // Font
 
 		#region Border
@@ -1151,7 +1263,7 @@ namespace unvell.ReoGrid.IO.OpenXML
 
 			if (rgSheet?.ConditionalFormats != null && rgSheet.ConditionalFormats.Count > 0)
 			{
-				rgSheet.ResetConditionalFormatting();
+				// rgSheet.ResetConditionalFormatting();
 				var item = Core.Worksheet.Additional.ConditionalFormatHelper.ToExcel2009(rgSheet.ConditionalFormats);
 				if (sheet.extLst == null) sheet.extLst = new CT_ExtensionList();
 				sheet.extLst.ext = new[]

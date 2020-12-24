@@ -731,7 +731,7 @@ namespace unvell.ReoGrid.Views
 						{
 							Cell cell = this.sheet.cells[r, c];
 
-							if (cell != null && cell.InnerStyle.BackColor.A > 0)
+							if (cell != null && cell.InnerStyleDisplay().BackColor.A > 0)
 							{
 								break;
 							}
@@ -772,7 +772,7 @@ namespace unvell.ReoGrid.Views
 						if (c > 0)
 						{
 							Cell cell = this.sheet.cells[r, c];
-							if (cell != null && cell.InnerStyle.BackColor.A > 0)
+							if (cell != null && cell.InnerStyleDisplay().BackColor.A > 0)
 							{
 								break;
 							}
@@ -846,7 +846,7 @@ namespace unvell.ReoGrid.Views
 			#region Rich Text
 
 			#region Determine clip region
-				bool needWidthClip = (cell.IsMergedCell || cell.InnerStyle.TextWrapMode == TextWrapMode.WordBreak);
+				bool needWidthClip = (cell.IsMergedCell || cell.InnerStyleDisplay().TextWrapMode == TextWrapMode.WordBreak);
 
 				if (!needWidthClip && dc.AllowCellClip)
 				{
@@ -921,10 +921,10 @@ namespace unvell.ReoGrid.Views
 					// render color, used to render negative number, specified by data formatter
 					textColor = cell.RenderColor;
 				}
-				else if (cell.InnerStyle.HasStyle(PlainStyleFlag.TextColor))
+				else if (cell.InnerStyleDisplay().HasStyle(PlainStyleFlag.TextColor))
 				{
 					// cell text color, specified by SetRangeStyle
-					textColor = cell.InnerStyle.TextColor;
+					textColor = cell.InnerStyleDisplay().TextColor;
 				}
 				// default cell text color
 				else if (!sheet.controlAdapter.ControlStyle.TryGetColor(ControlAppearanceColors.GridText, out textColor))
@@ -947,7 +947,7 @@ namespace unvell.ReoGrid.Views
 
 				Rectangle clipRect = new Rectangle(this.ScrollViewLeft * this.scaleFactor, cell.Top * this.scaleFactor, this.Width, cellScaledHeight);
 
-				bool needWidthClip = cell.IsMergedCell || cell.InnerStyle.TextWrapMode == TextWrapMode.WordBreak || dc.AllowCellClip;
+				bool needWidthClip = cell.IsMergedCell || cell.InnerStyleDisplay().TextWrapMode == TextWrapMode.WordBreak || dc.AllowCellClip;
 
 				if (!needWidthClip)
 				{
@@ -1083,7 +1083,7 @@ namespace unvell.ReoGrid.Views
 			}
 			else
 			{
-				style = cell.InnerStyle;
+				style = cell.InnerStyleDisplay();
 			}
 
 			if (style.BackColor.A > 0)

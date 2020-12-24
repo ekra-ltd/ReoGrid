@@ -608,10 +608,10 @@ namespace unvell.ReoGrid.Rendering
 			{
 				textColor = cell.RenderColor;
 			}
-			else if (cell.InnerStyle.HasStyle(PlainStyleFlag.TextColor))
+			else if (cell.InnerStyleDisplay().HasStyle(PlainStyleFlag.TextColor))
 			{
 				// cell text color, specified by SetRangeStyle
-				textColor = cell.InnerStyle.TextColor;
+				textColor = cell.InnerStyleDisplay().TextColor;
 			}
 			else if (!controlStyle.TryGetColor(ControlAppearanceColors.GridText, out textColor))
 			{
@@ -628,7 +628,7 @@ namespace unvell.ReoGrid.Rendering
 			if (sheet == null || sheet.controlAdapter == null) return;
 
 			double dpi = PlatformUtility.GetDPI();
-			double fontSize = cell.InnerStyle.FontSize * sheet.renderScaleFactor * dpi / 72.0;
+			double fontSize = cell.InnerStyleDisplay().FontSize * sheet.renderScaleFactor * dpi / 72.0;
 
 			if (cell.formattedText == null || cell.formattedText.Text != cell.InnerDisplay || reason == UpdateFontReason.TextColorChanged)
 			{
@@ -636,13 +636,13 @@ namespace unvell.ReoGrid.Rendering
 
 				cell.formattedText = new System.Windows.Media.FormattedText(cell.InnerDisplay,
 					System.Globalization.CultureInfo.CurrentCulture, System.Windows.FlowDirection.LeftToRight,
-					base.resourceManager.GetTypeface(cell.InnerStyle.FontName),
+					base.resourceManager.GetTypeface(cell.InnerStyleDisplay().FontName),
 					fontSize,
 					base.resourceManager.GetBrush(textColor));
 			}
 			else if (reason == Core.UpdateFontReason.FontChanged || reason == Core.UpdateFontReason.ScaleChanged)
 			{
-				cell.formattedText.SetFontFamily(cell.InnerStyle.FontName);
+				cell.formattedText.SetFontFamily(cell.InnerStyleDisplay().FontName);
 				cell.formattedText.SetFontSize(fontSize);
 			}
 			else if (reason == Core.UpdateFontReason.TextColorChanged)
@@ -656,11 +656,11 @@ namespace unvell.ReoGrid.Rendering
 			if (reason == Core.UpdateFontReason.FontChanged || reason == Core.UpdateFontReason.ScaleChanged)
 			{
 				ft.SetFontWeight(
-				cell.InnerStyle.Bold ? System.Windows.FontWeights.Bold : System.Windows.FontWeights.Normal);
+				cell.InnerStyleDisplay().Bold ? System.Windows.FontWeights.Bold : System.Windows.FontWeights.Normal);
 
-				ft.SetFontStyle(PlatformUtility.ToWPFFontStyle(cell.InnerStyle.fontStyles));
+				ft.SetFontStyle(PlatformUtility.ToWPFFontStyle(cell.InnerStyleDisplay().fontStyles));
 
-				ft.SetTextDecorations(PlatformUtility.ToWPFFontDecorations(cell.InnerStyle.fontStyles));
+				ft.SetTextDecorations(PlatformUtility.ToWPFFontDecorations(cell.InnerStyleDisplay().fontStyles));
 		}
 			}
 
