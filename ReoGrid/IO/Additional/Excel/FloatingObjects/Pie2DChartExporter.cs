@@ -3,12 +3,11 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
 using System.Linq;
-using System.Windows.Media.Imaging;
 using unvell.ReoGrid.Chart;
 using unvell.ReoGrid.Drawing;
 using unvell.ReoGrid.IO.OpenXML;
 using unvell.ReoGrid.IO.OpenXML.Schema;
-using ChartType = unvell.ReoGrid.Chart.Pie2DChart;
+using ChartType = unvell.ReoGrid.Chart.PieChart;
 
 namespace unvell.ReoGrid.IO.Additional.Excel.FloatingObjects
 {
@@ -21,7 +20,7 @@ namespace unvell.ReoGrid.IO.Additional.Excel.FloatingObjects
             if (CanExport(exportObject, options))
             {
                 // Здесь будет сохранение pie chart
-                WriteChart(doc, sheet, drawing, rgSheet, exportObject as Pie2DChart);
+                WriteChart(doc, sheet, drawing, rgSheet, exportObject as ChartType);
             }
             else
             {
@@ -48,7 +47,7 @@ namespace unvell.ReoGrid.IO.Additional.Excel.FloatingObjects
                 drawing.twoCellAnchors = new List<CT_TwoCellAnchor>();
             }
 
-            string typeName = /*chart.GetFriendlyTypeName()*/ "Pie2DChart";
+            string typeName = "Pie2DChart";
 
             drawing._typeObjectCount.TryGetValue(typeName, out var typeObjCount);
             typeObjCount++;
@@ -109,7 +108,7 @@ namespace unvell.ReoGrid.IO.Additional.Excel.FloatingObjects
             FillChartSpace(chartSpaceCreationResult.Result, chart);
         }
 
-        private static void FillChartSpace(CT_ChartSpace space, Pie2DChart chart)
+        private static void FillChartSpace(CT_ChartSpace space, ChartType chart)
         {
             space.date1904 = new CT_Boolean { val = false };
             space.lang = new CT_TextLanguageID
@@ -486,7 +485,7 @@ namespace unvell.ReoGrid.IO.Additional.Excel.FloatingObjects
             };
         }
 
-        private static CT_PieSer[] CreatePieSerArray(CT_ChartSpace space, Pie2DChart chart)
+        private static CT_PieSer[] CreatePieSerArray(CT_ChartSpace space, ChartType chart)
         {
             var count = WaGetSerialCount(chart);
             var result = new CT_PieSer[count];
@@ -497,7 +496,7 @@ namespace unvell.ReoGrid.IO.Additional.Excel.FloatingObjects
             return result;
         }
 
-        private static CT_PieSer CreatePieSer(CT_ChartSpace space, Pie2DChart chart, uint index)
+        private static CT_PieSer CreatePieSer(CT_ChartSpace space, ChartType chart, uint index)
         {
             var catRange = WaCategoryNameRange(chart);
             var valRange = WaDataRange(chart, index); 
@@ -595,7 +594,7 @@ namespace unvell.ReoGrid.IO.Additional.Excel.FloatingObjects
             return @"0";
         }
 
-        private static CT_DPt[] CreateDataPoints(CT_ChartSpace space, Pie2DChart chart)
+        private static CT_DPt[] CreateDataPoints(CT_ChartSpace space, ChartType chart)
         {
             var result = new CT_DPt[chart.DataSource.CategoryCount];
             for (uint i = 0; i < result.Length; i++)
@@ -603,7 +602,7 @@ namespace unvell.ReoGrid.IO.Additional.Excel.FloatingObjects
             return result;
         }
 
-        private static CT_DPt CreateDataPoint(CT_ChartSpace space, Pie2DChart chart, uint index)
+        private static CT_DPt CreateDataPoint(CT_ChartSpace space, ChartType chart, uint index)
         {
             return new CT_DPt
             {

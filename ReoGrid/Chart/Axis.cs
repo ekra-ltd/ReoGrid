@@ -386,7 +386,9 @@ namespace unvell.ReoGrid.Chart
 			{
 				RGFloat rowHeight = (clientRect.Height) / dataCount;
 
-				var maxHeight = boxes.Max(b => b.Height);
+				var maxHeight = 1.0;
+				if(boxes.Any())
+					maxHeight = boxes.Max(b => b.Height);
                 // 2017-12-25 отображались не все подписи слева
                 //var showableRows = clientRect.Width / maxHeight;
                 var showableRows = clientRect.Height / maxHeight;

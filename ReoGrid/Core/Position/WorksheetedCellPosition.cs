@@ -99,10 +99,7 @@ namespace unvell.ReoGrid {
                     else
                     {
                         var ws = worksheet.Workbook?.GetWorksheetByName(worksheetName);
-                        if (ws != null)
-                        {
-                            result = new WorksheetedCellPosition(worksheet, cellAddress);
-                        }
+                        result = new WorksheetedCellPosition(ws ?? worksheet, cellAddress);
                     }
                 }
             }

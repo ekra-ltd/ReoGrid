@@ -213,7 +213,7 @@ namespace unvell.ReoGrid.Chart
 
 				x += itemWidth;
 
-				const Double itemSpacing = 10;
+				const Double itemSpacing = 4;
 
 				if (LegendPosition == LegendPosition.Left || LegendPosition == LegendPosition.Right)
 				{

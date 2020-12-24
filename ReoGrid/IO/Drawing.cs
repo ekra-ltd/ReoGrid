@@ -20,6 +20,9 @@ namespace unvell.ReoGrid.IO.OpenXML.Schema
         // public List<TwoCellAnchor> twoCellAnchors;
         public List<CT_TwoCellAnchor> twoCellAnchors;
 
+        [XmlElement("absoluteAnchor")]
+        public List<CT_AbsoluteAnchor> absoluteAnchor;
+
         [XmlIgnore]
         internal int _drawingObjectCount = 2;
 

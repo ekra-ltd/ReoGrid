@@ -43,6 +43,7 @@ using unvell.ReoGrid.Utility;
 using unvell.ReoGrid.IO.OpenXML.Schema;
 using unvell.ReoGrid.Graphics;
 using unvell.ReoGrid.Drawing;
+using unvell.ReoGrid.Formula;
 using unvell.ReoGrid.IO.Additional;
 using unvell.ReoGrid.IO.Additional.Excel.FloatingObjects;
 using Border = unvell.ReoGrid.IO.OpenXML.Schema.Border;
@@ -1933,6 +1934,34 @@ namespace unvell.ReoGrid.IO.OpenXML
                     rgSheet.FloatingObjects.Add(obj);
                 }
             }
+            foreach (var anchor in drawingFile.absoluteAnchor)
+            {
+                DrawingObject obj = null;
+
+                if (anchor.Item is CT_Picture pic)
+                {
+                    obj = LoadImage(doc, rgSheet, pic, drawingFile);
+                }
+                else if (anchor.Item is CT_Shape shape)
+                {
+                    obj = LoadShape(doc, rgSheet, shape);
+                }
+                else if (anchor.Item is CT_Connector connector)
+                {
+                    obj = LoadShape(doc, rgSheet, connector);
+                }
+                else if (anchor.Item is CT_GraphicalObjectFrame graphcFrame)
+                {
+                    obj = LoadGraphic(doc, rgSheet, drawingFile, graphcFrame);
+                }
+
+                if (obj != null)
+                {
+                    obj.Bounds = GetDrawingBounds(rgSheet, anchor);
+                
+                    rgSheet.FloatingObjects.Add(obj);
+                }
+            }
         }
 
         private static void SetDrawingObjectStyle(Document doc, DrawingObject obj, CT_Shape shape)
@@ -2641,6 +2670,19 @@ namespace unvell.ReoGrid.IO.OpenXML
 
             return new Rectangle(start, end);
         }
+        
+        private static Rectangle GetDrawingBounds(
+            RGWorksheet rgSheet,
+            CT_AbsoluteAnchor anchor)
+        {
+            const int emuPerPixel = 9525; // English Metric Units per pixel
+            return new Rectangle(
+                (double)anchor.pos.x / emuPerPixel,
+                (double)anchor.pos.y / emuPerPixel,
+                (double)anchor.ext.cx / emuPerPixel,
+                (double)anchor.ext.cy / emuPerPixel
+            );
+        }
 #endregion // GetDrawingBounds
 
 #region LoadGraphic
@@ -2815,25 +2857,29 @@ switch (graphic.graphicData.uri)
                 };
 #endregion // Area Chart Plot Area
             }
-            if (rgChart is AxisChart axisChart)
-            {
-                if (plot.categoryAxis != null)
-                    axisChart.HorizontalAxisInfoView.TextDirection = GetAxisTextDirection(plot.categoryAxis.txPr.bodyPr.rot, plot.categoryAxis.txPr.bodyPr.vert);
-                else if (plot.dateAxis != null)
-                    axisChart.HorizontalAxisInfoView.TextDirection = GetAxisTextDirection(plot.dateAxis.txPr.bodyPr.rot, plot.dateAxis.txPr.bodyPr.vert);
-            }
 
-            bool showLegend = false;
-
-            if (chart.legend != null)
+            if (rgChart != null)
             {
-                if (chart.legend.legendPos != null)
+                if (rgChart is AxisChart axisChart)
                 {
-                    showLegend = true;
+                    if (plot.categoryAxis?.txPr?.bodyPr != null)
+                        axisChart.HorizontalAxisInfoView.TextDirection = GetAxisTextDirection(plot.categoryAxis.txPr.bodyPr.rot, plot.categoryAxis.txPr.bodyPr.vert);
+                    else if (plot.dateAxis?.txPr.bodyPr != null)
+                        axisChart.HorizontalAxisInfoView.TextDirection = GetAxisTextDirection(plot.dateAxis.txPr.bodyPr.rot, plot.dateAxis.txPr.bodyPr.vert);
                 }
-            }
 
-            rgChart.ShowLegend = showLegend;
+                bool showLegend = false;
+
+                if (chart.legend != null)
+                {
+                    if (chart.legend.legendPos != null)
+                    {
+                        showLegend = true;
+                    }
+                }
+
+                rgChart.ShowLegend = showLegend;
+            }
 
             return rgChart;
         }
@@ -2944,9 +2990,19 @@ switch (graphic.graphicData.uri)
                 if (error.IsSetted && error.IsUndefined)
                 {
                     var dataRangeVal = Formula.Evaluator.Evaluate(rgSheet.workbook, values.numRef.formula);
+                    
+                    SheetRangePosition sheetRange;
                     if (dataRangeVal.type == Formula.FormulaValueType.Range)
                     {
-                        var sheetRange = dataRangeVal.GetSheetRangePosition();
+                        sheetRange = dataRangeVal.GetSheetRangePosition();
+                    }
+                    else
+                    {
+                        sheetRange = Helper.ParseAsSheetRangePosition(rgSheet.workbook, values.numRef.formula);
+                    }
+
+                    if (sheetRange != null)
+                    {
                         var range = sheetRange.Position;
 
                         if (serial is PieChartSerial)
