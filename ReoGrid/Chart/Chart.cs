@@ -50,6 +50,15 @@ namespace unvell.ReoGrid.Chart
 		/// </summary>
 		public virtual string Title { get; set; }
 
+		private sealed class PlotViewContainerComponent: DrawingComponent
+		{
+			public PlotViewContainerComponent()
+			{
+				FillColor = SolidColor.Transparent;
+				LineColor = SolidColor.Transparent;
+			}
+		}
+		
 		#region Constructor
 		/// <summary>
 		/// Create chart instance.
@@ -63,11 +72,7 @@ namespace unvell.ReoGrid.Chart
 			this.Padding = new PaddingValue(10);
 
 			// body
-			this.Children.Add(this.PlotViewContainer = new DrawingComponent()
-			{
-				FillColor = SolidColor.Transparent,
-				LineColor = SolidColor.Transparent,
-			});
+			this.Children.Add(this.PlotViewContainer = new PlotViewContainerComponent());
 
 			// title
 			this.Children.Add(this.TitleView = new ChartTitle(this));
@@ -237,11 +242,17 @@ namespace unvell.ReoGrid.Chart
 		{
 			if (this.layoutDirty)
 			{
-				this.UpdateLayout();
+				OnLayoutDirtyDetected();
 			}
 
 			base.OnPaint(dc);
 		}
+
+		protected virtual void OnLayoutDirtyDetected()
+		{
+			UpdateLayout();
+		}
+
 		#endregion // Paint
 
 		#region Data Source

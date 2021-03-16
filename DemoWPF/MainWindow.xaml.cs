@@ -3,6 +3,7 @@
 // #define ADD_SHEET_3
 
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Windows;
@@ -16,6 +17,7 @@ using unvell.ReoGrid.Drawing.Shapes;
 using unvell.ReoGrid.Graphics;
 using unvell.ReoGrid.Utility;
 using Point = System.Windows.Point;
+using unvell.ReoGrid.WPFDemo.Task;
 
 namespace unvell.ReoGrid.WPFDemo
 {
@@ -24,6 +26,11 @@ namespace unvell.ReoGrid.WPFDemo
 	/// </summary>
 	public partial class MainWindow : Window
 	{
+        private List<ITaskExample> _taskExamples = new List<ITaskExample>
+        {
+            new Task9506HorizontalHistogram()
+        };
+        
 		public MainWindow()
 		{
 			InitializeComponent();
@@ -84,6 +91,7 @@ namespace unvell.ReoGrid.WPFDemo
             // ChangeColumnsRowsCount(grid, ColumnsCount, RowsCount);
 #endif
 
+            _taskExamples.ForEach(t => t.Apply(grid));
         }
 
 		private void UpdateMenuChecks()

@@ -18,6 +18,8 @@
 
 #if DRAWING
 
+using System.Collections.Generic;
+using System.Windows;
 using unvell.ReoGrid.Rendering;
 
 namespace unvell.ReoGrid.Chart
@@ -131,29 +133,69 @@ namespace unvell.ReoGrid.Chart
 			{
 				var style = axisChart.DataSerialStyles[r];
 
-				var seg = new System.Windows.Media.PathFigure();
+				var waZeroHeight = axisChart.ZeroHeight;
+				if (waZeroHeight > clientRect.Height)
+				{
+					waZeroHeight = clientRect.Height;
+				}
+				else if (waZeroHeight < clientRect.Y)
+				{
+					waZeroHeight = clientRect.Y;
+				}
 
-				seg.StartPoint = new System.Windows.Point(axisChart.PlotColumnPoints[0], axisChart.ZeroHeight);
+				var seg = new System.Windows.Media.PathFigure
+				{
+					StartPoint = new Point(axisChart.PlotColumnPoints[0], waZeroHeight)
+				};
+
 
 				for (int c = 0; c < ds.CategoryCount; c++)
 				{
-					var pt = axisChart.PlotDataPoints[r][c];
-
-					System.Windows.Point point;
-
-					if (pt.hasValue)
+					try
 					{
-						point = new System.Windows.Point(axisChart.PlotColumnPoints[c], axisChart.ZeroHeight - pt.value);
-					}
-					else
-					{
-						point = new System.Windows.Point(axisChart.PlotColumnPoints[c], axisChart.ZeroHeight);
-					}
+						var pt = axisChart.PlotDataPoints[r][c];
 
-					seg.Segments.Add(new System.Windows.Media.LineSegment(point, true));
+						var points = new List<Point>();
+
+						if (pt.hasValue)
+						{
+							if (c > 0)
+							{
+								var prevPt = axisChart.PlotDataPoints[r][c - 1];
+								if (!prevPt.hasValue)
+								{
+									points.Add(new Point(axisChart.PlotColumnPoints[c], waZeroHeight));
+								}
+							}
+
+							points.Add(new Point(axisChart.PlotColumnPoints[c], axisChart.ZeroHeight - pt.value));
+						}
+						else
+						{
+							if (c > 0)
+							{
+								var prevPt = axisChart.PlotDataPoints[r][c - 1];
+								if (prevPt.hasValue)
+								{
+									points.Add(new Point(axisChart.PlotColumnPoints[c - 1], waZeroHeight));
+								}
+							}
+
+							points.Add(new Point(axisChart.PlotColumnPoints[c], waZeroHeight));
+						}
+
+						foreach (var point in points)
+						{
+							seg.Segments.Add(new System.Windows.Media.LineSegment(point, true));
+						}
+					}
+					catch
+					{
+						// ignored
+					}
 				}
 
-				var endPoint = new System.Windows.Point(axisChart.PlotColumnPoints[ds.CategoryCount - 1], axisChart.ZeroHeight);
+				var endPoint = new System.Windows.Point(axisChart.PlotColumnPoints[ds.CategoryCount - 1], waZeroHeight);
 				seg.Segments.Add(new System.Windows.Media.LineSegment(endPoint, true));
 
 				seg.IsClosed = true;

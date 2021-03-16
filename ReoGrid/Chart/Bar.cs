@@ -157,18 +157,54 @@ namespace unvell.ReoGrid.Chart
 					{
 						var scaleY = Bounds.Width / Bounds.Height;
 						var style = axisChart.DataSerialStyles[r];
+						
+						try
+						{
+							if (pt.value > 0)
+							{
+								if (-axisChart.ZeroWidth < clientRect.X)
+								{
+									var waZeroWitdh = clientRect.X;
+									var waWidth = pt.value * scaleY + (waZeroWitdh - axisChart.ZeroWidth);
+									if (waWidth >= 0)
+									{
+										g.DrawAndFillRectangle(new Rectangle(
+											waZeroWitdh, (RGFloat) y,
+											waWidth, ReduceBarHeight(singleColumnHeight)), style.LineColor, style.FillColor);
+									}
+								}
+								else
+								{
+									g.DrawAndFillRectangle(new Rectangle(
+										-axisChart.ZeroWidth, (RGFloat) y,
+										pt.value * scaleY, ReduceBarHeight(singleColumnHeight)), style.LineColor, style.FillColor);
+								}
+							}
+							else
+							{
+								var xPos = -(axisChart.ZeroWidth - pt.value * scaleY);
 
-						if (pt.value > 0)
-						{
-							g.DrawAndFillRectangle(new Rectangle(
-									-axisChart.ZeroWidth, (RGFloat)y,
-									pt.value * scaleY, (RGFloat)(singleColumnHeight - 1)), style.LineColor, style.FillColor);
+								if (-axisChart.ZeroWidth > clientRect.Width)
+								{
+									var waWidth = clientRect.Width - xPos;
+									if (waWidth >= 0)
+									{
+										g.DrawAndFillRectangle(new Rectangle(
+											-(axisChart.ZeroWidth - pt.value * scaleY), (RGFloat) y,
+											waWidth, ReduceBarHeight(singleColumnHeight)), style.LineColor, style.FillColor);
+									}
+								}
+								else
+								{
+									g.DrawAndFillRectangle(new Rectangle(
+										xPos, (RGFloat) y,
+										(-pt.value) * scaleY, ReduceBarHeight(singleColumnHeight)), style.LineColor, style.FillColor);
+								}
+							}
 						}
-						else
+						catch
 						{
-							g.DrawAndFillRectangle(new Rectangle(
-								-(axisChart.ZeroWidth - pt.value * scaleY), (RGFloat)y,
-								-pt.value* scaleY, (RGFloat)(singleColumnHeight - 1)), style.LineColor, style.FillColor);
+							// ignored
 						}
 					}
 

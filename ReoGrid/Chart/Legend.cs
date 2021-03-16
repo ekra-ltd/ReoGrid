@@ -19,6 +19,9 @@
 #if DRAWING
 
 using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Windows.Documents;
 
 #if WINFORM || ANDROID
 using RGFloat = System.Single;
@@ -155,17 +158,26 @@ namespace unvell.ReoGrid.Chart
 			int dataCount = /*ds.SerialCount*/GetLegendItemsCount();
 
 			Children.Clear();
+			// Список кандидатов на попадание в Children. Применяется для ограничеия количество элементов легенды, так
+			// как в противном случае элементы легенды выходят за область отрисовки графика
+			var toAddInChildrenCandidates = new List<ChartLegendItem>();
 
+			// Класс для расчета размеров области, занимаемой легендой
+			var fitCalculation = new FitCalculationHelper();
+			
 			Double maxSymbolWidth = 0, maxSymbolHeight = 0, maxLabelWidth = 0, maxLabelHeight = 0;
 
 			#region Measure Sizes
 
 			for (int index = 0; index < dataCount; index++)
 			{
+				var saveFitCalculation = fitCalculation;
+				
 				var legendItem = new ChartLegendItem(this, index);
 
 				var symbolSize = GetSymbolSize(index);
-
+				fitCalculation.TryUpdateMaxSymbolSize(symbolSize);
+				
 				if (maxSymbolWidth < symbolSize.Width) maxSymbolWidth = symbolSize.Width;
 				if (maxSymbolHeight < symbolSize.Height) maxSymbolHeight = symbolSize.Height;
 
@@ -175,35 +187,40 @@ namespace unvell.ReoGrid.Chart
 
 				// should +6, don't know why
 				labelSize.Width += 6;
+				fitCalculation.TryUpdateMaxLabelSize(labelSize);
 
 				if (maxLabelWidth < labelSize.Width) maxLabelWidth = labelSize.Width;
 				if (maxLabelHeight < labelSize.Height) maxLabelHeight = labelSize.Height;
 
 				legendItem.LabelBounds = new Rectangle(new Point(0, 0), labelSize);
 
-				Children.Add(legendItem);
-			}
+				toAddInChildrenCandidates.Add(legendItem);
 
+				if (!fitCalculation.IsLegendItemsFitsInClientArea(toAddInChildrenCandidates, parentClientRect, LegendPosition))
+				{
+					toAddInChildrenCandidates.Remove(legendItem);
+					fitCalculation = saveFitCalculation;
+					break;
+				}
+			}
+			Children.AddRange(toAddInChildrenCandidates);
+			
 			#endregion // Measure Sizes
 
 			#region Layout
 
-			const Double symbolLabelSpacing = 4;
-
-			var itemWidth = maxSymbolWidth + symbolLabelSpacing + maxLabelWidth;
-			var itemHeight = Math.Max(maxSymbolHeight, maxLabelHeight);
+			var itemWidth = fitCalculation.ItemWidth();
+			var itemHeight = fitCalculation.ItemHeight();
 
 			var clientRect = parentClientRect;
 			Double x = 0, y = 0, right = 0, bottom = 0;
 
-			for (int index = 0; index < dataCount; index++)
+			foreach (var child in toAddInChildrenCandidates)
 			{
-				var legendItem = Children[index] as ChartLegendItem;
-
-				if (legendItem != null)
+				if (child is ChartLegendItem legendItem)
 				{
 					legendItem.SetSymbolLocation(0, (itemHeight - legendItem.SymbolBounds.Height) / 2);
-					legendItem.SetLabelLocation(maxSymbolWidth + symbolLabelSpacing, (itemHeight - legendItem.LabelBounds.Height) / 2);
+					legendItem.SetLabelLocation(fitCalculation.MaxSymbolWidth + FitCalculationHelper.SymbolLabelSpacing, (itemHeight - legendItem.LabelBounds.Height) / 2);
 
 					legendItem.Bounds = new Rectangle(x, y, itemWidth, itemHeight);
 
@@ -211,30 +228,11 @@ namespace unvell.ReoGrid.Chart
 					if (bottom < legendItem.Bottom) bottom = legendItem.Bottom;
 				}
 
-				x += itemWidth;
-
-				const Double itemSpacing = 4;
-
-				if (LegendPosition == LegendPosition.Left || LegendPosition == LegendPosition.Right)
-				{
-					x = 0;
-					y += itemHeight + itemSpacing;
-				}
-				else
-				{
-					x += itemSpacing;
-
-					if (x > clientRect.Width)
-					{
-						x = 0;
-						y += itemHeight + itemSpacing;
-					}
-				}
+				fitCalculation.GentNextPosition(ref x, ref y, itemWidth, itemHeight, clientRect, LegendPosition);
 			}
 
 			#endregion // Layout
-
-			_layoutedSize = new Size(right + 10, bottom);
+			_layoutedSize = new Size(right, bottom);
 		}
 
 		#endregion
@@ -245,6 +243,125 @@ namespace unvell.ReoGrid.Chart
 		private Size _layoutedSize = Size.Zero;
 
 		#endregion
+		
+		private struct FitCalculationHelper
+        {
+            public const double SymbolLabelSpacing = 4;
+            private const double ItemSpacing = 4;
+
+            public double MaxSymbolWidth;
+            private double _maxSymbolHeight;
+            private double _maxLabelWidth;
+            private double _maxLabelHeight;
+
+            public double ItemWidth()
+            {
+                return MaxSymbolWidth + SymbolLabelSpacing + _maxLabelWidth;
+            }
+
+            public double ItemHeight()
+            {
+                return Math.Max(_maxSymbolHeight, _maxLabelHeight);
+            }
+
+            private void TryUpdateMaxSymbolWidth(double value)
+            {
+                if (MaxSymbolWidth < value) MaxSymbolWidth = value;
+            }
+
+            private void TryUpdateMaxSymbolHeight(double value)
+            {
+                if (_maxSymbolHeight < value) _maxSymbolHeight = value;
+            }
+
+            public void TryUpdateMaxSymbolSize(Size size)
+            {
+                TryUpdateMaxSymbolWidth(size.Width);
+                TryUpdateMaxSymbolHeight(size.Height);
+            }
+
+            private void TryUpdateMaxLabelWidth(double value)
+            {
+                if (_maxLabelWidth < value) _maxLabelWidth = value;
+            }
+
+            private void TryUpdateMaxLabelHeight(double value)
+            {
+                if (_maxLabelHeight < value) _maxLabelHeight = value;
+            }
+
+            public void TryUpdateMaxLabelSize(Size size)
+            {
+                TryUpdateMaxLabelWidth(size.Width);
+                TryUpdateMaxLabelHeight(size.Height);
+            }
+
+            /// <summary>
+            /// Проверка что указанные элементы легенды помещаются в отведенную для них область
+            /// </summary>
+            /// <param name="items"></param>
+            /// <param name="clientArea"></param>
+            /// <param name="legendPosition"></param>
+            /// <returns></returns>
+            public bool IsLegendItemsFitsInClientArea(List<ChartLegendItem> items, Rectangle clientArea,  LegendPosition legendPosition)
+            {
+                if (legendPosition == LegendPosition.Left || legendPosition == LegendPosition.Right)
+                {
+                    return (ItemHeight() + ItemSpacing) * items.Count < (clientArea.Height - 10);
+                }
+
+                if (legendPosition == LegendPosition.Bottom)
+                {
+                    // Здесь, вероятно, есть какой то способ линейного подсчета (без цикла), но я его еще не придумал
+                    var itemHeight = ItemHeight();
+                    var itemWidth = ItemWidth();
+                    double x = 0, y = 0;
+                    foreach (var legendItem in items)
+                    {
+                        GentNextPosition(ref x, ref y, itemWidth, itemHeight, clientArea, legendPosition);
+                        if (x == 0)
+                        {
+                            // был переход на новую строку
+                            if (y > clientArea.Height)
+                                return false;
+                        }
+                        else
+                        {
+                            // находимся в строке с LegendItem
+                            if (x + itemWidth > clientArea.Width)
+                                return false;
+                            if (y + itemHeight > clientArea.Height)
+                                return false;
+                        }
+                    }
+                    return true;
+                }
+
+                // Другие варианты не обрабатываются в скаде
+                return true;
+            }
+
+            public void GentNextPosition(ref double x, ref double y, double itemWidth, double itemHeight, Rectangle clientArea, LegendPosition legendPosition)
+            {
+                x += itemWidth;
+
+                if (legendPosition == LegendPosition.Left || legendPosition == LegendPosition.Right)
+                {
+                    x = 0;
+                    y += itemHeight + ItemSpacing;
+                }
+                else
+                {
+                    x += ItemSpacing;
+
+                    if (x + itemWidth > clientArea.Width)
+                    {
+                        x = 0;
+                        y += itemHeight + ItemSpacing;
+                    }
+                }
+            }
+        }
 	}
 
 	/// <summary>

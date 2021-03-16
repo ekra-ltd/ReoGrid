@@ -19,6 +19,7 @@
 #if DRAWING
 
 using System;
+using System.Windows.Media;
 
 #if WINFORM || ANDROID
 using RGFloat = System.Single;
@@ -28,6 +29,7 @@ using RGFloat = System.Double;
 
 using unvell.ReoGrid.Graphics;
 using unvell.ReoGrid.Rendering;
+using DrawingContext = unvell.ReoGrid.Rendering.DrawingContext;
 
 namespace unvell.ReoGrid.Chart
 {
@@ -238,25 +240,75 @@ namespace unvell.ReoGrid.Chart
 					{
 						var style = axisChart.DataSerialStyles[r];
 
-						if (pt.value > 0)
+						try
 						{
-							g.DrawAndFillRectangle(new Rectangle(
-									(RGFloat)x, axisChart.ZeroHeight - pt.value,
-									(RGFloat)(singleColumnWidth - 1), pt.value), style.LineColor, style.FillColor);
+							if (pt.value > 0)
+							{
+								// Определить что график выходит за границу отрисовки (больше высоты)
+								if (axisChart.ZeroHeight > clientRect.Height)
+								{
+									var waHeight = pt.value + (clientRect.Height - axisChart.ZeroHeight);
+									if (waHeight >= 0)
+									{
+										g.DrawAndFillRectangle(new Rectangle(
+											(RGFloat)x, axisChart.ZeroHeight - pt.value,
+											ReduceBarWidth(singleColumnWidth), waHeight), style.LineColor, style.FillColor);
+									}
+								}
+								else
+								{
+									g.DrawAndFillRectangle(new Rectangle(
+										(RGFloat)x, axisChart.ZeroHeight - pt.value,
+										ReduceBarWidth(singleColumnWidth), pt.value), style.LineColor, style.FillColor);
+								}
+							}
+							else
+							{
+								// Определить что график выходит за границу отрисовки (меньше начальной точки)
+								if (axisChart.ZeroHeight < clientRect.Y)
+								{
+									var waZeroHeight = clientRect.Y;
+									var waHeight = -pt.value - (waZeroHeight - axisChart.ZeroHeight);
+
+									if (waHeight >= 0)
+									{
+										g.DrawAndFillRectangle(new Rectangle(
+											(RGFloat)x, waZeroHeight,
+											ReduceBarWidth(singleColumnWidth), waHeight), style.LineColor, style.FillColor);
+									}
+								}
+								else
+								{
+
+									g.DrawAndFillRectangle(new Rectangle(
+										(RGFloat)x, axisChart.ZeroHeight,
+										ReduceBarWidth(singleColumnWidth), -pt.value), style.LineColor, style.FillColor);
+								}
+							}
 						}
-						else
+						catch
 						{
-							g.DrawAndFillRectangle(new Rectangle(
-								(RGFloat)x, axisChart.ZeroHeight,
-								(RGFloat)(singleColumnWidth - 1), -pt.value), style.LineColor, style.FillColor);
+							// ignored
 						}
 					}
-
 					x += singleColumnWidth;
 				}
 
 				x += roundColumnSpace;
 			}
+		}
+		
+		protected static RGFloat ReduceBarHeight(RGFloat fullHeight) => ReduceValue(fullHeight);
+
+		private static RGFloat ReduceBarWidth(RGFloat fullWidth) => ReduceValue(fullWidth);
+
+		private static RGFloat ReduceValue(RGFloat value)
+		{
+			if (value > 2)
+				return value - 1;
+			if (value > 0.1)
+				return 0.95 * value;
+			return value;
 		}
 	}
 }

@@ -82,7 +82,7 @@ namespace unvell.ReoGrid.Chart
 		#region Legend
 		protected override ChartLegend CreateChartLegend(LegendType type)
 		{
-			var chartLegend = UseReogridWorkaround ? base.CreateChartLegend(type) : new PieChartLegend(this);
+			var chartLegend = UseReogridWorkaround ? new PieChartLegend2(this) as ChartLegend : new PieChartLegend(this);
 
 			if (type == LegendType.PrimaryLegend)
 			{

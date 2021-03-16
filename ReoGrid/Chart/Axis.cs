@@ -30,6 +30,8 @@ using RGFloat = System.Double;
 using unvell.ReoGrid.Drawing;
 using unvell.ReoGrid.Graphics;
 using unvell.ReoGrid.Rendering;
+using Rectangle = unvell.ReoGrid.Graphics.Rectangle;
+using Size = unvell.ReoGrid.Graphics.Size;
 
 namespace unvell.ReoGrid.Chart
 {
@@ -393,15 +395,17 @@ namespace unvell.ReoGrid.Chart
                 //var showableRows = clientRect.Width / maxHeight;
                 var showableRows = clientRect.Height / maxHeight;
 
-                int showTitleStride = (int)Math.Ceiling(dataCount / showableRows);
+                int showTitleStride = (int)Math.Round(dataCount / showableRows);
 				if (showTitleStride < 1) showTitleStride = 1;
+
+				var heightPerVisibleRow = (clientRect.Height) / (int)(dataCount / showTitleStride);
 
 				for (int i = 0; i < dataCount; i += showTitleStride)
 				{
 					if (titles.TryGetValue(i, out var text) && !string.IsNullOrEmpty(text))
 					{
 						var size = boxes[i];
-						var textRect = new Rectangle(0, rowHeight * i, clientRect.Width, rowHeight);
+						var textRect = new Rectangle(0, rowHeight * i, clientRect.Width, Math.Max(size.Height, heightPerVisibleRow));
 
 						g.DrawText(text, this.FontName, this.FontSize, this.ForeColor, textRect, ReoGridHorAlign.Center, ReoGridVerAlign.Middle);
 					}
