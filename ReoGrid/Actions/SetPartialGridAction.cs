@@ -57,7 +57,8 @@ namespace unvell.ReoGrid.Actions
 			//#5439-43 Сбрасываем Merge всех ячеек
 			if (_forceUnmerge)
 			{
-				Worksheet.UnmergeRange(Range);
+				// Выполнеяется Unmerge для существующих на рабочем листе ячеек
+				Worksheet.UnmergeRange(Range, new SkipCellUnmergeBehavior());
 				Range = Worksheet.SetPartialGridRepeatly(Range, data);
 			}
 			else
@@ -76,7 +77,7 @@ namespace unvell.ReoGrid.Actions
 			Debug.Assert(backupData != null);
 			//#5439-43 Сбрасываем Merge всех ячеек
 			if (_forceUnmerge)
-				Worksheet.UnmergeRange(Range);
+				Worksheet.UnmergeRange(Range, new SkipCellUnmergeBehavior());
 			base.Worksheet.SetPartialGrid(Range, backupData, PartialGridCopyFlag.All, ExPartialGridCopyFlag.BorderOutsideOwner);
 		}
 

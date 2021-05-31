@@ -419,7 +419,10 @@ namespace unvell.ReoGrid
                             var style = StyleUtility.FindCellParentStyle(this, r, c, out pKind);
 
                             style = StyleUtility.DistinctStyle(style, Worksheet.DefaultStyle);
-
+                            if (pKind == StyleParentKind.Root)
+                            {
+                                style = null;
+                            }
                             if (style != null)
                             {
                                 toCell = new Cell(this);
@@ -746,15 +749,19 @@ namespace unvell.ReoGrid
 
                         if (!processed)
                         {
-                            Cell toCell = CreateAndGetCell(tr, tc);
-
-                            if (toCell.Rowspan == 0 && toCell.Colspan == 0)
-                            {
-                                continue;
-                            }
+                            Cell toCell = GetCellOrNull(tr, tc);
 
                             if (fromCell != null)
                             {
+                                if (toCell is null)
+                                {
+                                    toCell = CreateAndGetCell(tr, tc);
+                                }
+                                if (toCell.Rowspan == 0 && toCell.Colspan == 0)
+                                {
+                                    continue;
+                                }
+
                                 #region Copy Data
                                 if ((flag & PartialGridCopyFlag.CellData) == PartialGridCopyFlag.CellData)
                                 {

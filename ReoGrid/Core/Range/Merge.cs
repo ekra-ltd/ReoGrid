@@ -189,7 +189,7 @@ namespace unvell.ReoGrid
 		/// </summary>
 		/// <seealso cref="MergeRange"/>
 		/// <param name="range">Range to be checked and all cells in this range will be unmerged.</param>
-		public void UnmergeRange(RangePosition range)
+		public void UnmergeRange(RangePosition range, IUnmergeRangeBehavior behavior = null)
 		{
 			if (range.IsEmpty) return;
 
@@ -200,24 +200,20 @@ namespace unvell.ReoGrid
 			int torow = range.Row + range.Rows - 1;
 			int tocol = range.Col + range.Cols - 1;
 
+			behavior = behavior ?? new CreateCellUnmergeBehavior();
+
 			for (int r = row; r <= torow; r++)
 			{
 				for (int c = col; c <= tocol; c++)
 				{
-					Cell cell = CreateAndGetCell(r, c);
-
-					if (cell.Colspan > 1 || cell.Rowspan > 1)
-					{
-						UnmergeCell(cell);
-						c += cell.Colspan;
-					}
+					behavior.UnmergeCellInRange(this, ref r, ref c);
 				}
 			}
 
 			RequestInvalidate();
 		}
 
-		private void UnmergeCell(Cell source)
+		internal void UnmergeCell(Cell source)
 		{
 			//WorksheetRangeStyle style = source.InnerStyle;
 			int r2 = source.InternalRow + source.Rowspan;

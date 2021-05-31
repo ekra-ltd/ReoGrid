@@ -871,6 +871,18 @@ namespace unvell.ReoGrid
 		}
 
 		/// <summary>
+		/// Поулчает ячейку, если она существует или null
+		/// </summary>
+		/// <param name="row">Zero-based number of row to return cell instance</param>
+		/// <param name="col">Zero-based number of column to return cell instance.</param>
+		/// <returns>Cell instance or null at specified position.</returns>
+		public Cell GetCellOrNull(int row, int col)
+		{
+			Cell cell = cells[row, col];
+			return cell;
+		}
+		
+		/// <summary>
 		/// Create cell instance at specified position.
 		/// </summary>
 		/// <param name="row">Zero-based number of row to create and return cell instance.</param>

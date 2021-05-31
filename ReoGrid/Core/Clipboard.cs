@@ -245,7 +245,7 @@ namespace unvell.ReoGrid
                 {
                     this.controlAdapter.ChangeCursor(CursorStyle.PlatformDefault);
                 }
-
+                GC.Collect();
             }
 
             return true;
@@ -298,6 +298,7 @@ namespace unvell.ReoGrid
                     FinallyPasteAction();
                 }
                 NotifyPasteAction();
+                GC.Collect();
             }
 
             return true;
@@ -321,7 +322,7 @@ namespace unvell.ReoGrid
         {
             if (pasteValues.PartialGrid != null)
             {
-                if (!PastlePartialGrid(pasteValues.PartialGrid))
+                if (!PastePartialGrid(pasteValues.PartialGrid))
                 {
                     return false;
                 }
@@ -336,11 +337,11 @@ namespace unvell.ReoGrid
             return true;
         }
         
-        private bool PastlePartialGrid(PartialGrid partialGrid)
+        private bool PastePartialGrid(PartialGrid partialGrid)
         {
-            var pastleData =  CreatePastlePartialGridTargetRange(this, partialGrid);
-            if (IsSomethingWrongInPastlePartialGrid(pastleData.DstRangePosition)) return false;
-            DoAction(new SetPartialGridAction(pastleData.DstRangePosition, pastleData.SourcePartialGrid, pastleData.ForceUnmerge));
+            var pasteData =  CreatePastePartialGridTargetRange(this, partialGrid);
+            if (IsSomethingWrongInPastePartialGrid(pasteData.DstRangePosition)) return false;
+            DoAction(new SetPartialGridAction(pasteData.DstRangePosition, pasteData.SourcePartialGrid, pasteData.ForceUnmerge));
             return true;
         }
 
@@ -355,7 +356,7 @@ namespace unvell.ReoGrid
             AfterPaste?.Invoke(this, new RangeEventArgs(selectionRange));
         }
         
-        private class PastleRangesData
+        private class PasteRangesData
         {
             public RangePosition DstRangePosition { get; set; }
 
@@ -364,7 +365,7 @@ namespace unvell.ReoGrid
             public bool ForceUnmerge { get; set; }
         }
 
-        private static PastleRangesData CreatePastlePartialGridTargetRange(Worksheet dstWorksheet, PartialGrid sourcePartialGrid)
+        private static PasteRangesData CreatePastePartialGridTargetRange(Worksheet dstWorksheet, PartialGrid sourcePartialGrid)
         {
             var dstPosition = dstWorksheet.selectionRange;
             bool forceUnmerge = true;
@@ -397,7 +398,7 @@ namespace unvell.ReoGrid
                 cols = 1;
                 forceUnmerge = false;
             }
-            return new PastleRangesData
+            return new PasteRangesData
             {
                 DstRangePosition = new RangePosition(startRow, startCol, rows, cols),
                 SourcePartialGrid = sourcePartialGrid,
@@ -443,7 +444,7 @@ namespace unvell.ReoGrid
             return result;
         }
 
-        private bool IsSomethingWrongInPastlePartialGrid(RangePosition targetRange)
+        private bool IsSomethingWrongInPastePartialGrid(RangePosition targetRange)
         {
             if (IsPastePartialGridExternCodeCanceled(targetRange)) return true;
             if (IsPateTargetoutOfrange(targetRange)) return true;

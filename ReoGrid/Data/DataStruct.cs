@@ -600,35 +600,44 @@ namespace unvell.ReoGrid.Data
 			}
 			set
 			{
+				// #9922
+				// Предполагается что создавать все массивы для случая value == null нет необходимости, так как, если
+				// массивы не созданы, то this[row, col] вернет null
+				// В случае, если value == null и массивы существуют, то нужно обнулить значение
+				// В случае, если value != null - массивы создавать надо.
+				var createArrays = value != null;
+
 				int l1row = row >> RowSizeBits;
 				var l1cols = this.rows[l1row];
 
-				if (l1cols == null)
+				if (l1cols == null && createArrays)
 				{
 					l1cols = new T[ColSize][][];
 					this.rows[l1row] = l1cols;
 				}
 
 				int l1col = col >> ColSizeBits;
-				var l2rows = l1cols[l1col];
+				var l2rows = l1cols?[l1col];
 
-				if (l2rows == null)
+				if (l2rows == null && createArrays)
 				{
 					l2rows = new T[RowSize][];
 					l1cols[l1col] = l2rows;
 				}
 
 				int l2row = row & RowSizeModBits;
-				var l2cols = l2rows[l2row];
+				var l2cols = l2rows?[l2row];
 
-				if (l2cols == null)
+				if (l2cols == null && createArrays)
 				{
 					l2cols = new T[ColSize];
 					l2rows[l2row] = l2cols;
 				}
 
-				int l2col = col & ColSizeModBits;
-				l2cols[l2col] = value;
+				if (l2cols != null) {
+					int l2col = col & ColSizeModBits;
+					l2cols[l2col] = value;
+				}
 
 				if (value != null)
 				{
