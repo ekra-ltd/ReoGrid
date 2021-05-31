@@ -28,7 +28,8 @@ namespace unvell.ReoGrid.WPFDemo
 	{
         private List<ITaskExample> _taskExamples = new List<ITaskExample>
         {
-            new Task9506HorizontalHistogram()
+            new Task9506HorizontalHistogram(),
+            new Task9922_DoUndoMemoryUse()
         };
         
 		public MainWindow()
