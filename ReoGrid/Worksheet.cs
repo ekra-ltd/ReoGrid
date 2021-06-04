@@ -871,7 +871,7 @@ namespace unvell.ReoGrid
 		}
 
 		/// <summary>
-		/// Поулчает ячейку, если она существует или null
+		/// Получает ячейку, если она существует или null
 		/// </summary>
 		/// <param name="row">Zero-based number of row to return cell instance</param>
 		/// <param name="col">Zero-based number of column to return cell instance.</param>
