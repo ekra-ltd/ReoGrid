@@ -25,6 +25,7 @@ using System.Threading;
 using unvell.ReoGrid.Core;
 using unvell.ReoGrid.DataFormat;
 using unvell.ReoGrid.Utility;
+using System.Text.RegularExpressions;
 
 namespace unvell.ReoGrid.DataFormat
 {
@@ -47,6 +48,8 @@ namespace unvell.ReoGrid.DataFormat
 
 		private static DateTimeFormats InvariantCultureDateTimeFormats { get; } = new DateTimeFormats(CultureInfo.InvariantCulture);
 
+		private static readonly Regex MacrosRegex = new Regex(@".*%.*%.*", RegexOptions.Compiled);
+
 		private static bool TryParseDateTime(DateTimeFormats data, string src, out DateTime value)
 		{
 			var result = Constants.ExcelZeroDatePoint;
@@ -54,6 +57,8 @@ namespace unvell.ReoGrid.DataFormat
 			value = result;
 			return parseResult;
 		}
+
+		private static bool HasMacros(string data) => MacrosRegex.IsMatch(data);
 
 		/// <summary>
 		/// Format cell
@@ -178,7 +183,10 @@ namespace unvell.ReoGrid.DataFormat
 				}
 			}
 
-			return isFormat ? new FormatCellResult(formattedText, value) : null;
+			return isFormat ? new FormatCellResult(formattedText, value) 
+				: (HasMacros(Convert.ToString(data))
+					? new FormatCellResult(Convert.ToString(data), data) 
+					: null);
 		}
 
 		/// <summary>

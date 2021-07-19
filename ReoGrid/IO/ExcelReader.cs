@@ -1801,7 +1801,7 @@ namespace unvell.ReoGrid.IO.OpenXML
                             arg = ReadNumberFormatArgs(pattern, new NumberDataFormatter.NumberFormatArgs());
                             #endregion // Percent
                         }
-                        else if (pattern.Any(c => c == 'm' || c == 'h' || c == 's' || c == 'y' || c == 'd'))
+                        else if (pattern.Any(c => c == 'm' || c == 'M' || c == 'h' || c == 's' || c == 'y' || c == 'd'))
                         {
                             CultureInfo culture = null;
                             foreach (var condFormat in GetConditionFormattingPart(pattern))
