@@ -1,6 +1,5 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFrameworks>netcoreapp3.0;net451</TargetFrameworks>
     <OutputType>Library</OutputType>
     <RootNamespace>unvell.ReoGrid</RootNamespace>
     <AssemblyName>unvell.ReoGrid</AssemblyName>
@@ -25,18 +24,19 @@
     <UseWPF>true</UseWPF>
     <ImportWindowsDesktopTargets>true</ImportWindowsDesktopTargets>
     <Configurations>WPFDebug;WPFRelease</Configurations>
+    <TargetFramework>net5.0-windows</TargetFramework>
   </PropertyGroup>
 	<PropertyGroup>
 		<Authors>Jingwood</Authors>
 		<Company>unvell</Company>
 		<PackageLicenseExpression>MIT</PackageLicenseExpression>
-		<PackageProjectUrl>https://reogrid.net</PackageProjectUrl>
+		<PackageProjectUrl>https://github.com/ekra-ltd/</PackageProjectUrl>
 		<PackageIcon>icon.png</PackageIcon>
-		<RepositoryUrl>https://github.com/unvell/ReoGrid/</RepositoryUrl>
+		<RepositoryUrl>https://github.com/ekra-ltd/ReoGrid</RepositoryUrl>
 		<RepositoryType>git</RepositoryType>
 		<VersionPrefix>3.0.0</VersionPrefix>
 		<VersionSuffix></VersionSuffix>
-		<PackageId>unvell.ReoGridWPF.dll</PackageId>
+		<PackageId>ekra.unvell.ReoGridWPF.dll</PackageId>
 		<Description>Powerful and lightweight open source .NET spreadsheet component. Compatible with Excel 2007 format or later. Simple APIs to open/edit/save/print an Excel spreadsheet in the .NET application.</Description>
 		<SignAssembly>true</SignAssembly>
 		<ApplicationIcon>favicon.ico</ApplicationIcon>
@@ -140,7 +140,7 @@
     </BootstrapperPackage>
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="DotNetZip" Version="1.15.0" />
+    <PackageReference Include="DotNetZip" Version="1.16.0" />
   </ItemGroup>
   <ItemGroup>
     <None Include="..\NuGet\icon.png">
