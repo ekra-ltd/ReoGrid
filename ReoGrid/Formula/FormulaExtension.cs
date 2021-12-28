@@ -45,8 +45,12 @@ namespace unvell.ReoGrid.Formula
 		{
 			try
 			{
-				ParameterSeparator = System.Threading.Thread.CurrentThread.CurrentCulture.TextInfo.ListSeparator;
-				NumberDecimalSeparator = System.Threading.Thread.CurrentThread.CurrentCulture.NumberFormat.NumberDecimalSeparator;
+				// Откат изменений. Изначально предполагалось что формулы будут введены в формате по умолчанию 
+				// (тестирование по #8375)
+				// TODO Рассмотреть возможность конвертирования формул из Invariant-формата в локальный формат
+				
+				// ParameterSeparator = System.Threading.Thread.CurrentThread.CurrentCulture.TextInfo.ListSeparator;
+				// NumberDecimalSeparator = System.Threading.Thread.CurrentThread.CurrentCulture.NumberFormat.NumberDecimalSeparator;
 			}
 			catch { }
 		}
