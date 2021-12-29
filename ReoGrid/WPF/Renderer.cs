@@ -630,7 +630,7 @@ namespace unvell.ReoGrid.Rendering
 			double dpi = PlatformUtility.GetDPI();
 			double fontSize = cell.InnerStyleDisplay().FontSize * sheet.renderScaleFactor * dpi / 72.0;
 
-			if (cell.formattedText == null || cell.formattedText.Text != cell.InnerDisplay || reason == UpdateFontReason.TextColorChanged)
+			if (cell.formattedText == null || cell.formattedText.Text != cell.InnerDisplay || reason.HasFlag(UpdateFontReason.TextColorChanged))
 			{
 				SolidColor textColor = DecideTextColor(cell);
 
@@ -640,12 +640,12 @@ namespace unvell.ReoGrid.Rendering
 					fontSize,
 					base.resourceManager.GetBrush(textColor));
 			}
-			else if (reason == Core.UpdateFontReason.FontChanged || reason == Core.UpdateFontReason.ScaleChanged)
+			else if (reason.HasFlag(Core.UpdateFontReason.FontChanged) || reason.HasFlag(Core.UpdateFontReason.ScaleChanged))
 			{
 				cell.formattedText.SetFontFamily(cell.InnerStyleDisplay().FontName);
 				cell.formattedText.SetFontSize(fontSize);
 			}
-			else if (reason == Core.UpdateFontReason.TextColorChanged)
+			else if (reason.HasFlag(Core.UpdateFontReason.TextColorChanged))
 			{
 				SolidColor textColor = DecideTextColor(cell);
 				cell.formattedText.SetForegroundBrush(resourceManager.GetBrush(textColor));
@@ -653,7 +653,7 @@ namespace unvell.ReoGrid.Rendering
 
 			var ft = cell.formattedText;
 
-			if (reason == Core.UpdateFontReason.FontChanged || reason == Core.UpdateFontReason.ScaleChanged)
+			if (reason.HasFlag(Core.UpdateFontReason.FontChanged) || reason.HasFlag(Core.UpdateFontReason.ScaleChanged))
 			{
 				ft.SetFontWeight(
 				cell.InnerStyleDisplay().Bold ? System.Windows.FontWeights.Bold : System.Windows.FontWeights.Normal);

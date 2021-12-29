@@ -1083,6 +1083,7 @@ namespace unvell.ReoGrid
         /// </summary>
         internal void ApplyConditionalFormattingStyle(WorksheetRangeStyle style)
         {
+            const UpdateFontReason reason = UpdateFontReason.TextColorChanged | UpdateFontReason.FontChanged;
             // Если требуется очистить переопределенный стиль
             if (style is null)
             {
@@ -1091,7 +1092,7 @@ namespace unvell.ReoGrid
                 // очистка стиля и выход
                 _innerStyleOverride = null;
                 if (updateFont)
-                    Worksheet?.UpdateCellFont(this, UpdateFontReason.TextColorChanged);
+                    Worksheet?.UpdateCellFont(this, reason);
                 return;
             }
 
@@ -1106,7 +1107,7 @@ namespace unvell.ReoGrid
 
             if (style.Flag.HasAny(PlainStyleFlag.FontAll)) // Если стиль меняет шрифт
             {
-                Worksheet?.UpdateCellFont(this, UpdateFontReason.TextColorChanged); // Перерисовка шрифта: цвета текста, bold, italic, ...
+                Worksheet?.UpdateCellFont(this, reason); // Перерисовка шрифта: цвета текста, bold, italic, ...
             }
         }
 

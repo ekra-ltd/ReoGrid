@@ -61,11 +61,12 @@ namespace unvell.ReoGrid.Core
         Own,
     }
 
+    [Flags]
     enum UpdateFontReason
     {
-        FontChanged,
-        ScaleChanged,
-		TextColorChanged,
+        FontChanged = 1,
+        ScaleChanged = 2,
+		TextColorChanged = 4,
     }
 }
 
@@ -973,7 +974,7 @@ namespace unvell.ReoGrid
 #endif // DRAWING
 
             if (drawMode == DrawMode.View 
-                && reason != UpdateFontReason.ScaleChanged)
+                && !reason.HasFlag(UpdateFontReason.ScaleChanged))
             {
                 if (size.Height > oldSize.Height 
                     && this.settings.Has(WorksheetSettings.Edit_AutoExpandRowHeight))
@@ -1116,6 +1117,7 @@ namespace unvell.ReoGrid
     /// <summary>
     /// Key of cell style item
     /// </summary>
+    [Flags]
     public enum PlainStyleFlag : long
     {
         /// <summary>
