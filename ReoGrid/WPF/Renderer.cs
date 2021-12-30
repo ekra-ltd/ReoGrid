@@ -554,20 +554,25 @@ namespace unvell.ReoGrid.Rendering
 			{
 				UpdateCellRenderFont(cell, UpdateFontReason.FontChanged); 
 			}
-			if (cell.InnerStyle.RotationAngle != 0)
-			{
-				System.Windows.Media.Matrix m = System.Windows.Media.Matrix.Identity;
-
-				double hw = cell.formattedText.WidthIncludingTrailingWhitespace * 0.5, hh = cell.formattedText.Height * 0.5;
-				WPFPoint p1 = new WPFPoint(-hw, -hh), p2 = new WPFPoint(hw, hh);
-				m.Rotate(cell.InnerStyle.RotationAngle);
-				p1 *= m; p2 *= m;
-				return new Graphics.Size(Math.Abs(p1.X - p2.X), Math.Abs(p1.Y - p2.Y));
-			}
-			else
-			{
-				return new Graphics.Size(cell.formattedText.WidthIncludingTrailingWhitespace, cell.formattedText.Height);
-			}
+			// Откат изменений reogrid, так как он конфликтует с ранее разработанным функцоналом, при этом:
+			// - угол поворота обратный (от excel);
+			// - выравнивание текста при повороте (RotationAngle!=0) всегда по центру (горизонтально и вертикально) что
+			//   не соответствует предыдущему функционалу.
+			// if (cell.InnerStyle.RotationAngle != 0)
+			// {
+			// 	System.Windows.Media.Matrix m = System.Windows.Media.Matrix.Identity;
+			// 
+			// 	double hw = cell.formattedText.WidthIncludingTrailingWhitespace * 0.5, hh = cell.formattedText.Height * 0.5;
+			// 	WPFPoint p1 = new WPFPoint(-hw, -hh), p2 = new WPFPoint(hw, hh);
+			// 	m.Rotate(cell.InnerStyle.RotationAngle);
+			// 	p1 *= m; p2 *= m;
+			// 	return new Graphics.Size(Math.Abs(p1.X - p2.X), Math.Abs(p1.Y - p2.Y));
+			// }
+			// else
+			// {
+			// 	return new Graphics.Size(cell.formattedText.WidthIncludingTrailingWhitespace, cell.formattedText.Height);
+			// }
+			return new Graphics.Size(cell.formattedText.WidthIncludingTrailingWhitespace, cell.formattedText.Height);
 		}
 
 		public void DrawCellText(Cell cell, SolidColor textColor, DrawMode drawMode, double scale)
@@ -581,20 +586,26 @@ namespace unvell.ReoGrid.Rendering
 			//	sheet.UpdateCellFont(cell);
 			//}
 
-			if (cell.InnerStyle.RotationAngle != 0)
-			{
-				System.Windows.Media.Matrix m = System.Windows.Media.Matrix.Identity;
-				m.Rotate(cell.InnerStyle.RotationAngle);
-				m.Translate(cell.Bounds.OriginX * sheet.ScaleFactor, cell.Bounds.OriginY * sheet.ScaleFactor);
+			// Откат изменений reogrid, так как он конфликтует с ранее разработанным функцоналом, при этом:
+			// - угол поворота обратный (от excel);
+			// - выравнивание текста при повороте (RotationAngle!=0) всегда по центру (горизонтально и вертикально) что
+			//   не соответствует предыдущему функционалу.
+			// if (cell.InnerStyle.RotationAngle != 0)
+			// {
+			// 	System.Windows.Media.Matrix m = System.Windows.Media.Matrix.Identity;
+			// 	m.Rotate(cell.InnerStyle.RotationAngle);
+			// 	m.Translate(cell.Bounds.OriginX * sheet.ScaleFactor, cell.Bounds.OriginY * sheet.ScaleFactor);
+			// 
+			// 	this.PushTransform(m);
+			// 	this.PlatformGraphics.DrawText(cell.formattedText, new WPFPoint(-cell.formattedText.Width * 0.5, -cell.formattedText.Height * 0.5));
+			// 	this.PopTransform();
+			// }
+			// else
+			// {
+			// 	this.PlatformGraphics.DrawText(cell.formattedText, cell.TextBounds.Location);
+			// }
 
-				this.PushTransform(m);
-				this.PlatformGraphics.DrawText(cell.formattedText, new WPFPoint(-cell.formattedText.Width * 0.5, -cell.formattedText.Height * 0.5));
-				this.PopTransform();
-			}
-			else
-			{
-				this.PlatformGraphics.DrawText(cell.formattedText, cell.TextBounds.Location);
-			}
+			this.PlatformGraphics.DrawText(cell.formattedText, cell.TextBounds.Location);
 		}
 
 		private static Color DecideTextColor(Cell cell)
