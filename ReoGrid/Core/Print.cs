@@ -310,7 +310,7 @@ namespace unvell.ReoGrid
 			/// </summary>
 			public int Count
 			{
-				get { return ValidPageBreakArray.Count; }
+				get { return ValidPageBreakArray?.Count ?? 0; }
 			}
 
 			/// <summary>
@@ -479,7 +479,7 @@ namespace unvell.ReoGrid
 			/// </summary>
 			public int Count
 			{
-				get { return ValidPageBreakArray.Count; }
+				get { return ValidPageBreakArray?.Count ?? 0; }
 			}
 
 			/// <summary>
