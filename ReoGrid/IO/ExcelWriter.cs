@@ -1181,7 +1181,7 @@ namespace unvell.ReoGrid.IO.OpenXML
 		#region Worksheet
 		internal static readonly System.Globalization.CultureInfo EnglishCulture = System.Globalization.CultureInfo.GetCultureInfo("en-US");
 
-		        private class CultureData
+		private class CultureData
         {
             public string RU;
             public string EN;
@@ -1189,14 +1189,17 @@ namespace unvell.ReoGrid.IO.OpenXML
 
         private static void DescendantsNodes(StringBuilder formula, Dictionary<string, CultureData> dictionary, STFunctionNode root)
         {
-            if (root?.Type != STNodeType.FUNCTION_CALL)
-                return;
-            foreach (var child in root.Children.OfType<STFunctionNode>().OrderByDescending(i => i.Start))
-                DescendantsNodes(formula, dictionary, child);
-            var replacer = dictionary.Values.FirstOrDefault(i => i.RU == root.Name);
-            if (replacer != null)
-                formula.Replace(replacer.RU, replacer.EN, root.Start, replacer.RU.Length);
-        }
+			if (root?.Type != STNodeType.FUNCTION_CALL)
+				return;
+			if (root.Children != null)
+			{
+				foreach (var child in root.Children.OfType<STFunctionNode>().OrderByDescending(i => i.Start))
+					DescendantsNodes(formula, dictionary, child);
+			}
+			var replacer = dictionary.Values.FirstOrDefault(i => i.RU == root.Name);
+			if (replacer != null)
+					formula.Replace(replacer.RU, replacer.EN, root.Start, replacer.RU.Length);
+		}
 
         private static string LocalizeFormula(Cell formula)
         {
