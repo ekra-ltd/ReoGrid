@@ -27,22 +27,22 @@
     <Configurations>Debug;Release;Pack</Configurations>
   </PropertyGroup>
 	<PropertyGroup>
-		<Authors>Jingwood</Authors>
-		<Company>unvell</Company>
+		<Authors>Jingwood,ekra-ltd</Authors>
+		<Company>ekra-ltd</Company>
 		<PackageLicenseExpression>MIT</PackageLicenseExpression>
-		<PackageProjectUrl>https://reogrid.net</PackageProjectUrl>
+		<PackageProjectUrl>https://github.com/ekra-ltd/ReoGrid</PackageProjectUrl>
 		<PackageIcon>icon.png</PackageIcon>
-		<RepositoryUrl>https://github.com/unvell/ReoGrid/</RepositoryUrl>
+		<RepositoryUrl>https://github.com/ekra-ltd/ReoGrid</RepositoryUrl>
 		<RepositoryType>git</RepositoryType>
 		<VersionPrefix>3.0.0</VersionPrefix>
 		<VersionSuffix></VersionSuffix>
-		<PackageId>unvell.ReoGrid.dll</PackageId>
+		<PackageId>ekra-ltd.ReoGrid.dll</PackageId>
 		<Description>Powerful and lightweight open source .NET spreadsheet component. Compatible with Excel 2007 format or later. Simple APIs to open/edit/save/print an Excel spreadsheet in the .NET application.</Description>
 		<SignAssembly>true</SignAssembly>
 		<ApplicationIcon>favicon.ico</ApplicationIcon>
 		<Copyright>2012-2021 (c) Jingwood, unvell, all rights reserved.</Copyright>
-		<PackageTags>spreadsheet excel drawing grid workbook worksheet chart data formula script macro outline print</PackageTags>
-		<PackageReleaseNotes>https://github.com/unvell/ReoGrid/releases/tag/v3.0.0</PackageReleaseNotes>
+		<PackageTags>spreadsheet</PackageTags>
+		<PackageReleaseNotes>https://github.com/ekra-ltd/ReoGrid/releases/tag/v3.0.0</PackageReleaseNotes>
 	</PropertyGroup>
 
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
