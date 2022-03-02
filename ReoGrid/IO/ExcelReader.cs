@@ -783,7 +783,7 @@ namespace unvell.ReoGrid.IO.OpenXML
                                     else if (ssitem.runs != null)
                                     {
 #if DRAWING
-                                        rgCell.InnerData = CreateRichTextFromRuns(doc, new Paragraph[] { new Paragraph { runs = ssitem.runs } });
+                                        rgCell.InnerData = CreateRichTextFromRuns(doc, new Paragraph[] { new Paragraph { runs = ssitem.runs } }).ToString();
 #endif // DRAWING
                                     }
                                 }
@@ -3233,9 +3233,15 @@ switch (graphic.graphicData.uri)
 
             if (nlIndex > -1)
             {
-                rt.AddText(r.text.innerText.Substring(0, nlIndex), fontName, fontSize, fontStyles, foreColor, backColor);
-                rt.NewLine();
-                rt.AddText(r.text.innerText.Substring(nlIndex + 1), fontName, fontSize, fontStyles, foreColor, backColor);
+                int startIndex = 0;
+                while (nlIndex != -1)
+                {
+                    rt.AddText(r.text.innerText.Substring(startIndex, nlIndex - startIndex), fontName, fontSize, fontStyles, foreColor, backColor);
+                    rt.NewLine();
+                    startIndex = nlIndex + 1;
+                    nlIndex = r.text.innerText.IndexOf('\n', startIndex);
+                }
+                rt.AddText(r.text.innerText.Substring(startIndex), fontName, fontSize, fontStyles, foreColor, backColor);
             }
             else
             {
