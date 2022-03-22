@@ -57,9 +57,12 @@ namespace unvell.ReoGrid.IO.OpenXML
 
 	internal sealed class ExcelReader
 	{
+		const System.Globalization.NumberStyles numberStyle = System.Globalization.NumberStyles.Any; //System.Globalization.NumberStyles.Float | System.Globalization.NumberStyles.AllowThousands;
+
 		#region Read Stream
 		public static void ReadStream(RGWorkbook rgWorkbook, Stream stream)
 		{
+			
 #if DEBUG
 			Stopwatch sw = Stopwatch.StartNew();
 #endif
@@ -219,7 +222,7 @@ namespace unvell.ReoGrid.IO.OpenXML
 				if (sheetView.zoomScale != null)
 				{
 					double zoom = 100;
-					if (double.TryParse(sheetView.zoomScale, out zoom))
+					if (double.TryParse(sheetView.zoomScale, numberStyle, System.Globalization.CultureInfo.InvariantCulture, out zoom))
 					{
 						rgSheet.ScaleFactor = (float)(zoom / 100f);
 					}
@@ -453,7 +456,7 @@ namespace unvell.ReoGrid.IO.OpenXML
 
 				if (//row.customHeight == "1"
 						//&& 
-					!string.IsNullOrEmpty(row.height) && double.TryParse(row.height, NumberStyles.Float, CultureInfo.InvariantCulture, out rowHeight))
+					!string.IsNullOrEmpty(row.height) && double.TryParse(row.height, numberStyle, System.Globalization.CultureInfo.InvariantCulture , out rowHeight))
 				{
 					rowHeader = rgSheet.GetRowHeader(rowIndex);
 					ushort height = (ushort)Math.Round(rowHeight * dpi / 72f);
@@ -795,11 +798,9 @@ namespace unvell.ReoGrid.IO.OpenXML
 						}
 						else
 						{
-							double d;
-							if (double.TryParse(cell.value.val, NumberStyles.Float | NumberStyles.AllowThousands,
-								CultureInfo.InvariantCulture, out d))
+							if (decimal.TryParse(cell.value.val, numberStyle, System.Globalization.CultureInfo.InvariantCulture, out var dv))
 							{
-								rgCell.InnerData = d;
+								rgCell.InnerData = dv;
 							}
 							else
 							{
@@ -1449,7 +1450,7 @@ namespace unvell.ReoGrid.IO.OpenXML
 							default: rgColor = SolidColor.Black; break;
 						}
 
-						if (double.TryParse(color.tint, out tint))
+						if (double.TryParse(color.tint,numberStyle, System.Globalization.CultureInfo.InvariantCulture, out tint))
 						{
 							HSLColor hlsColor = ColorUtility.RGBToHSL(rgColor);
 							hlsColor.L = ColorUtility.CalculateFinalLumValue((float)tint, (float)hlsColor.L * 255f) / 255f;
@@ -1612,7 +1613,7 @@ namespace unvell.ReoGrid.IO.OpenXML
 
 		private static Regex currencyFormatRegex = new Regex(@"([^\\\s]*)\\?(\s*)\[\$([^(\-|\])]+)-?[^\]]*\]\\?(\s*)([^\\\s]*)", RegexOptions.Compiled);
 
-		private static NumberDataFormatter.INumberFormatArgs ReadNumberFormatArgs(string pattern, NumberDataFormatter.INumberFormatArgs arg/*, CultureInfo culture = null*/)
+		private static NumberDataFormatter.INumberFormatArgs ReadNumberFormatArgs(string pattern, NumberDataFormatter.INumberFormatArgs arg, System.Globalization.CultureInfo culture)
 		{
 			if (pattern.StartsWith("[Red]", StringComparison.CurrentCultureIgnoreCase))
 			{
@@ -1655,9 +1656,7 @@ namespace unvell.ReoGrid.IO.OpenXML
 				arg.NegativeStyle &= ~NumberDataFormatter.NumberNegativeStyle.Minus;
 
 				pattern = pattern.Substring(2, pattern.Length - 4);
-			}
-
-			var culture = CultureInfo.InvariantCulture;
+			}			
 
 			int len = pattern.Length;
 
@@ -1720,7 +1719,7 @@ namespace unvell.ReoGrid.IO.OpenXML
 							flag = CellDataFormatFlag.Currency;
 
 							var carg = (CurrencyDataFormatter.CurrencyFormatArgs)ReadNumberFormatArgs(
-								pattern.Substring(3), new CurrencyDataFormatter.CurrencyFormatArgs());
+								pattern.Substring(3), new CurrencyDataFormatter.CurrencyFormatArgs(), System.Globalization.CultureInfo.InvariantCulture);
 
 							carg.PrefixSymbol = "$";
 
@@ -1745,7 +1744,7 @@ namespace unvell.ReoGrid.IO.OpenXML
 									carg.PostfixSymbol = currencyMatch.Groups[2].Value + carg.PostfixSymbol;
 								}
 
-								carg = (CurrencyDataFormatter.CurrencyFormatArgs)ReadNumberFormatArgs(currencyMatch.Groups[1].Value, carg);
+								carg = (CurrencyDataFormatter.CurrencyFormatArgs)ReadNumberFormatArgs(currencyMatch.Groups[1].Value, carg, System.Globalization.CultureInfo.InvariantCulture);
 							}
 							else if (currencyMatch.Groups[5].Length > 0)
 							{
@@ -1759,7 +1758,7 @@ namespace unvell.ReoGrid.IO.OpenXML
 									carg.PrefixSymbol += currencyMatch.Groups[4].Value;
 								}
 
-								carg = (CurrencyDataFormatter.CurrencyFormatArgs)ReadNumberFormatArgs(currencyMatch.Groups[5].Value, carg);
+								carg = (CurrencyDataFormatter.CurrencyFormatArgs)ReadNumberFormatArgs(currencyMatch.Groups[5].Value, carg, System.Globalization.CultureInfo.InvariantCulture);
 							}
 
 							arg = carg;
@@ -1787,7 +1786,7 @@ namespace unvell.ReoGrid.IO.OpenXML
 								PostfixSymbol = postfix,
 								CultureEnglishName = culture.Name,
 							};
-							carg = (CurrencyDataFormatter.CurrencyFormatArgs)ReadNumberFormatArgs(currencyMatch.Groups["number_format"].Value, carg);
+							carg = (CurrencyDataFormatter.CurrencyFormatArgs)ReadNumberFormatArgs(currencyMatch.Groups["number_format"].Value, carg, System.Globalization.CultureInfo.InvariantCulture );
 							arg = carg;
 							#endregion
 						}
@@ -1798,7 +1797,7 @@ namespace unvell.ReoGrid.IO.OpenXML
 
 							pattern = pattern.Substring(0, pattern.Length - 1);
 
-							arg = ReadNumberFormatArgs(pattern, new NumberDataFormatter.NumberFormatArgs());
+							arg = ReadNumberFormatArgs(pattern, new NumberDataFormatter.NumberFormatArgs(), System.Globalization.CultureInfo.InvariantCulture);
 							#endregion // Percent
 						}
 						else if (pattern.Any(c => c == 'm' || c == 'M' || c == 'h' || c == 's' || c == 'y' || c == 'd'))
@@ -1826,7 +1825,7 @@ namespace unvell.ReoGrid.IO.OpenXML
 						else
 						{
 							flag = CellDataFormatFlag.Number;
-							arg = ReadNumberFormatArgs(patterns.Length > 1 ? patterns[1] : patterns[0], new NumberDataFormatter.NumberFormatArgs());
+							arg = ReadNumberFormatArgs(patterns.Length > 1 ? patterns[1] : patterns[0], new NumberDataFormatter.NumberFormatArgs(), System.Globalization.CultureInfo.InvariantCulture);
 						}
 
 						if (flag != CellDataFormatFlag.General)
