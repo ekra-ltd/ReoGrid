@@ -3344,6 +3344,7 @@ switch (graphic.graphicData.uri)
 	{
 		public static bool SetFromExcelBuiltinFormat(RGWorksheet rgSheet, Cell cell, int formatId, out CellDataFormatFlag dataFormatFlag)
 		{
+			var currentCulture = System.Threading.Thread.CurrentThread.CurrentCulture;
 			CellDataFormatFlag? format = null;
 			object arg = null;
 
@@ -3385,85 +3386,19 @@ switch (graphic.graphicData.uri)
 					break;
 
 				case 14:
-					// openxml spec: mm-dd-yy 
-					// Excel implementation: m/d/yyyy 
+				case 15:
+				case 16:
+				case 17:
+				case 18:
+				case 19:
+				case 20:
+				case 21:
+				case 22:
 					format = CellDataFormatFlag.DateTime;
 					arg = new DateTimeDataFormatter.DateTimeFormatArgs
 					{
-						CultureName = "en-US",
-						Format = "M/d/yyyy",
-					};
-					break;
-
-				case 15: // d-mmm-yy
-					format = CellDataFormatFlag.DateTime;
-					arg = new DateTimeDataFormatter.DateTimeFormatArgs
-					{
-						CultureName = "en-US",
-						Format = "d-MMM-yy",
-					};
-					break;
-
-				case 16: // d-mmm
-					format = CellDataFormatFlag.DateTime;
-					arg = new DateTimeDataFormatter.DateTimeFormatArgs
-					{
-						CultureName = "en-US",
-						Format = "d-MMM",
-					};
-					break;
-
-				case 17: // mmm-yy
-					format = CellDataFormatFlag.DateTime;
-					arg = new DateTimeDataFormatter.DateTimeFormatArgs
-					{
-						CultureName = "en-US",
-						Format = "MMM-yy",
-					};
-					break;
-
-				case 18: // h:mm AM/PM
-					format = CellDataFormatFlag.DateTime;
-					arg = new DateTimeDataFormatter.DateTimeFormatArgs
-					{
-						CultureName = "en-US",
-						Format = "h:mm tt",
-					};
-					break;
-
-				case 19: // h:mm:ss AM/PM
-					format = CellDataFormatFlag.DateTime;
-					arg = new DateTimeDataFormatter.DateTimeFormatArgs
-					{
-						CultureName = "en-US",
-						Format = "h:mm:ss tt",
-					};
-					break;
-
-				case 20: // h:mm
-					format = CellDataFormatFlag.DateTime;
-					arg = new DateTimeDataFormatter.DateTimeFormatArgs
-					{
-						CultureName = "en-US",
-						Format = "h:mm",
-					};
-					break;
-
-				case 21: // h:mm:ss
-					format = CellDataFormatFlag.DateTime;
-					arg = new DateTimeDataFormatter.DateTimeFormatArgs
-					{
-						CultureName = "en-US",
-						Format = "H:mm:ss",
-					};
-					break;
-
-				case 22: // m/d/yy h:mm
-					format = CellDataFormatFlag.DateTime;
-					arg = new DateTimeDataFormatter.DateTimeFormatArgs
-					{
-						CultureName = "en-US",
-						Format = "M/d/yy h:mm",
+						CultureName = currentCulture.Name,
+						Format = Properties.DateTimeFormat.ResourceManager.GetString(formatId.ToString(), currentCulture),
 					};
 					break;
 
@@ -3511,7 +3446,7 @@ switch (graphic.graphicData.uri)
 					format = CellDataFormatFlag.DateTime;
 					arg = new DateTimeDataFormatter.DateTimeFormatArgs
 					{
-						CultureName = "en-US",
+						CultureName = currentCulture.Name,
 						Format = "mm:ss",
 					};
 					break;
@@ -3520,7 +3455,7 @@ switch (graphic.graphicData.uri)
 					format = CellDataFormatFlag.DateTime;
 					arg = new DateTimeDataFormatter.DateTimeFormatArgs
 					{
-						CultureName = "en-US",
+						CultureName = currentCulture.Name,
 						Format = "h:mm:ss",
 					};
 					break;
@@ -3529,7 +3464,7 @@ switch (graphic.graphicData.uri)
 					format = CellDataFormatFlag.DateTime;
 					arg = new DateTimeDataFormatter.DateTimeFormatArgs
 					{
-						CultureName = "en-US",
+						CultureName = currentCulture.Name,
 						Format = "mmss.f",
 					};
 					break;
