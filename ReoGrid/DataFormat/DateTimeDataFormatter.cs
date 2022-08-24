@@ -48,7 +48,37 @@ namespace unvell.ReoGrid.DataFormat
 
 		private static DateTimeFormats InvariantCultureDateTimeFormats { get; } = new DateTimeFormats(CultureInfo.InvariantCulture);
 
-		private static readonly Regex MacrosRegex = new Regex(@".*%.*%.*", RegexOptions.Compiled);
+		/// <summary>
+		/// Список правил отображения, для которых нужно выставлять формат "Дата/время"
+		/// </summary>
+		private static string[] _dateTimeViewRules =
+		{
+			"%REPORT.DATE%",         @"%ОТЧЕТ.ДАТА%",
+			"%REPORT.DATEOFREPORT%", @"%ОТЧЕТ.ДАТАФОРМИРОВАНИЯ%",
+			"%REPORT.TIMEOFREPORT%", @"%ОТЧЕТ.ВРЕМЯФОРМИРОВАНИЯ%"
+		};
+
+		/// <summary>
+		/// Флаг изменения списка правил отображения, для которых нужно выставлять формат "Дата/время"
+		/// </summary>
+		private static volatile bool _dateTimeViewRulesChanged;
+
+		/// <summary>
+		/// Список заданных правил отображения, для которых нужно выставлять формат "Дата/время"
+		/// </summary>
+		// ReSharper disable once MemberCanBePrivate.Global
+		public static string[] DateTimeViewRules
+		{
+			get => _dateTimeViewRules;
+			// ReSharper disable once UnusedMember.Global
+			set
+			{
+				_dateTimeViewRules = value;
+				_dateTimeViewRulesChanged = true;
+			}
+		}
+
+		private static Regex _hasDateTimeViewRuleRegex = null;
 
 		private static bool TryParseDateTime(DateTimeFormats data, string src, out DateTime value)
 		{
@@ -58,7 +88,18 @@ namespace unvell.ReoGrid.DataFormat
 			return parseResult;
 		}
 
-		private static bool HasMacros(string data) => MacrosRegex.IsMatch(data);
+		private static Regex HasDateTimeViewRuleRegex()
+		{
+			if (_dateTimeViewRulesChanged || _hasDateTimeViewRuleRegex is null)
+			{
+				var regexString = string.Join("|", DateTimeViewRules.Select(r => $@"(.*{Regex.Escape(r)}.*)"));
+				_hasDateTimeViewRuleRegex = new Regex(regexString, RegexOptions.Compiled);
+				_dateTimeViewRulesChanged = false;
+			}
+			return _hasDateTimeViewRuleRegex;
+		}
+
+		private static bool HasDateTimeMacros(string data) => HasDateTimeViewRuleRegex().IsMatch(data);
 
 		/// <summary>
 		/// Format cell
@@ -184,7 +225,7 @@ namespace unvell.ReoGrid.DataFormat
 			}
 
 			return isFormat ? new FormatCellResult(formattedText, value) 
-				: (HasMacros(Convert.ToString(data))
+				: (HasDateTimeMacros(Convert.ToString(data))
 					? new FormatCellResult(Convert.ToString(data), data) 
 					: null);
 		}
