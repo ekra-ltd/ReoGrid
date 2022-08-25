@@ -92,7 +92,7 @@ namespace unvell.ReoGrid.DataFormat
 		{
 			if (_dateTimeViewRulesChanged || _hasDateTimeViewRuleRegex is null)
 			{
-				var regexString = string.Join("|", DateTimeViewRules.Select(r => $@"(.*{Regex.Escape(r)}.*)"));
+				var regexString = $@"^[ ]*({string.Join("|", DateTimeViewRules.Select(Regex.Escape))})[ ]*$";
 				_hasDateTimeViewRuleRegex = new Regex(regexString, RegexOptions.Compiled);
 				_dateTimeViewRulesChanged = false;
 			}
