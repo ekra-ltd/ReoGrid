@@ -100,7 +100,7 @@ namespace unvell.ReoGrid.Formula
 					return FormulaValue.FromRange(rangeNode.Worksheet, rangeNode.Range);
 
 				case STNodeType.STRING:
-					return ((STStringNode)node).Text;
+					return ((STStringNode)node).Text.Replace("\"\"", "\""); // Unescape double quotes
 
 				case STNodeType.TRUE:
 					return true;
