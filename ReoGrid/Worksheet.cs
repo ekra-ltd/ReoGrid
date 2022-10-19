@@ -2334,7 +2334,6 @@ namespace unvell.ReoGrid
 			this.hBorders.Reset();
 			this.vBorders.Reset();
 
-			this.cellDataComparer = null;
 			this.controlAdapter = null;
 
 #if OUTLINE
