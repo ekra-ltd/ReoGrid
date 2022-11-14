@@ -70,7 +70,7 @@ namespace unvell.ReoGrid
 
             foreach (var rule in format.Rules)
             {
-                if (rule.DifferentialFormat == null) continue;
+                if (!CanApplyRule(rule)) continue;
                 ConditionalFormatAdders.FirstOrDefault(a => a.ExpressionType == rule.Type)?.Add(new AddConditionalFormatInfo
                 {
                     Worksheet = this,
@@ -81,23 +81,35 @@ namespace unvell.ReoGrid
             }
         }
 
+        // Метод возвращает false, если в правиле условного форматирования формат задан "Формат не задан" и 
+        // не установлен флаг "Оставновить, если истина"
+        private bool CanApplyRule( ConditionalFormatRule rule) => rule.DifferentialFormat != null ||  (rule.StopIfTrue ?? false);
+
         private void RecalcConditionalFormat(IRecalcConditionalFormatsSource source, RecalcConditionalFormatsParameters parameters)
         {
-            foreach (var item in source.Items().OrderByDescending(r => r.Rule.Priority))
+            var sourceItem = source.Items().Reverse();
+            foreach (var item in sourceItem.OrderByDescending(r => r.Rule.Priority))
             {
                 var pos = item.Position;
                 var cell = Cells[pos.StartPos];
                 RestoreDefaultDifferencealFormatOnceInRange(pos, parameters);
 
                 var dxFormat = item.Rule.DifferentialFormat;
-                if (dxFormat == null) continue;
+                if (!CanApplyRule(item.Rule)) continue;
 
                 var cfAdder = ConditionalFormatAdders.FirstOrDefault(a => a.ExpressionType == item.Rule.Type);
                 if (cfAdder != null)
                     for (var r = 0; r < pos.Rows; r++)
                     for (var c = 0; c < pos.Cols; c++)
                         if (cfAdder.CanApplyFormat(Cells[cell.Row + r, cell.Column + c], c, r, item.Rule))
+                        {
+                            // Если для правила установлен флаг "Оставновить, если истина", то выполняется очистка формата
+                            if (item.Rule.StopIfTrue == true)
+                            {
+                                ApplyDifferencialFormat(pos, c, r, null);
+                            }
                             ApplyDifferencialFormat(pos, c, r, dxFormat);
+                        }
             }
         }
 
@@ -2466,7 +2478,7 @@ namespace unvell.ReoGrid.Core.Worksheet.Additional
                 if (value.Rules != null && value.Rules.Count > 0)
                 {
                     var list = new List<E2009.CT_CfRule>();
-                    foreach (var rule in value.Rules)
+                    foreach (var rule in value.Rules.OrderBy(r=>r.Priority))
                     {
                         var item = ToExcel2009(rule);
                         if (item != null)
