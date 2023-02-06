@@ -96,6 +96,8 @@ namespace unvell.ReoGrid.DataFormat
 		/// </summary>
 		/// <returns>True to perform test; Otherwise return false.</returns>
 		bool PerformTestFormat();
+
+		public object GetDefaultDataFormatArgs() => null;
 	}
 
 	public class FormatCellResult
@@ -180,6 +182,8 @@ namespace unvell.ReoGrid.DataFormat
 						cell.DataFormat = flag;
 						cell.InnerDisplay = formattedText;
 						cell.InnerData = formatResult.Data;
+						if (cell.DataFormatArgs is null && dataFormatters.TryGetValue(flag, out var dataFormatter))
+							cell.DataFormatArgs = dataFormatter.GetDefaultDataFormatArgs();
 						found = true;
 						break;
 					}

@@ -203,6 +203,15 @@ namespace unvell.ReoGrid.DataFormat
 			}
 		}
 
+		public object GetDefaultDataFormatArgs()
+		{
+			return new NumberFormatArgs()
+			{
+				DecimalPlaces = 4, 
+				UseSeparator = false
+			};
+		}
+
 		/// <summary>
 		/// Represents an interface for all number formats.
 		/// </summary>

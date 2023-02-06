@@ -34,6 +34,14 @@ namespace unvell.ReoGrid.DataFormat
 	/// </summary>
 	public class DateTimeDataFormatter : IDataFormatter
 	{
+		public object GetDefaultDataFormatArgs()
+		{
+			return new DateTimeFormatArgs()
+			{
+				Format = @"dd/MM/yyyy HH:mm:ss",
+				CultureName = @"ru-RU"
+			};
+		}
 		private class DateTimeFormats
 		{
 			public DateTimeFormats(CultureInfo culture)

@@ -113,9 +113,12 @@ namespace unvell.ReoGrid
 			ref object dataFormatArgs, List<Cell> formulaDirtyCells = null)
 		{
 			cell.DataFormat = format;
-			cell.DataFormatArgs = dataFormatArgs;
+			if (cell.DataFormatArgs is null && DataFormatterManager.Instance.DataFormatters.TryGetValue(format, out var dataFormatter))
+				cell.DataFormatArgs = dataFormatter.GetDefaultDataFormatArgs();
+			else
+				cell.DataFormatArgs = dataFormatArgs;
 
-			//string oldDisplay = cell.Display;
+				//string oldDisplay = cell.Display;
 
 			DataFormatterManager.Instance.FormatCell(cell);
 

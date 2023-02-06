@@ -119,6 +119,11 @@ namespace unvell.ReoGrid.DataFormat
 		{
 			return true;
 		}
+
+		public object GetDefaultDataFormatArgs()
+		{
+			return new NumberDataFormatter.NumberFormatArgs() {DecimalPlaces = 4};
+		}
 	}
 	#endregion // Percent
 

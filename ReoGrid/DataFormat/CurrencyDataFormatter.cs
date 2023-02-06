@@ -161,6 +161,11 @@ namespace unvell.ReoGrid.DataFormat
 				return null;
 		}
 
+		public object GetDefaultDataFormatArgs()
+		{
+			return new CurrencyFormatArgs() {CultureEnglishName = "ru-RU", PostfixSymbol = "₽", DecimalPlaces = 2};
+		}
+		
 		/// <summary>
 		/// Represents arguments of currency data format.
 		/// </summary>
