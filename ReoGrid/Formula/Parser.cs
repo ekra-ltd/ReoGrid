@@ -37,10 +37,11 @@ namespace unvell.ReoGrid.Formula
 		/// <param name="workbook">Workbook instance.</param>
 		/// <param name="cell">Cell instance.</param>
 		/// <param name="input">Formula to be converted.</param>
+		/// <param name="parameterSeparator">Function argument separator</param>
 		/// <returns>syntax tree constructed from specified formula.</returns>
-		public static STNode Parse(IWorkbook workbook, Cell cell, string input)
+		public static STNode Parse(IWorkbook workbook, Cell cell, string input, char parameterSeparator = ',')
 		{
-			ExcelFormulaLexer lexer = new ExcelFormulaLexer(workbook, cell, input);
+			ExcelFormulaLexer lexer = new ExcelFormulaLexer(workbook, cell, input, parameterSeparator);
 			var node = ReadExpr(lexer);
 
 			if (lexer.CurrentToken != null && lexer.CurrentToken.Success)
@@ -292,7 +293,7 @@ namespace unvell.ReoGrid.Formula
 				nodes.Add(node);
 				i++;
 
-				if (!lexer.SkipToken(FormulaExtension.ParameterSeparator)) break;
+				if (!lexer.SkipToken(lexer.ParameterSeparator.ToString())) break;
 			}
 
 			while (nodes.Count > 0 && nodes[nodes.Count - 1] == null)
@@ -510,17 +511,7 @@ namespace unvell.ReoGrid.Formula
 		public IWorkbook Workbook { get; set; }
 		public Cell Cell { get; set; }
 
-		private static readonly Regex TokenRegex = new Regex(
-			"\\s*((?<string>\"(?:\"\"|[^\"])*\")|(?<union_ranges>[A-Z]+[0-9]+:[A-Z]+[0-9]+(\\s[A-Z]+[0-9]+:[A-Z]+[0-9]+)+)"
-			+ "|(?<range>\\$?[A-Z]+\\$?[0-9]*:\\$?[A-Z]+\\$?[0-9]*)"
-			+ "|(?<cell>\\$?[A-Z]+\\$?[0-9]+)"
-			+ "|(?<token>-)|(?<number>\\-?\\d*\\" + FormulaExtension.NumberDecimalSeparator + "?\\d+)"
-			+ "|(?<true>(?i)TRUE)|(?<false>(?i)FALSE)|(?<identifier>\\w+)"
-			+ "|('(?<identifier>[^']+)')"                                                                               // идентификатор в кавычках. требуется для разбора формул вида 'AUX1'!A1;'123'!A1
-			+ "|(?<token>\\=\\=|\\<\\>|\\<\\=|\\>\\=|\\<\\>|\\=|\\!|[\\=\\.\\"
-			+ FormulaExtension.ParameterSeparator // ,
-			+ "\\+\\-\\*\\/\\%\\<\\>\\(\\)\\&\\^]))",
-			RegexOptions.Compiled);
+		private static readonly Dictionary<char, Regex> _regexesCache = new Dictionary<char, Regex>();
 
 		public string Input { get; set; }
 
@@ -549,18 +540,35 @@ namespace unvell.ReoGrid.Formula
 			}
 		}
 
-		public ExcelFormulaLexer(IWorkbook workbook, Cell cell, string input)
-			: this(workbook, cell, input, 0, input.Length)
+		public ExcelFormulaLexer(IWorkbook workbook, Cell cell, string input, char parameterSeparator = ',')
+			: this(workbook, cell, input, 0, input.Length, parameterSeparator)
 		{
 		}
 
-		public ExcelFormulaLexer(IWorkbook workbook, Cell cell, string input, int start, int length)
+		public ExcelFormulaLexer(IWorkbook workbook, Cell cell, string input, int start, int length, char parameterSeparator = ',')
 		{
 			this.Workbook = workbook;
 			this.Cell = cell;
 			this.Input = input;
 			this.Start = start;
 			this.Length = length;
+			ParameterSeparator = parameterSeparator;
+
+			if (!_regexesCache.ContainsKey(ParameterSeparator))
+			{
+				var regex = new Regex(
+					"\\s*((?<string>\"(?:\"\"|[^\"])*\")|(?<union_ranges>[A-Z]+[0-9]+:[A-Z]+[0-9]+(\\s[A-Z]+[0-9]+:[A-Z]+[0-9]+)+)"
+					+ "|(?<range>\\$?[A-Z]+\\$?[0-9]*:\\$?[A-Z]+\\$?[0-9]*)"
+					+ "|(?<cell>\\$?[A-Z]+\\$?[0-9]+)"
+					+ "|(?<token>-)|(?<number>\\-?\\d*\\" + FormulaExtension.NumberDecimalSeparator + "?\\d+)"
+					+ "|(?<true>(?i)TRUE)|(?<false>(?i)FALSE)|(?<identifier>\\w+)"
+					+ "|('(?<identifier>[^']+)')"                                                                               // идентификатор в кавычках. требуется для разбора формул вида 'AUX1'!A1;'123'!A1
+					+ "|(?<token>\\=\\=|\\<\\>|\\<\\=|\\>\\=|\\<\\>|\\=|\\!|[\\=\\.\\"
+					+ ParameterSeparator // ,
+					+ "\\+\\-\\*\\/\\%\\<\\>\\(\\)\\&\\^]))",
+					RegexOptions.Compiled);
+				_regexesCache.Add(parameterSeparator, regex);
+			}
 
 			Reset();
 		}
@@ -579,7 +587,7 @@ namespace unvell.ReoGrid.Formula
 				else
 				{
 					if (_useHookMatch)
-						match = TokenRegex.Match(Input, CommittedLength);
+						match = _regexesCache[ParameterSeparator].Match(Input, CommittedLength);
 					else
 						this.match = this.match.NextMatch();
 					HookNextMatch();
@@ -630,7 +638,7 @@ namespace unvell.ReoGrid.Formula
 		public void Reset()
 		{
 			this.CommittedLength = 0;
-			this.match = TokenRegex.Match(this.Input, this.Start);
+			this.match = _regexesCache[ParameterSeparator].Match(this.Input, this.Start);
 			HookNextMatch();
 		}
 
@@ -657,6 +665,8 @@ namespace unvell.ReoGrid.Formula
 		private bool _useHookMatch = false;
 
 		private static Regex HookRegex = new Regex(@"\s*((?<identifier>\w+))", RegexOptions.Compiled);
+
+		public char ParameterSeparator { get; set; }
 	}
 	#endregion
 

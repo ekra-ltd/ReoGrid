@@ -1077,76 +1077,116 @@ namespace unvell.ReoGrid
 #endregion // Recalculate
 #region Поддержка переименования листов
 
-            /// <summary>
-            /// Подменяет в формулах ячеек и формулах условного форматирования имя листа
-            /// </summary>
-            /// <param name="sheet">Лист для которого выполняется переименование</param>
-            /// <param name="oldWorksheetName">Старое имя листа</param>
-            /// <param name="newWorksheetName">Новое имя листа</param>
-        internal void PutFormulasInOrderAfterWorksheetNameChanged(Worksheet sheet, string oldWorksheetName, string newWorksheetName)
-        {
-            var entireRange = new RangePosition(0, 0, MaxContentRow + 1, MaxContentCol + 1);
-            IterateCells(entireRange, (row, col, cell) =>
-            {
-                if (cell.HasFormula)
-                {
-                    if (TrySubstituteWorksheetName(cell.Formula, oldWorksheetName, newWorksheetName, out var result))
-                    {
-                        cell.Formula = result;
-                    }
-                }
-                return true;
-            });
+			/// <summary>
+			/// Подменяет в формулах ячеек и формулах условного форматирования имя листа
+			/// </summary>
+			/// <param name="sheet">Лист для которого выполняется переименование</param>
+			/// <param name="oldWorksheetName">Старое имя листа</param>
+			/// <param name="newWorksheetName">Новое имя листа</param>
+		internal void PutFormulasInOrderAfterWorksheetNameChanged(Worksheet sheet, string oldWorksheetName, string newWorksheetName)
+		{
+			var entireRange = new RangePosition(0, 0, MaxContentRow + 1, MaxContentCol + 1);
+			IterateCells(entireRange, (row, col, cell) =>
+			{
+				if (cell.HasFormula)
+				{
+					if (TrySubstituteWorksheetName(cell.Formula, oldWorksheetName, newWorksheetName, out var result))
+					{
+						cell.Formula = result;
+					}
+				}
+				return true;
+			});
 
-            if (ConditionalFormats != null)
-            {
-                foreach (var format in ConditionalFormats)
-                {
-                    foreach (var rule in format.Rules)
-                    {
-                        foreach (var formuaItem in rule.Formula)
-                        {
-                            if (TrySubstituteWorksheetName(formuaItem.Value, oldWorksheetName, newWorksheetName, out var result))
-                            {
-                                formuaItem.Value = result;
-                            }
-                        }
-                    }
-                }
-            }
-        }
+			if (ConditionalFormats != null)
+			{
+				foreach (var format in ConditionalFormats)
+				{
+					foreach (var rule in format.Rules)
+					{
+						foreach (var formuaItem in rule.Formula)
+						{
+							if (TrySubstituteWorksheetName(formuaItem.Value, oldWorksheetName, newWorksheetName, out var result))
+							{
+								formuaItem.Value = result;
+							}
+						}
+					}
+				}
+			}
+		}
 
-        /// <summary>
-        /// Выполняет попытку подменить имя листа в формуле
-        /// </summary>
-        /// <param name="formula">Формула в которой выполняется попытка подменить имя листа</param>
-        /// <param name="oldWorksheetName">Старое имя листа</param>
-        /// <param name="newWorksheetName">Новое имя листа</param>
-        /// <param name="newFormula">Новая фомула, в случае если подмена выполнена успешно</param>
-        /// <returns>
-        /// true, если в формуле были ссылки на лист
-        /// false, ссылок не было
-        /// </returns>
-        private static bool TrySubstituteWorksheetName(string formula, string oldWorksheetName, string newWorksheetName, out string newFormula)
-        {
-            var result = false;
-            newFormula = formula;
-            if (!string.IsNullOrEmpty(formula))
-            {
-                foreach (var id in FormulaUtility.EnumerateIdentifiers(formula).Reverse().ToList())
-                {
-                    if (id.Identifier == oldWorksheetName)
-                    {
-                        result = true;
-                        newFormula = newFormula.Remove(id.Start, id.Length);
-                        newFormula = newFormula.Insert(id.Start, newWorksheetName);
-                    }
-                }
-            }
-            return result;
-        }
+		/// <summary>
+		/// Выполняет попытку подменить имя листа в формуле
+		/// </summary>
+		/// <param name="formula">Формула в которой выполняется попытка подменить имя листа</param>
+		/// <param name="oldWorksheetName">Старое имя листа</param>
+		/// <param name="newWorksheetName">Новое имя листа</param>
+		/// <param name="newFormula">Новая фомула, в случае если подмена выполнена успешно</param>
+		/// <returns>
+		/// true, если в формуле были ссылки на лист
+		/// false, ссылок не было
+		/// </returns>
+		private static bool TrySubstituteWorksheetName(string formula, string oldWorksheetName, string newWorksheetName, out string newFormula)
+		{
+			var result = false;
+			newFormula = formula;
+			if (!string.IsNullOrEmpty(formula))
+			{
+				foreach (var id in FormulaUtility.EnumerateIdentifiers(formula).Reverse().ToList())
+				{
+					if (id.Identifier == oldWorksheetName)
+					{
+						result = true;
+						newFormula = newFormula.Remove(id.Start, id.Length);
+						newFormula = newFormula.Insert(id.Start, newWorksheetName);
+					}
+				}
+			}
+			return result;
+		}
 
-        #endregion
+		#endregion
+
+		private static string ReplaceSeparatorsInFormula(string formula, STNode rootNode, char oldSeparator, char newSeparator)
+		{
+			if (formula == null)
+			{
+				throw new ArgumentNullException(nameof(formula));
+			}
+			if (rootNode == null)
+			{
+				return formula;
+			}
+			
+			var nodes = new Queue<STNode>();
+			nodes.Enqueue(rootNode);
+			var ranges = new List<(int, int)>();
+			while (nodes.Any())
+			{
+				var node = nodes.Dequeue();
+				for (var i = 0; i < node?.Children?.Count; ++i)
+				{
+					var child = node.Children[i];
+					nodes.Enqueue(child);
+					if (node.Type == STNodeType.FUNCTION_CALL && i != node.Children.Count - 1)
+					{
+						ranges.Add((child.Start + child.Length, node.Children[i + 1].Start));
+					}
+				}
+			}
+
+			var sb = new StringBuilder(formula);
+			if (ranges.Any())
+			{
+				foreach (var (start, end) in ranges)
+				{
+					sb.Replace(oldSeparator, newSeparator, start, end - start);
+				}
+			}
+
+			return sb.ToString();
+		}
 	}
 
 	partial class Cell

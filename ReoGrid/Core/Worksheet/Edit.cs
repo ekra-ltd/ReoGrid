@@ -20,6 +20,7 @@ using RGFloat = System.Double;
 using unvell.ReoGrid.Core;
 using unvell.ReoGrid.Actions;
 using unvell.ReoGrid.DataFormat;
+using unvell.ReoGrid.Formula;
 using unvell.ReoGrid.Views;
 using unvell.ReoGrid.Graphics;
 
@@ -152,6 +153,19 @@ namespace unvell.ReoGrid
 				if (!string.IsNullOrEmpty(cell.InnerFormula))
 				{
 					editText = "=" + cell.InnerFormula;
+					
+					if (LanguageResource.Culture.Name == "ru-RU")
+					{
+						try
+						{
+							var rootNode = Parser.Parse(workbook, cell, cell.InnerFormula, ',');
+							editText = "=" + ReplaceSeparatorsInFormula(cell.InnerFormula, rootNode, ',', ';');
+						}
+						catch (Exception)
+						{
+							editText = "=" + cell.InnerFormula;
+						}
+					}
 				}
 				else if (cell.InnerData is string)
 				{
@@ -420,6 +434,23 @@ namespace unvell.ReoGrid
 						}
 						else
 						{
+							if (datastr.StartsWith("="))
+							{
+								if (LanguageResource.Culture.Name == "ru-RU")
+								{
+									try
+									{
+										var formula = datastr.Substring(1);
+										var rootNode = Parser.Parse(workbook, currentEditingCell, formula, ';');
+										data = datastr = "=" + ReplaceSeparatorsInFormula(formula, rootNode, ';', ',');
+									}
+									catch (Exception)
+									{
+										// ignored
+									}
+								}
+							}
+							
 							// convert data into cell data format
 							switch (currentEditingCell.DataFormat)
 							{
