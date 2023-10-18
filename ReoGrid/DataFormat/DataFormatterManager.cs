@@ -217,6 +217,13 @@ namespace unvell.ReoGrid.DataFormat
 					if (formattedResult == null)
 					{
 						formattedResult = DataFormatters[CellDataFormatFlag.Text].FormatCell(cell);
+						if (string.IsNullOrEmpty(formattedResult.FormattedText) && string.IsNullOrEmpty(cell.Formula))
+						{
+							formattedResult = null;
+							cell.InnerDisplay = null;
+							cell.InnerData = null;
+							return;
+						}
 					}
 
 					cell.InnerDisplay = formattedResult.FormattedText;

@@ -1102,6 +1102,24 @@ namespace unvell.ReoGrid.Formula
 					{
 						return true;
 					}
+				case BuiltinFunctionNames.IFERROR_EN:
+				case BuiltinFunctionNames.IFERROR_RU:
+				{
+					if (funNode.Children == null || funNode.Children.Count < 2)
+						throw new FormulaParameterMismatchException(cell);
+					try
+					{
+						var funcArgs = GetFunctionArgs(cell, funNode.Children, 2);
+						if (funcArgs[0].type != FormulaValueType.Number) return funcArgs[1];
+						var d = (double) funcArgs[0].value;
+						return !(double.IsNaN(d) || double.IsInfinity(d)) ? funcArgs[0] : funcArgs[1];
+					}
+					catch
+					{
+						// ignored
+					}
+					return Evaluator.Evaluate(cell, funNode.Children[1]);
+				}
 				#endregion // ISERROR
 				#region ISNUMBER
 				case BuiltinFunctionNames.ISNUMBER_EN:
