@@ -25,7 +25,7 @@
     <ImportWindowsDesktopTargets>true</ImportWindowsDesktopTargets>
     <Configurations>WPFDebug;WPFRelease</Configurations>
     <TargetFramework>net5.0-windows</TargetFramework>
-    <PackageVersion>3.0.6</PackageVersion>
+    <PackageVersion>3.0.7</PackageVersion>
   </PropertyGroup>
 	<PropertyGroup>
 		<Authors>Jingwood,ekra-ltd</Authors>
