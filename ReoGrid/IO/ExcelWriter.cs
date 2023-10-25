@@ -1557,6 +1557,7 @@ namespace unvell.ReoGrid.IO.OpenXML
 							if (hasFormula)
 							{
 								cell.formula = new Schema.Formula { val = LocalizeFormula(rgCell) };
+								cell.value = null;
 							}
 #endregion // Formula
 

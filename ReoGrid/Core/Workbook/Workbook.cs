@@ -276,6 +276,7 @@ namespace unvell.ReoGrid
 			try
 			{
 				provider.Load(this, stream, encoding, null);
+				WorkbookFormulaUpdater.Update(this);
 			}
 			finally
 			{
