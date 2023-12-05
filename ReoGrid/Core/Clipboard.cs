@@ -9,10 +9,10 @@
  * IMPLIED WARRANTIES OF MERCHANTABILITY AND/OR FITNESS FOR A PARTICULAR
  * PURPOSE.
  *
- * Author: Jing Lu <jingwood at unvell.com>
+ * Author: Jingwood <jingwood at unvell.com>
  *
- * Copyright (c) 2012-2021 Jing Lu <jingwood at unvell.com>
- * Copyright (c) 2012-2016 unvell.com, all rights reserved.
+ * Copyright (c) 2012-2023 Jingwood <jingwood at unvell.com>
+ * Copyright (c) 2012-2023 unvell inc. All rights reserved.
  * 
  ****************************************************************************/
 
@@ -702,7 +702,7 @@ namespace unvell.ReoGrid
 						this.RemoveRangeStyles(range, PlainStyleFlag.All);
 						this.RemoveRangeBorders(range, BorderPositions.All);
 					}
-                }
+				}
 
                 if (AfterCut != null)
                 {

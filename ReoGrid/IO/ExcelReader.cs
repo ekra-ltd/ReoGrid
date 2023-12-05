@@ -9,10 +9,10 @@
  * IMPLIED WARRANTIES OF MERCHANTABILITY AND/OR FITNESS FOR A PARTICULAR
  * PURPOSE.
  *
- * Author: Jing Lu <jingwood at unvell.com>
+ * Author: Jingwood <jingwood at unvell.com>
  *
  * Copyright (c) 2012-2016 Jing <lujing at unvell.com>
- * Copyright (c) 2012-2016 unvell.com, all rights reserved.
+ * Copyright (c) 2012-2023 unvell inc. All rights reserved.
  * 
  ****************************************************************************/
 
@@ -48,6 +48,7 @@ using unvell.ReoGrid.IO.Additional;
 using unvell.ReoGrid.IO.Additional.Excel.FloatingObjects;
 using Border = unvell.ReoGrid.IO.OpenXML.Schema.Border;
 using Fill = unvell.ReoGrid.IO.OpenXML.Schema.Fill;
+using Font = unvell.ReoGrid.IO.OpenXML.Schema.Font;
 using GradientFill = unvell.ReoGrid.IO.OpenXML.Schema.GradientFill;
 using NumberFormat = unvell.ReoGrid.IO.OpenXML.Schema.NumberFormat;
 
@@ -392,8 +393,7 @@ namespace unvell.ReoGrid.IO.OpenXML
 			// data
 			SharedStrings sharedStringTable = doc.ReadSharedStringTable();
 
-			var defaultFont = fonts.list.ElementAtOrDefault(0) as Schema.Font;
-			if (defaultFont != null)
+			if (fonts?.list != null && fonts.list.ElementAtOrDefault(0) is Font defaultFont)
 			{
 				SetStyleFont(doc, rgSheet.RootStyle, defaultFont);
 			}

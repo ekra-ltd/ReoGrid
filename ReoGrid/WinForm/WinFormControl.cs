@@ -9,10 +9,10 @@
  * IMPLIED WARRANTIES OF MERCHANTABILITY AND/OR FITNESS FOR A PARTICULAR
  * PURPOSE.
  *
- * Author: Jing Lu <jingwood at unvell.com>
+ * Author: Jingwood <jingwood at unvell.com>
  *
- * Copyright (c) 2012-2021 Jing Lu <jingwood at unvell.com>
- * Copyright (c) 2012-2016 unvell.com, all rights reserved.
+ * Copyright (c) 2012-2023 Jingwood <jingwood at unvell.com>
+ * Copyright (c) 2012-2023 unvell inc. All rights reserved.
  *
  ****************************************************************************/
 
@@ -313,21 +313,19 @@ namespace unvell.ReoGrid
 		/// False to release only unmanaged resources.</param>
 		protected override void Dispose(bool disposing)
 		{
-			var gdiRenderer = (GDIRenderer)renderer;
+			base.Dispose(disposing);
 
-			if (gdiRenderer != null)
+			this.workbook?.Dispose();
+
+			this.builtInCellsSelectionCursor?.Dispose();
+			this.defaultPickRangeCursor?.Dispose();
+			this.builtInFullColSelectCursor?.Dispose();
+			this.builtInFullRowSelectCursor?.Dispose();
+
+			if (renderer is GDIRenderer gdiRenderer)
 			{
 				gdiRenderer.Dispose();
 			}
-
-			base.Dispose(disposing);
-
-			this.workbook.Dispose();
-
-			if (builtInCellsSelectionCursor != null) builtInCellsSelectionCursor.Dispose();
-			if (defaultPickRangeCursor != null) defaultPickRangeCursor.Dispose();
-			if (builtInFullColSelectCursor != null) builtInFullColSelectCursor.Dispose();
-			if (builtInFullRowSelectCursor != null) builtInFullRowSelectCursor.Dispose();
 		}
 
 		#endregion // Constructor

@@ -9,16 +9,17 @@
  * IMPLIED WARRANTIES OF MERCHANTABILITY AND/OR FITNESS FOR A PARTICULAR
  * PURPOSE.
  *
- * Author: Jing Lu <jingwood at unvell.com>
+ * Author: Jingwood <jingwood at unvell.com>
  *
- * Copyright (c) 2012-2021 Jing Lu <jingwood at unvell.com>
- * Copyright (c) 2012-2016 unvell.com, all rights reserved.
+ * Copyright (c) 2012-2023 Jingwood <jingwood at unvell.com>
+ * Copyright (c) 2012-2023 unvell inc. All rights reserved.
  * 
  ****************************************************************************/
 
 #if WPF
 
 using System;
+using System.Globalization;
 using System.Windows;
 using System.Windows.Media;
 
@@ -86,7 +87,34 @@ namespace unvell.ReoGrid.Rendering
 			return null;
 		}
 
-		private static ResourcePoolManager resourcePoolManager;// = new ResourcePoolManager();
+		public static (Typeface, GlyphTypeface) FindTypefaceContainsCharacter(char ch, CultureInfo ci = null)
+		{
+			if (ci == null)
+			{
+				ci = CultureInfo.CurrentCulture;
+			}
+
+			foreach (var font in Fonts.SystemFontFamilies)
+			{
+				foreach (var typeface in font.GetTypefaces())
+				{
+					if (typeface.TryGetGlyphTypeface(out var glyphTypeface))
+					{
+						if (glyphTypeface.FaceNames.ContainsKey(ci))
+						{
+							if (glyphTypeface.CharacterToGlyphMap.ContainsKey(ch))
+							{
+								return (typeface, glyphTypeface);
+							}
+						}
+					}
+				}
+			}
+
+			return (null, null);
+		}
+
+        private static ResourcePoolManager resourcePoolManager;// = new ResourcePoolManager();
 
 		internal static Graphics.Size MeasureText(IRenderer r, string text, string fontName, double fontSize, Drawing.Text.FontStyles style)
 		{
