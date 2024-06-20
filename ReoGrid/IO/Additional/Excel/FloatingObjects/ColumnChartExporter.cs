@@ -553,7 +553,7 @@ namespace unvell.ReoGrid.IO.Additional.Excel.FloatingObjects
             return new CT_CatAx
             {
                 axId = id,
-                scaling = new CT_Scaling { orientation = new CT_Orientation { val = ST_Orientation.minMax } },
+                scaling = new CT_Scaling { orientation = new CT_Orientation { val = ST_Orientation.maxMin } },
                 delete = new CT_Boolean { val = delete },
                 axPos = new CT_AxPos { val = ST_AxPos.b },
                 numFmt = new CT_NumFmt { formatCode = @"General", sourceLinked = true, sourceLinkedSpecified = true },
