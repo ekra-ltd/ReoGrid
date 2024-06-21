@@ -123,9 +123,9 @@ namespace unvell.ReoGrid.IO.Additional.Excel.FloatingObjects
                 valId,
                 chart.DataSource.CategoryNameRange  == null,
                 chart.HorizontalAxisInfoView.TextDirection,
-                chart.HorizontalAxisInfoView.ReverseOrderCategories ? ST_Orientation.maxMin : ST_Orientation.minMax
+                chart.HorizontalAxisInfoView.ReverseOrderOfCategories ? ST_Orientation.maxMin : ST_Orientation.minMax
             );
-            var valAx = CreateValAx(valId, axId, chart.VerticalAxisInfoView.ReverseOrderCategories ? ST_Orientation.maxMin : ST_Orientation.minMax);
+            var valAx = CreateValAx(valId, axId, chart.VerticalAxisInfoView.ReverseOrderOfCategories ? ST_Orientation.maxMin : ST_Orientation.minMax);
 
             space.chart = new CT_Chart
             {
@@ -459,7 +459,7 @@ namespace unvell.ReoGrid.IO.Additional.Excel.FloatingObjects
             return null;
         }
 
-        private static CT_CatAx CreateCatAx(CT_UnsignedInt id, CT_UnsignedInt crossId, bool delete, AxisTextDirection direction, ST_Orientation reverseOrder)
+        private static CT_CatAx CreateCatAx(CT_UnsignedInt id, CT_UnsignedInt crossId, bool delete, AxisTextDirection direction, ST_Orientation order)
         {
             CT_ShapeProperties shapePr = null;
             CT_TextBody textPr = null;
@@ -556,7 +556,7 @@ namespace unvell.ReoGrid.IO.Additional.Excel.FloatingObjects
             return new CT_CatAx
             {
                 axId = id,
-                scaling = new CT_Scaling { orientation = new CT_Orientation { val = reverseOrder } },
+                scaling = new CT_Scaling { orientation = new CT_Orientation { val = order } },
                 delete = new CT_Boolean { val = delete },
                 axPos = new CT_AxPos { val = ST_AxPos.b },
                 numFmt = new CT_NumFmt { formatCode = @"General", sourceLinked = true, sourceLinkedSpecified = true },
@@ -574,12 +574,12 @@ namespace unvell.ReoGrid.IO.Additional.Excel.FloatingObjects
             };
         }
 
-        private static CT_ValAx CreateValAx(CT_UnsignedInt id, CT_UnsignedInt crossId, ST_Orientation reverseOrderCategories)
+        private static CT_ValAx CreateValAx(CT_UnsignedInt id, CT_UnsignedInt crossId, ST_Orientation order)
         {
             return new CT_ValAx
             {
                 axId = id,
-                scaling = new CT_Scaling { orientation = new CT_Orientation { val = reverseOrderCategories } },
+                scaling = new CT_Scaling { orientation = new CT_Orientation { val = order } },
                 delete = new CT_Boolean { val = false },
                 axPos = new CT_AxPos { val = ST_AxPos.l },
                 majorGridlines = new CT_ChartLines

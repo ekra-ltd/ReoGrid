@@ -2865,9 +2865,9 @@ switch (graphic.graphicData.uri)
 						axisChart.HorizontalAxisInfoView.TextDirection = GetAxisTextDirection(plot.categoryAxis.txPr.bodyPr.rot, plot.categoryAxis.txPr.bodyPr.vert);
 					else if (plot.dateAxis?.txPr.bodyPr != null)
 						axisChart.HorizontalAxisInfoView.TextDirection = GetAxisTextDirection(plot.dateAxis.txPr.bodyPr.rot, plot.dateAxis.txPr.bodyPr.vert);
-					axisChart.HorizontalAxisInfoView.ReverseOrderCategories =
+					axisChart.HorizontalAxisInfoView.ReverseOrderOfCategories =
 						plot.categoryAxis?.scaling.orientation.val == ST_Orientation.maxMin;
-					axisChart.VerticalAxisInfoView.ReverseOrderCategories =
+					axisChart.VerticalAxisInfoView.ReverseOrderOfCategories =
 						plot.valueAxis.scaling.orientation.value == nameof(ST_Orientation.maxMin);
 				}
 
