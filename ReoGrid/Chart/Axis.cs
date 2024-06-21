@@ -172,6 +172,8 @@ namespace unvell.ReoGrid.Chart
 		public AxisTypes AxisType { get; protected set; }
 
 		public AxisTextDirection TextDirection { get; set; } = AxisTextDirection.Horizontal;
+		
+		public bool ReverseOrderCategories { get; set; }
 
 		public AxisInfoView(AxisChart chart, AxisTypes axisType)
 		{
