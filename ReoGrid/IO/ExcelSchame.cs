@@ -1899,6 +1899,9 @@ namespace unvell.ReoGrid.IO.OpenXML.Schema
 	{
 		[XmlElement("txPr")]
 		public CT_TextBody txPr;
+
+		[XmlElement("scaling")]
+		public CT_Scaling scaling;
 	}
 
 	public class DateAxis
