@@ -126,7 +126,9 @@ namespace unvell.ReoGrid.Graphics
 		void TranslateTransform(RGFloat x, RGFloat y);
 		void RotateTransform(RGFloat angle);
 		void ResetTransform();
-
+		void ReflectionYTransform(double offsetY);
+		void ReflectionXTransform(double offsetX);
+		void ReflectionXYTransform(double offsetX, double offsetY);
 		void PushClip(Rectangle clip);
 		void PopClip();
 

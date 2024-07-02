@@ -420,6 +420,36 @@ namespace unvell.ReoGrid.Rendering
 				mt.Matrix = Matrix.Identity;
 			}
 		}
+
+		public void ReflectionYTransform(double offsetY)
+		{
+			if (transformStack.Count > 0)
+			{
+				var mt = transformStack.Peek();
+				var m2 = new Matrix(1, 0, 0, -1, mt.Matrix.OffsetX, offsetY);
+				mt.Matrix = m2;
+			}
+		}
+
+		public void ReflectionXTransform(double offsetX)
+		{
+			if (transformStack.Count > 0)
+			{
+				var mt = transformStack.Peek();
+				var m2 = new Matrix(-1, 0, 0, 1, offsetX, mt.Matrix.OffsetY);
+				mt.Matrix = m2;
+			}
+		}
+
+		public void ReflectionXYTransform(double offsetX, double offsetY)
+		{
+			if (transformStack.Count > 0)
+			{
+				var mt = transformStack.Peek();
+				var m2 = new Matrix(-1, 0, 0, -1, offsetX, offsetY);
+				mt.Matrix = m2;
+			}
+		}
 		#endregion // Transform
 
 		#region Ellipse

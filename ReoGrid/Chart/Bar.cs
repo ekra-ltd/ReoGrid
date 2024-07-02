@@ -213,6 +213,16 @@ namespace unvell.ReoGrid.Chart
 
 				y += groupColumnSpace;
 			}
+			if (axisChart.VerticalAxisInfoView.ReverseOrderOfCategories &&
+			    !axisChart.HorizontalAxisInfoView.ReverseOrderOfCategories)
+			{
+				dc.Graphics.ReflectionXYTransform(axisChart.VerticalAxisInfoView.Right, axisChart.HorizontalAxisInfoView.Bottom);
+				return;
+			}
+			if(axisChart.VerticalAxisInfoView.ReverseOrderOfCategories)
+				dc.Graphics.ReflectionXTransform(axisChart.VerticalAxisInfoView.Right);
+			if(!axisChart.HorizontalAxisInfoView.ReverseOrderOfCategories)
+				dc.Graphics.ReflectionYTransform(axisChart.HorizontalAxisInfoView.Bottom);
 		}
 	}
 }
