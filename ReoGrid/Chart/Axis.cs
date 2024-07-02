@@ -224,31 +224,69 @@ namespace unvell.ReoGrid.Chart
 			RGFloat fontHeight = (RGFloat)(this.FontSize * PlatformUtility.GetDPI() / 72.0) + 4;
 
 			double rowValue = ai.Minimum;
-
 			if (orientation == AxisOrientation.Vertical)
 			{
+				double axisX = 0;
+				double axisY = 0;
+				ReoGridHorAlign align = ReoGridHorAlign.Right;
+				if (Chart.HorizontalAxisInfoView.ReverseOrderOfCategories)
+				{
+					axisX = Chart.HorizontalAxisInfoView.Width + Chart.VerticalAxisInfoView.Width/2;
+					align = ReoGridHorAlign.Left;
+				}
+				if (Chart.VerticalAxisInfoView.ReverseOrderOfCategories)
+					axisY = Chart.Height - Chart.VerticalAxisInfoView.Bottom;
+
 				RGFloat stepY = (clientRect.Height - fontHeight) / ai.Levels;
-				var textRect = new Rectangle(0, clientRect.Bottom - fontHeight, clientRect.Width, fontHeight);
+				double y = clientRect.Bottom;
+				if (Chart.VerticalAxisInfoView.ReverseOrderOfCategories)
+				{
+					y = clientRect.Top + fontHeight;
+					stepY *= -1;
+				}
+
+				var textRect = new Rectangle(0, y - fontHeight, clientRect.Width, fontHeight);
 
 				for (int level = 0; level <= ai.Levels; level++)
 				{
-					g.DrawText(Math.Round(rowValue, Math.Abs(ai.Scaler)).ToString(), this.FontName, this.FontSize, this.ForeColor, textRect, ReoGridHorAlign.Right, ReoGridVerAlign.Middle);
+					g.DrawText(Math.Round(rowValue, Math.Abs(ai.Scaler)).ToString(), this.FontName, this.FontSize, this.ForeColor, textRect, align, ReoGridVerAlign.Middle);
 
 					textRect.Y -= stepY;
 					rowValue += Math.Round(ai.LargeStride, Math.Abs(ai.Scaler));
 				}
+				if(Chart.HorizontalAxisInfoView.ReverseOrderOfCategories || Chart.VerticalAxisInfoView.ReverseOrderOfCategories)
+					dc.Graphics.TranslateTransform(axisX, axisY);
 			}
 			else if (orientation == AxisOrientation.Horizontal)
 			{
 				RGFloat columnWidth = clientRect.Width / ai.Levels;
-				var textRect = new Rectangle(clientRect.Left - (columnWidth / 2), clientRect.Top, columnWidth, /*clientRect.Height*/fontHeight);
+
+				int rev = 1;
+				if (!(Chart is BarChart))
+				{
+					if (Chart.HorizontalAxisInfoView.ReverseOrderOfCategories)
+					{
+						rowValue = ai.Maximum;
+						rev = -1;
+					}	
+				}
+				else
+				{
+					if (Chart.VerticalAxisInfoView.ReverseOrderOfCategories)
+					{
+						rowValue = ai.Maximum;
+						rev = -1;
+					}
+				}
+
+				var textRect = new Rectangle(clientRect.Left - (columnWidth / 2), clientRect.Top, columnWidth, fontHeight);
 
 				for (int level = 0; level <= ai.Levels; level ++)
 				{
 					g.DrawText(Math.Round(rowValue, Math.Abs(ai.Scaler)).ToString(), this.FontName, this.FontSize, this.ForeColor, textRect, ReoGridHorAlign.Center, ReoGridVerAlign.Top);
 
 					textRect.X += columnWidth;
-					rowValue += Math.Round(ai.LargeStride, Math.Abs(ai.Scaler));
+					rowValue += Math.Round(ai.LargeStride, Math.Abs(ai.Scaler)) * rev;
 				}
 			}
 		}
@@ -298,7 +336,18 @@ namespace unvell.ReoGrid.Chart
 
 			for (int i = 0; i < dataCount; i++)
 			{
-				var title = ds.GetCategoryName(i);
+				int categoryNum = i;
+				if (!(Chart is BarChart))
+				{
+					if (Chart.HorizontalAxisInfoView.ReverseOrderOfCategories)
+						categoryNum = dataCount - i - 1;
+				}
+				else
+				{
+					if (!Chart.HorizontalAxisInfoView.ReverseOrderOfCategories)
+						categoryNum = dataCount - i - 1;
+				}
+				var title = ds.GetCategoryName(categoryNum);
 
 				if (!string.IsNullOrEmpty(title))
 				{
@@ -307,9 +356,22 @@ namespace unvell.ReoGrid.Chart
 				}
 				else
 				{
-					boxes.Add(new Size(0, 0));
+					var text = (categoryNum + 1).ToString();
+					//boxes.Add(new Size(0, 0));
+					titles[i] = text;
+					boxes.Add(PlatformUtility.MeasureText(dc.Renderer, text, this.FontName, this.FontSize, Drawing.Text.FontStyles.Regular));
 				}
 			}
+
+			double axisX = 0;
+			double axisY = 0;
+			ReoGridHorAlign align = ReoGridHorAlign.Right;
+			if (Chart.HorizontalAxisInfoView.ReverseOrderOfCategories)
+			{
+				axisX = -Chart.VerticalAxisInfoView.Width;
+			}
+			if (Chart.VerticalAxisInfoView.ReverseOrderOfCategories)
+				axisY = -Chart.VerticalAxisInfoView.Height;
 
 			if (orientation == AxisOrientation.Horizontal)
 			{
@@ -385,6 +447,7 @@ namespace unvell.ReoGrid.Chart
 						}
 					}
 				}
+				dc.Graphics.TranslateTransform(axisX, axisY);
 			}
 			else if (orientation == AxisOrientation.Vertical)
 			{
