@@ -260,22 +260,21 @@ namespace unvell.ReoGrid.Chart
 			else if (orientation == AxisOrientation.Horizontal)
 			{
 				RGFloat columnWidth = clientRect.Width / ai.Levels;
-
-				int rev = 1;
-				if (!(Chart is BarChart))
-				{
-					if (Chart.HorizontalAxisInfoView.ReverseOrderOfCategories)
-					{
-						rowValue = ai.Maximum;
-						rev = -1;
-					}	
-				}
-				else
+				int orderOfValue = 1;
+				if (Chart is BarChart)
 				{
 					if (Chart.VerticalAxisInfoView.ReverseOrderOfCategories)
 					{
 						rowValue = ai.Maximum;
-						rev = -1;
+						orderOfValue = -1;
+					}
+				}
+				else
+				{
+					if (Chart.HorizontalAxisInfoView.ReverseOrderOfCategories)
+					{
+						rowValue = ai.Maximum;
+						orderOfValue = -1;
 					}
 				}
 
@@ -286,7 +285,7 @@ namespace unvell.ReoGrid.Chart
 					g.DrawText(Math.Round(rowValue, Math.Abs(ai.Scaler)).ToString(), this.FontName, this.FontSize, this.ForeColor, textRect, ReoGridHorAlign.Center, ReoGridVerAlign.Top);
 
 					textRect.X += columnWidth;
-					rowValue += Math.Round(ai.LargeStride, Math.Abs(ai.Scaler)) * rev;
+					rowValue += Math.Round(ai.LargeStride, Math.Abs(ai.Scaler)) * orderOfValue;
 				}
 			}
 		}
@@ -337,14 +336,14 @@ namespace unvell.ReoGrid.Chart
 			for (int i = 0; i < dataCount; i++)
 			{
 				int categoryNum = i;
-				if (!(Chart is BarChart))
+				if (Chart is BarChart)
 				{
-					if (Chart.HorizontalAxisInfoView.ReverseOrderOfCategories)
+					if (!Chart.HorizontalAxisInfoView.ReverseOrderOfCategories)
 						categoryNum = dataCount - i - 1;
 				}
 				else
 				{
-					if (!Chart.HorizontalAxisInfoView.ReverseOrderOfCategories)
+					if (Chart.HorizontalAxisInfoView.ReverseOrderOfCategories)
 						categoryNum = dataCount - i - 1;
 				}
 				var title = ds.GetCategoryName(categoryNum);
@@ -357,7 +356,6 @@ namespace unvell.ReoGrid.Chart
 				else
 				{
 					var text = (categoryNum + 1).ToString();
-					//boxes.Add(new Size(0, 0));
 					titles[i] = text;
 					boxes.Add(PlatformUtility.MeasureText(dc.Renderer, text, this.FontName, this.FontSize, Drawing.Text.FontStyles.Regular));
 				}
@@ -367,9 +365,7 @@ namespace unvell.ReoGrid.Chart
 			double axisY = 0;
 			ReoGridHorAlign align = ReoGridHorAlign.Right;
 			if (Chart.HorizontalAxisInfoView.ReverseOrderOfCategories)
-			{
 				axisX = -Chart.VerticalAxisInfoView.Width;
-			}
 			if (Chart.VerticalAxisInfoView.ReverseOrderOfCategories)
 				axisY = -Chart.VerticalAxisInfoView.Height;
 
