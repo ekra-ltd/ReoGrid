@@ -30,6 +30,7 @@ using RGFloat = System.Double;
 using unvell.ReoGrid.Graphics;
 using unvell.ReoGrid.Rendering;
 using unvell.ReoGrid.Interaction;
+using unvell.ReoGrid.WPF;
 
 namespace unvell.ReoGrid.Drawing
 {
@@ -393,7 +394,7 @@ namespace unvell.ReoGrid.Drawing
 			this.LineColor = SolidColor.Black;
 			this.FillColor = SolidColor.White;
 
-			this.FontName = "Arial";
+			this.FontName = FontLibrary.DefaultFontFamilyName;
 			this.FontSize = 8.25F;
 
 			this.LineWidth = 1.0F;

@@ -62,6 +62,7 @@ using RGKeys = System.Windows.Forms.Keys;
 using unvell.ReoGrid.Graphics;
 using unvell.ReoGrid.Interaction;
 using unvell.ReoGrid.Main;
+using unvell.ReoGrid.WPF;
 
 namespace unvell.ReoGrid
 {
@@ -135,7 +136,7 @@ namespace unvell.ReoGrid
 		
 		public static PlainStyleFlag GetDefaultStyleFlag() => PlainStyleFlag.FontName | PlainStyleFlag.FontSize | PlainStyleFlag.AlignAll;
 
-		public static string GetDefaultStyleFontName() => @"Calibri";
+		public static string GetDefaultStyleFontName() => FontLibrary.DefaultFontFamilyName;
 
 		public static float GetDefaultStyleFontSize() => 10.25f;
 

@@ -33,6 +33,11 @@
 					<MenuItem Header="Сбросить"   Click="MenuItem_ResetItalic"/>
 				</MenuItem>
             </MenuItem>
+			<MenuItem Header="Шрифт">
+				<MenuItem Header="Liberation Sans" Click="MenuItem_SetFont"/>
+				<MenuItem Header="XO Verbena"   Click="MenuItem_SetFont"/>
+				<MenuItem Header="ST-Brigantina-free"   Click="MenuItem_SetFont"/>
+			</MenuItem>
 			<MenuItem Header="_Sheet">
 				<MenuItem x:Name="freezeToCell" Header="Freeze To Cell" Click="freezeToCell_Click"/>
 				<MenuItem x:Name="append100Rows" Header="Append 100 Rows" Click="Sheet_Append_100_Rows_Click"/>

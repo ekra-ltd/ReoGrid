@@ -23,11 +23,11 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Diagnostics;
-
+using unvell.ReoGrid;
 using WFFont = System.Drawing.Font;
 using WFFontStyle = System.Drawing.FontStyle;
 using WFGraphics = System.Drawing.Graphics;
-
+using System.Windows;
 #if WINFORM
 
 using RGFloat = System.Single;
@@ -54,6 +54,7 @@ using RGDashStyles = System.Windows.Media.DashStyles;
 #endif // WPF
 
 using unvell.ReoGrid.Graphics;
+using unvell.ReoGrid.WPF;
 
 namespace unvell.Common
 {
@@ -65,6 +66,24 @@ namespace unvell.Common
 		internal ResourcePoolManager()
 		{
 			Logger.Log("resource pool", "create resource pool...");
+			FontLibrary.FontCollectionChanged += OnFontCollectionChanged;
+		}
+
+		private void OnFontCollectionChanged(object sender, FontLibrary.FontCollectionChangedArg arg)
+		{
+			var familyName = FontLibrary.GetFontFamilyName(arg.FontName);
+			switch (arg.EventAction)
+			{
+				case FontLibrary.FontCollectionChangedArg.EventType.Delete:
+				case FontLibrary.FontCollectionChangedArg.EventType.Add:
+					if (typefaces.ContainsKey(familyName))
+						typefaces.Remove(familyName);
+					break;
+				case FontLibrary.FontCollectionChangedArg.EventType.Clear:
+					typefaces.Clear();
+					break;
+			}
+
 		}
 
 #region Brush
@@ -411,7 +430,12 @@ namespace unvell.Common
 			var typeface = list.FirstOrDefault(t=>t.Weight == weight && t.Style == style);
 			if (typeface == null)
 			{
-				list.Add(typeface = new System.Windows.Media.Typeface(new System.Windows.Media.FontFamily(name), style, weight, stretch));
+				if (FontLibrary.FontsDictionary?.Count > 0)
+					list.Add(typeface = new System.Windows.Media.Typeface(
+						FontLibrary.GetFont(name, weight == FontWeights.Bold, style == FontStyles.Italic), style,
+						weight, stretch));
+				else
+					list.Add(typeface = new System.Windows.Media.Typeface(new System.Windows.Media.FontFamily(name), style, weight, stretch));
 			}
 
 			return typeface;

@@ -37,6 +37,7 @@ using RGFont = System.Windows.Media.Typeface;
 using DrawingContext = unvell.ReoGrid.Rendering.DrawingContext;
 using WPFDrawingContext = System.Windows.Media.DrawingContext;
 using unvell.ReoGrid.Drawing.Text;
+using unvell.ReoGrid.WPF;
 
 namespace unvell.ReoGrid.Rendering
 {
@@ -683,7 +684,12 @@ namespace unvell.ReoGrid.Rendering
 			}
 			else if (reason.HasFlag(Core.UpdateFontReason.FontChanged) || reason.HasFlag(Core.UpdateFontReason.ScaleChanged))
 			{
-				cell.formattedText.SetFontFamily(cell.InnerStyleDisplay().FontName);
+				if (FontLibrary.FontsDictionary?.Count > 0)
+					cell.formattedText.SetFontFamily(FontLibrary.GetFont(
+						cell.InnerStyleDisplay().FontName, cell.InnerStyleDisplay().Bold,
+						cell.InnerStyleDisplay().Italic));
+				else
+					cell.formattedText.SetFontFamily(cell.InnerStyleDisplay().FontName);
 				cell.formattedText.SetFontSize(fontSize);
 			}
 			else if (reason.HasFlag(Core.UpdateFontReason.TextColorChanged))

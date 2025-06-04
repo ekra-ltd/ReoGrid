@@ -172,8 +172,8 @@ namespace unvell.ReoGrid.Rendering
 				}
 			}
             // return new Graphics.Size(totalWidth, typeface.CapsHeight);
-            // Не знаю как расчитать высоту
-            return new Graphics.Size(totalWidth, typeface.CapsHeight * 18.0f);
+            // если использовать typeface.CapsHeight * 18.0f, то некоторые шрифты выходят за размеры и легенда не отображалась
+            return new Graphics.Size(totalWidth, Math.Ceiling(typeface.FontFamily.LineSpacing * 16.0f));
 		}
 
 		public static System.Windows.FontStyle ToWPFFontStyle(unvell.ReoGrid.Drawing.Text.FontStyles textStyle)

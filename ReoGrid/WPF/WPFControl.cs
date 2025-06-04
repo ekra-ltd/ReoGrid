@@ -774,7 +774,9 @@ namespace unvell.ReoGrid
 
 				this.editTextbox.CellSize = cell.Bounds.Size;
 				this.editTextbox.VAlign = cell.InnerStyle.VAlign;
-				this.editTextbox.FontFamily = new FontFamily(cell.InnerStyle.FontName);
+				this.editTextbox.FontFamily = FontLibrary.FontsDictionary?.Count > 0
+						? FontLibrary.GetFont(cell.InnerStyle.FontName, cell.InnerStyle.Bold, cell.InnerStyle.Italic)
+						: new FontFamily(cell.InnerStyle.FontName);
 				this.editTextbox.FontSize = cell.InnerStyle.FontSize * sheet.ScaleFactor * 96f / 72f;
 				this.editTextbox.FontStyle = PlatformUtility.ToWPFFontStyle(cell.InnerStyle.fontStyles);
 				this.editTextbox.Foreground = this.Renderer.GetBrush(textColor);

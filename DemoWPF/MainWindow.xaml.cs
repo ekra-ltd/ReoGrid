@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Text.RegularExpressions;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
@@ -16,34 +17,54 @@ using unvell.ReoGrid.DataFormat;
 using unvell.ReoGrid.Drawing.Shapes;
 using unvell.ReoGrid.Graphics;
 using unvell.ReoGrid.Utility;
+using unvell.ReoGrid.WPF;
 using Point = System.Windows.Point;
 using unvell.ReoGrid.WPFDemo.Task;
 
 namespace unvell.ReoGrid.WPFDemo
 {
-	/// <summary>
-	/// Interaction logic for MainWindow.xaml
-	/// </summary>
-	public partial class MainWindow : Window
-	{
+    /// <summary>
+    /// Interaction logic for MainWindow.xaml
+    /// </summary>
+    public partial class MainWindow : Window
+    {
         private List<ITaskExample> _taskExamples = new List<ITaskExample>
         {
             new Task9506HorizontalHistogram(),
             new Task9922_DoUndoMemoryUse()
         };
         
-		public MainWindow()
-		{
-			InitializeComponent();
+        public MainWindow()
+        {
+            InitializeComponent();
 
-			// don't use Clear method in actual application,
-			// instead, load template into the first worksheet directly.
-			grid.Worksheets.Clear();
+            // don't use Clear method in actual application,
+            // instead, load template into the first worksheet directly.
+            grid.Worksheets.Clear();
 
-			// handles event to update menu check status.
-			grid.SettingsChanged += (s, e) => UpdateMenuChecks();
-			grid.CurrentWorksheetChanged += (s, e) => UpdateMenuChecks();
+            // handles event to update menu check status.
+            grid.SettingsChanged += (s, e) => UpdateMenuChecks();
+            grid.CurrentWorksheetChanged += (s, e) => UpdateMenuChecks();
 
+            ///Для тестирования установки шрифтов
+            foreach (var dir in Directory.GetDirectories(@"D:\DATA\fonts")) // Указать путь до папки с шрифтами
+            {
+                var reg = new Regex(@"\..tf");
+                var file = Directory.GetFiles(dir).Where(name =>reg.IsMatch(name)).ToArray()[0];
+                var typeFace = new GlyphTypeface(new Uri(file));
+                foreach (var fontName in typeFace.FamilyNames)
+                {
+                    FontLibrary.AddFont(
+                        string.Concat(
+                            fontName.Value, FontLibrary.GetStyleString(
+                                typeFace.Weight == FontWeights.Bold,
+                                typeFace.Style == FontStyles.Italic)
+                        ),
+                        new FontFamily(new Uri(file), $@"./#{fontName.Value}")
+                    );
+                    break;
+                }
+            }
 
             //var result = FormulaUtility.EnumerateR1C1("RC").ToArray();
             //result = FormulaUtility.EnumerateR1C1("R1C").ToArray();
@@ -277,7 +298,7 @@ namespace unvell.ReoGrid.WPFDemo
 			worksheet.SetRangeStyles(RangePosition.EntireRange, new WorksheetRangeStyle
 			{
 				Flag = PlainStyleFlag.FontName | PlainStyleFlag.VerticalAlign,
-				FontName = "Arial",
+				FontName = FontLibrary.DefaultFontFamilyName,
 				VAlign = ReoGridVerAlign.Middle,
 			});
 
@@ -439,7 +460,7 @@ namespace unvell.ReoGrid.WPFDemo
 				// Open document 
 				grid.Save(dlg.FileName);
 
-				System.Diagnostics.Process.Start(dlg.FileName);
+				//System.Diagnostics.Process.Start(dlg.FileName);
 			}
 		}
 
@@ -636,6 +657,42 @@ namespace unvell.ReoGrid.WPFDemo
             {
                 MessageBox.Show(grid?.CurrentWorksheet.Cells[range.Value.StartPos].GetStyle());
             }
+        }
+        private void MenuItem_SetFont(object sender, RoutedEventArgs e)
+        {
+	        var range = grid?.CurrentWorksheet?.SelectionRange;
+	        if (range.HasValue)
+	        {
+		        grid?.DoAction(new SetRangeStyleAction(range.Value, new WorksheetRangeStyle(){FontName = (sender as MenuItem)?.Header.ToString()}));
+	        }
+        }
+
+        private readonly List<string> extensionFormats = new List<string>() {@".ttf"};
+        private string GetFamilyNameByPath(string fontFilePath)
+        {
+            try
+            {
+                if (extensionFormats.Contains(Path.GetExtension(fontFilePath)))
+                {
+                    var typeFace = new GlyphTypeface(new Uri(fontFilePath));
+                    foreach (var fontName in typeFace.FamilyNames)
+                    {
+                        var name = fontName.Value;
+                        if (typeFace.Style == FontStyles.Italic && typeFace.Weight == FontWeights.Bold)
+                            return string.Concat(name, @"[BI]");
+                        if (typeFace.Style == FontStyles.Italic)
+                            return string.Concat(name, @"[I]");
+                        if (typeFace.Weight == FontWeights.Bold)
+                            return string.Concat(name, @"[B]");
+                        return string.Concat(fontName.Value, @"[R]");
+                    }
+                }
+            }
+            catch (Exception e)
+            {
+                // ignored
+            }
+            return string.Empty;
         }
     }
 }
