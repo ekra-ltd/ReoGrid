@@ -298,7 +298,7 @@ namespace unvell.ReoGrid.WPFDemo
 			worksheet.SetRangeStyles(RangePosition.EntireRange, new WorksheetRangeStyle
 			{
 				Flag = PlainStyleFlag.FontName | PlainStyleFlag.VerticalAlign,
-				FontName = FontLibrary.DefaultFontFamilyName,
+				FontName = FontLibrary.GetDefaultFontFamilyName(),
 				VAlign = ReoGridVerAlign.Middle,
 			});
 

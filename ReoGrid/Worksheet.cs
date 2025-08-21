@@ -136,7 +136,7 @@ namespace unvell.ReoGrid
 		
 		public static PlainStyleFlag GetDefaultStyleFlag() => PlainStyleFlag.FontName | PlainStyleFlag.FontSize | PlainStyleFlag.AlignAll;
 
-		public static string GetDefaultStyleFontName() => FontLibrary.DefaultFontFamilyName;
+		public static string GetDefaultStyleFontName() => FontLibrary.GetDefaultFontFamilyName();
 
 		public static float GetDefaultStyleFontSize() => 10.25f;
 

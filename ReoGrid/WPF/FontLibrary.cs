@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text.RegularExpressions;
 using System.Windows.Media;
 
@@ -10,6 +11,66 @@ namespace unvell.ReoGrid.WPF
     /// </summary>
     public static class FontLibrary
     {
+        #region Публичные поля и методы
+
+        /// <summary>
+        /// Удаление шрифта
+        /// </summary>
+        /// <param name="name">Имя шрифта</param>
+        public static void RemoveFont(string name)
+        {
+            FontsDictionary.Remove(name);
+            FontCollectionChanged?.Invoke(null, new FontCollectionChangedArg(name, FontCollectionChangedArg.EventType.Delete));
+        }
+
+        /// <summary>
+        /// Добавление шрифта
+        /// </summary>
+        /// <param name="name">Имя шрифта</param>
+        /// <param name="fontFamily">шрифт</param>
+        public static void AddFont(string name, FontFamily fontFamily)
+        {
+            FontsDictionary[name] = fontFamily;
+            FontCollectionChanged?.Invoke(null, new FontCollectionChangedArg(name, FontCollectionChangedArg.EventType.Add));
+        }
+
+        /// <summary>
+        /// Очистка списка шрифтов
+        /// </summary>
+        public static void ClearFonts()
+        {
+            FontsDictionary.Clear();
+            FontCollectionChanged?.Invoke(null, new FontCollectionChangedArg(string.Empty, FontCollectionChangedArg.EventType.Clear));
+        }
+
+        /// <summary>
+        /// Получение начертания шрифта в виде стороки
+        /// </summary>
+        /// <param name="bold">Жирный</param>
+        /// <param name="italic">Курсив</param>
+        /// <returns></returns>
+        public static string GetStyleString(bool bold = false, bool italic = false)
+        {
+            if (bold && italic)
+                return @"[BI]";
+            if (bold)
+                return @"[B]";
+            if (italic)
+                return @"[I]";
+            return @"[R]";
+        }
+
+        /// <summary>
+        /// Получение семейства шрифта по умолчанию
+        /// <returns>Семейство шрифта по умолчанию</returns>
+        /// </summary>
+        public static string GetDefaultFontFamilyName()
+            => GetDefaultFontFamily().FamilyNames.FirstOrDefault().Value ?? string.Empty;
+
+        #endregion
+
+        #region Внутренние поля и методы
+
         /// <summary>
         /// Информация о событии изменения списка шрифтов
         /// </summary>
@@ -58,56 +119,6 @@ namespace unvell.ReoGrid.WPF
         internal static event EventHandler<FontCollectionChangedArg> FontCollectionChanged;
 
         /// <summary>
-        /// Получение шрифта по умолчанию
-        /// </summary>
-        /// <returns>Шрифт по умолчанию</returns>
-        private static FontFamily GetDefaultFontFamily()
-        {
-            return FontsDictionary.ContainsKey(DefaultFontName)
-                ? FontsDictionary[DefaultFontName]
-                : new FontFamily();
-        }
-
-        /// <summary>
-        /// Имя шрифта по умолчанию
-        /// </summary>
-        private static string DefaultFontName = @"Liberation Sans[R]";
-
-        /// <summary>
-        /// Имя семейства шрифта по умолчанию
-        /// </summary>
-        public static string DefaultFontFamilyName = @"Liberation Sans";
-
-        /// <summary>
-        /// Удаление шрифта
-        /// </summary>
-        /// <param name="name">Имя шрифта</param>
-        public static void RemoveFont(string name)
-        {
-            FontsDictionary.Remove(name);
-            FontCollectionChanged?.Invoke(null, new FontCollectionChangedArg(name, FontCollectionChangedArg.EventType.Delete));
-        }
-        /// <summary>
-        /// Добавление шрифта
-        /// </summary>
-        /// <param name="name">Имя шрифта</param>
-        /// <param name="fontFamily">шрифт</param>
-        public static void AddFont(string name, FontFamily fontFamily)
-        {
-            FontsDictionary[name] = fontFamily;
-            FontCollectionChanged?.Invoke(null, new FontCollectionChangedArg(name, FontCollectionChangedArg.EventType.Add));
-        }
-
-        /// <summary>
-        /// Очистка списка шрифтов
-        /// </summary>
-        public static void ClearFonts()
-        {
-            FontsDictionary.Clear();
-            FontCollectionChanged?.Invoke(null, new FontCollectionChangedArg(string.Empty, FontCollectionChangedArg.EventType.Clear));
-        }
-
-        /// <summary>
         /// Получение FontFamily по имени семейтва и начертанию
         /// </summary>
         /// <param name="familyName">Имя семейства</param>
@@ -142,20 +153,27 @@ namespace unvell.ReoGrid.WPF
         }
 
         /// <summary>
-        /// Получение начертания шрифта в виде стороки
+        /// Получение шрифта по умолчанию
         /// </summary>
-        /// <param name="bold">Жирный</param>
-        /// <param name="italic">Курсив</param>
-        /// <returns></returns>
-        public static string GetStyleString(bool bold = false, bool italic = false)
-        {
-            if (bold && italic)
-                return @"[BI]";
-            if (bold)
-                return @"[B]";
-            if (italic)
-                return @"[I]";
-            return @"[R]";
-        }
+        /// <returns>Шрифт по умолчанию</returns>
+        private static FontFamily GetDefaultFontFamily()
+            => FontsDictionary.ContainsKey(DefaultFontName)
+                ? FontsDictionary[DefaultFontName]
+                : FontsDictionary.Any()
+                    ? FontsDictionary.First().Value
+                    : new FontFamily();
+
+        /// <summary>
+        /// Имя семейства шрифта по умолчанию
+        /// </summary>
+        private static readonly string DefaultFontFamilyName = @"Liberation Sans";
+
+        /// <summary>
+        /// Имя шрифта по умолчанию
+        /// </summary>
+        private static readonly string DefaultFontName = @$"{DefaultFontFamilyName}[R]";
+
+        #endregion
+
     }
 }

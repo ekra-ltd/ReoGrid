@@ -394,7 +394,7 @@ namespace unvell.ReoGrid.Drawing
 			this.LineColor = SolidColor.Black;
 			this.FillColor = SolidColor.White;
 
-			this.FontName = FontLibrary.DefaultFontFamilyName;
+			this.FontName = FontLibrary.GetDefaultFontFamilyName();
 			this.FontSize = 8.25F;
 
 			this.LineWidth = 1.0F;
