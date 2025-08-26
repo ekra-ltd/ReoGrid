@@ -59,13 +59,20 @@ namespace unvell.ReoGrid.WPF
                 return @"[I]";
             return @"[R]";
         }
+        
+        /// <summary>
+        /// Получение семейства шрифта
+        /// <returns>Семейство шрифта</returns>
+        /// </summary>
+        public static string GetFontFamilyName(FontFamily fontFamily)
+            => fontFamily.FamilyNames.FirstOrDefault().Value ?? string.Empty;
 
         /// <summary>
         /// Получение семейства шрифта по умолчанию
         /// <returns>Семейство шрифта по умолчанию</returns>
         /// </summary>
         public static string GetDefaultFontFamilyName()
-            => GetDefaultFontFamily().FamilyNames.FirstOrDefault().Value ?? string.Empty;
+            => GetFontFamilyName(GetDefaultFontFamily());
 
         #endregion
 

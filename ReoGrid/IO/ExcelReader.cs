@@ -46,6 +46,7 @@ using unvell.ReoGrid.Drawing;
 using unvell.ReoGrid.Formula;
 using unvell.ReoGrid.IO.Additional;
 using unvell.ReoGrid.IO.Additional.Excel.FloatingObjects;
+using unvell.ReoGrid.WPF;
 using Border = unvell.ReoGrid.IO.OpenXML.Schema.Border;
 using Fill = unvell.ReoGrid.IO.OpenXML.Schema.Fill;
 using Font = unvell.ReoGrid.IO.OpenXML.Schema.Font;
@@ -1184,12 +1185,6 @@ namespace unvell.ReoGrid.IO.OpenXML
 		{
 			SolidColor tempColor = new SolidColor();
 
-			if (font.name != null && !string.IsNullOrEmpty(font.name.value))
-			{
-				styleset.Flag |= PlainStyleFlag.FontName;
-				styleset.FontName = font.name.value;
-			}
-
 			float v;
 			if (font.size != null && float.TryParse(font.size, System.Globalization.NumberStyles.Float,
 				ExcelWriter.EnglishCulture, out v))
@@ -1208,6 +1203,12 @@ namespace unvell.ReoGrid.IO.OpenXML
 			{
 				styleset.Flag |= PlainStyleFlag.FontStyleItalic;
 				styleset.Italic = true;
+			}
+
+			if (font.name != null && !string.IsNullOrEmpty(font.name.value))
+			{
+				styleset.Flag |= PlainStyleFlag.FontName;
+				styleset.FontName = FontLibrary.GetFontFamilyName(FontLibrary.GetFont(font.name.value, styleset.Bold, styleset.Italic));
 			}
 
 			if (font.strikethrough != null)
