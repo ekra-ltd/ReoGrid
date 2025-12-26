@@ -3160,6 +3160,24 @@ namespace unvell.ReoGrid
 			}
 		}
 
+		private int outlineLevel;
+		public int OutlineLevel
+		{
+			get => outlineLevel;
+			set
+			{
+				if (this.outlineLevel != value)
+				{
+					this.outlineLevel = value;
+
+					if (this.Worksheet != null)
+					{
+						this.Worksheet.RequestInvalidate();
+					}
+				}
+			}
+		}
+
 		private void VerifyWorksheet()
 		{
 			if (this.Worksheet == null)
@@ -3198,6 +3216,7 @@ namespace unvell.ReoGrid
 				DefaultCellBody = this.DefaultCellBody,
 				Col = this.Col,
 				LastWidth = this.LastWidth,
+				OutlineLevel = this.OutlineLevel,
 			};
 		}
 
@@ -3357,6 +3376,25 @@ namespace unvell.ReoGrid
 			}
 		}
 
+		private int outlineLevel;
+
+		public int OutlineLevel
+		{
+			get => outlineLevel;
+			set
+			{
+				if (this.outlineLevel != value)
+				{
+					this.outlineLevel = value;
+
+					if (this.Worksheet != null)
+					{
+						this.Worksheet.RequestInvalidate();
+					}
+				}
+			}
+		} 
+
 		private void VerifyWorksheet()
 		{
 			if (this.Worksheet == null)
@@ -3388,6 +3426,7 @@ namespace unvell.ReoGrid
 				Body = this.Body,
 				Row = this.Row,
 				LastHeight = this.LastHeight,
+				OutlineLevel = this.OutlineLevel,
 			};
 		}
 

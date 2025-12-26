@@ -110,32 +110,43 @@ namespace unvell.ReoGrid
 			}
 		}
 
-		private static void InsertOutline(OutlineCollection<ReoGridOutline> outlineGroups, int groupIndex, ReoGridOutline outline)
+		private static int InsertOutline(OutlineCollection<ReoGridOutline> outlineGroups, int groupIndex, ReoGridOutline outline)
 		{
 			int k = groupIndex;
 
 			if (k < 0)
 			{
 				outlineGroups.Insert(0, new OutlineGroup<ReoGridOutline>() { outline });
-				return;
+				return 1;
 			}
 
-			var group = outlineGroups[k];
+			var firstGroups = outlineGroups[0];
 
-			for (int i = 0; i < group.Count; i++)
+			var group = 0;
+			for (var i = 0; i < outlineGroups.Count; ++i)
 			{
-				var o = group[i];
-
-				if (o.Contains(outline))
+				foreach (var o in outlineGroups[i])
 				{
-					group.RemoveAt(i);
-
-					InsertOutline(outlineGroups, k - 1, o);
-					break;
+					if (o.Contains(outline))
+					{
+						group = i + 1;
+						break;
+					}
+				}
+				if (group == 0)
+				{
+					firstGroups.Add(outline);
+					return 1;
 				}
 			}
 
-			group.Add(outline);
+			if (group + 1 >= outlineGroups.Count)
+			{
+				outlineGroups.Insert(group, new OutlineGroup<ReoGridOutline> { outline });
+				return group + 1;
+			}
+			outlineGroups[group].Add(outline);
+			return group + 1;
 		}
 
 		/// <summary>
@@ -264,7 +275,26 @@ namespace unvell.ReoGrid
 			}
 
 			// insert outline
-			InsertOutline(outlineGroups, targetGroupIndex, newOutline);
+			var outlineIndex = InsertOutline(outlineGroups, targetGroupIndex, newOutline);
+			
+			if (flag == RowOrColumn.Row)
+			{
+				for (var i = start; i < start + count; ++i)
+				{
+					rows[i].OutlineLevel = outlineIndex;
+					if (rows[i].Height == 0)
+						newOutline.InternalCollapsed = true;
+				}
+			}
+			else
+			{
+				for (var i = start; i < start + count; ++i)
+				{
+					cols[i].OutlineLevel = outlineIndex;
+					if (rows[i].Height == 0)
+						newOutline.InternalCollapsed = true;
+				}
+			}
 
 			// update viewport controller
 			if (this.viewportController != null)
@@ -1266,7 +1296,7 @@ namespace unvell.ReoGrid.Outline
 				}
 
 				var rowhead = sheet.RetrieveRowHeader(r);
-				return rowhead.IsVisible ? rowhead.InnerHeight : rowhead.LastHeight;
+				return rowhead.IsVisible ? rowhead.InnerHeight : rowhead.LastHeight == 0 ? sheet.defaultRowHeight : rowhead.LastHeight;
 			}, false);
 
 			this.InternalCollapsed = false;

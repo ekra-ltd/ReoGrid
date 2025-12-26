@@ -1345,6 +1345,8 @@ namespace unvell.ReoGrid.IO.OpenXML
 
 			bool lastColAutoWidth = firstColHeader.IsAutoWidth;
 
+			int lastOutlineLevel = firstColHeader.OutlineLevel;
+
 			for (int i = 1; i <= maxCols; i++)
 			{
 				var colHeader = rgSheet.RetrieveColumnHeader(i);
@@ -1359,7 +1361,7 @@ namespace unvell.ReoGrid.IO.OpenXML
 				int colWidth = colHeader.InnerWidth;
 
 				if (colWidth != lastColWidth || colStyleId != lastColStyleId
-					|| colHeader.IsAutoWidth != lastColAutoWidth)
+					|| colHeader.IsAutoWidth != lastColAutoWidth || colHeader.OutlineLevel != lastOutlineLevel)
 				{
 					bool customWidth = lastColWidth != rgSheet.defaultColumnWidth;
 
@@ -1377,12 +1379,14 @@ namespace unvell.ReoGrid.IO.OpenXML
 						width = Math.Truncate((pixel) / fixedCharWidth * 100.0 + 0.5) / 100.0,
 						customWidth = !lastColAutoWidth ? "1" : null,
 						style = lastColStyleId >= 0 ? lastColStyleId.ToString() : null,
+						outlineLevel = lastOutlineLevel == 0 ? null : lastOutlineLevel.ToString(),
 					});
 
 					lastColWidth = colWidth;
 					lastColIndex = i;
 					lastColStyleId = colStyleId;
 					lastColAutoWidth = colHeader.IsAutoWidth;
+					lastOutlineLevel = colHeader.OutlineLevel;
 				}
 			}
 
@@ -1446,7 +1450,8 @@ namespace unvell.ReoGrid.IO.OpenXML
 
 				if (rowHeader.InnerHeight != rgSheet.defaultRowHeight
 					|| !rowHeader.IsAutoHeight
-					|| rowHeader.InnerStyle != null)
+					|| rowHeader.InnerStyle != null
+					|| rowHeader.OutlineLevel != 0)
 				{
 					row = new Row()
 					{
@@ -1467,6 +1472,7 @@ namespace unvell.ReoGrid.IO.OpenXML
 						row.styleIndex = WriteStyle(doc, rowHeader.InnerStyle).ToString();
 						row.customFormat = "1";
 					}
+					row.outlineLevel =  rowHeader.OutlineLevel == 0 ? null : rowHeader.OutlineLevel.ToString();
 				}
 
 				#endregion Row
@@ -1667,7 +1673,7 @@ namespace unvell.ReoGrid.IO.OpenXML
 					c++;
 				}
 
-				if (row != null && ((row.cells != null && row.cells.Count > 0) || row.height != null))
+				if (row != null)
 				{
 					sheet.rows.Add(row);
 				}

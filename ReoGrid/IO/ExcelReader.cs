@@ -52,6 +52,8 @@ using Fill = unvell.ReoGrid.IO.OpenXML.Schema.Fill;
 using Font = unvell.ReoGrid.IO.OpenXML.Schema.Font;
 using GradientFill = unvell.ReoGrid.IO.OpenXML.Schema.GradientFill;
 using NumberFormat = unvell.ReoGrid.IO.OpenXML.Schema.NumberFormat;
+using Paragraph = unvell.ReoGrid.IO.OpenXML.Schema.Paragraph;
+using Run = unvell.ReoGrid.IO.OpenXML.Schema.Run;
 
 namespace unvell.ReoGrid.IO.OpenXML
 {
@@ -198,6 +200,17 @@ namespace unvell.ReoGrid.IO.OpenXML
 		#endregion // Named range
 
 		#region Worksheet
+
+		private class InsertedGroup
+		{
+			public int IndexStart = 0;
+			public int Count = 1;
+			public int OutlineLevel = 0;
+			public bool Finished = false;
+			public int IndexEnd => IndexStart + Count - 1;
+			public int IndexToMain = -1;
+		}
+
 		private static void LoadWorksheet(RGWorkbook rgWorkbook, Document doc, WorkbookSheet sheetIndex)
 		{
 			RGWorksheet rgSheet = rgWorkbook.GetWorksheetByName(sheetIndex.name);
@@ -295,6 +308,7 @@ namespace unvell.ReoGrid.IO.OpenXML
 			// columns
 			if (sheet.cols != null)
 			{
+				var colGroups = new List<InsertedGroup>();
 				foreach (Column col in sheet.cols)
 				{
 					//width = Truncate([{Number of Characters} * {Maximum Digit Width} + {5 pixel padding}] / {Maximum Digit Width} * 256) / 256
@@ -316,8 +330,10 @@ namespace unvell.ReoGrid.IO.OpenXML
 					for (int i = startCol; i < startCol + count; i++)
 					{
 						var header = rgSheet.GetColumnHeader(i);
-
 						header.IsAutoWidth = !OpenXMLUtility.IsTrue(col.customWidth);
+						var outlineLevel = col.outlineLevel == null ? 0 : Convert.ToInt32(col.outlineLevel);
+						header.OutlineLevel = outlineLevel;
+						AddGroup(outlineLevel, i + 1, colGroups, sheet.cols.Last().max, rgSheet, RowOrColumn.Column);
 					}
 				}
 			}
@@ -424,6 +440,7 @@ namespace unvell.ReoGrid.IO.OpenXML
 
 			#region Rows
 
+			var rowGroups = new List<InsertedGroup>();
 			foreach (Row row in sheet.rows)
 			{
 				int rowIndex = row.index - 1;
@@ -494,6 +511,8 @@ namespace unvell.ReoGrid.IO.OpenXML
 				}
 
 				rowHeader.IsAutoHeight = !OpenXMLUtility.IsTrue(row.customHeight);
+
+				rowHeader.OutlineLevel = row.outlineLevel == null ? 0 : Convert.ToInt32(row.outlineLevel);
 
 				lastRowIndex = rowIndex;
 
@@ -898,6 +917,9 @@ namespace unvell.ReoGrid.IO.OpenXML
 #endregion // Cell Formula
 				}
 
+				var outlineLevel = row.outlineLevel == null ? 0 : Convert.ToInt32(row.outlineLevel);
+				AddGroup(outlineLevel, row.index, rowGroups,
+					sheet.rows.Last().index, rgSheet, RowOrColumn.Row);
 #if DEBUG
 				cellCount++;
 #endif // DEBUG
@@ -1122,6 +1144,214 @@ namespace unvell.ReoGrid.IO.OpenXML
 
 		}
 
+		private static void AddGroup(int outlineLevel, int index, List<InsertedGroup> groups, int lastIndex,
+			RGWorksheet rgSheet, RowOrColumn unit)
+		{
+			if (outlineLevel != 0)
+			{
+				if (groups.Count == 0)
+				{
+					groups.Add(new InsertedGroup(){OutlineLevel = outlineLevel, Count = 1, IndexStart = index});
+				}
+				else
+				{
+					var lastRowGroup = groups.Last();
+					if (lastRowGroup.OutlineLevel == outlineLevel)
+						lastRowGroup.Count = index - lastRowGroup.IndexStart + 1;
+					else
+						groups.Add(new InsertedGroup { OutlineLevel = outlineLevel, IndexStart = index, Count = 1});
+				}
+			}
+
+			if (outlineLevel == 0 || index == lastIndex)
+			{
+				if (groups.Count > 0)
+				{
+					var resultGroups = new List<InsertedGroup>()
+					{
+						new InsertedGroup
+						{
+							IndexStart = groups[0].IndexStart,
+							OutlineLevel = 1,
+							Count = groups.Last().IndexEnd - groups[0].IndexStart + 1,
+							Finished = true
+						}
+					};
+					for (var groupIndex = 0; groupIndex < groups.Count; ++groupIndex)
+					{
+						var group = groups[groupIndex];
+						var insertedGroupIndexes = new List<int>();
+						if (group.OutlineLevel != 1)
+						{
+							if (resultGroups.Count != 0)
+							{
+								if (groupIndex >= 1)
+								{
+									{
+										var lastGroup = resultGroups.Last();
+										// lastGroup.OutlineLevel == group.OutlineLevel такого не должно быть
+										if (lastGroup.OutlineLevel < group.OutlineLevel)
+										{
+											resultGroups.Add(group);
+											insertedGroupIndexes.Add(resultGroups.Count - 1);
+										}
+										else
+										{
+											for (var i = resultGroups.Count - 1; i >= 0; --i)
+											{
+												if (resultGroups[i].OutlineLevel == group.OutlineLevel)
+												{
+													if (resultGroups[i].Finished)
+													{
+														var mainIndex = resultGroups[i].IndexToMain;
+														if (mainIndex > -1)
+														{
+															if (resultGroups[mainIndex].Finished)
+															{
+																resultGroups.Add(new InsertedGroup()
+																{
+																	IndexStart = resultGroups[i].IndexStart,
+																	Count = resultGroups[i].IndexStart -
+																		group.IndexStart + group.Count,
+																	OutlineLevel = group.OutlineLevel,
+																});
+																insertedGroupIndexes.Add(i);
+															}
+															else
+															{
+																resultGroups[mainIndex].Count = group.IndexEnd -
+																	resultGroups[mainIndex].IndexStart + 1;
+																resultGroups.Add(new InsertedGroup()
+																{
+																	IndexStart = group.IndexEnd, Count = 0,
+																	Finished = true,
+																	OutlineLevel = group.OutlineLevel,
+																	IndexToMain = mainIndex
+																});
+																insertedGroupIndexes.Add(mainIndex);
+															}
+															break;
+														}
+
+														if (i + 1 != resultGroups.Count)
+														{
+															resultGroups.Add(new InsertedGroup()
+															{
+																IndexStart = resultGroups[i + 1].IndexStart,
+																Count = resultGroups[i + 1].Count + group.Count,
+																OutlineLevel = group.OutlineLevel
+															});
+															insertedGroupIndexes.Add(resultGroups.Count - 1);
+															break;
+														}
+														else
+														{
+															resultGroups.Add(group);
+															insertedGroupIndexes.Add(resultGroups.Count - 1);
+															break;
+														}
+													}
+													else
+													{
+														resultGroups[i].Count = group.IndexEnd -
+															resultGroups[i].IndexStart + 1;
+														resultGroups.Add(new InsertedGroup()
+														{
+															IndexStart = group.IndexEnd, Count = 0, Finished = true,
+															OutlineLevel = group.OutlineLevel, IndexToMain = i
+														});
+														insertedGroupIndexes.Add(i);
+														break;
+													}
+												}
+												else
+												{
+													if (resultGroups[i].OutlineLevel < group.OutlineLevel)
+													{
+														resultGroups.Add(new InsertedGroup()
+														{
+															IndexStart = resultGroups[i + 1].IndexStart,
+															Count = group.IndexStart -
+																resultGroups[i + 1].IndexStart + 1,
+															OutlineLevel = group.OutlineLevel
+														});
+														insertedGroupIndexes.Add(resultGroups.Count - 1);
+														break;
+													}
+												}
+											}
+										}
+									}
+									{
+										if (groupIndex + 1 < groups.Count)
+										{
+											var nextGroup = groups[groupIndex + 1];
+											for (var level = group.OutlineLevel - 1; level > nextGroup.OutlineLevel; --level)
+											{
+												for (var groupNumber = resultGroups.Count - 1;
+													 groupNumber >= 0; --groupNumber)
+												{
+													if (resultGroups[groupNumber].OutlineLevel == level)
+													{
+														resultGroups[groupNumber].Count =
+															group.IndexEnd - resultGroups[groupNumber].IndexStart + 1;
+														resultGroups.Add(new InsertedGroup()
+														{
+															IndexStart = group.IndexEnd, Count = 0,
+															Finished = true,
+															OutlineLevel = group.OutlineLevel,
+															IndexToMain = groupNumber
+														});
+														insertedGroupIndexes.Add(groupNumber);
+													}
+												}
+											}
+
+										}
+									}
+								}
+								else
+								{
+									resultGroups.Add(group);
+									insertedGroupIndexes.Add(1);
+								}
+
+								if (insertedGroupIndexes.Count != 0)
+								{
+									foreach (var insertedGroupIndex in insertedGroupIndexes)
+									{
+										if ((insertedGroupIndex != 1 || groupIndex != 0) && groupIndex + 1 < groups.Count &&
+										    groups[groupIndex + 1].OutlineLevel < group.OutlineLevel)
+										{
+											resultGroups[insertedGroupIndex].Finished = true;
+										}	
+									}
+									insertedGroupIndexes.Clear();
+								}
+							}
+						}
+					}
+					foreach (var group in resultGroups)
+					{
+						if (!group.Finished)
+						{
+							group.Count = resultGroups.Last().IndexEnd - group.IndexStart + 1;
+							group.Finished = true;
+						}
+					}
+					
+					foreach (var interval in resultGroups.OrderBy(group => group.OutlineLevel).ToList())
+					{
+						if (interval.Count == 0 || interval.IndexToMain > -1)
+							continue;
+						rgSheet.AddOutline(unit, interval.IndexStart - 1, interval.Count);
+					}
+
+					groups.Clear();
+				}
+
+			}
+		}
 		private static void PrepareCf(Document doc, List<ConditionalFormat> list)
 		{
 			foreach (var v in list)

@@ -588,6 +588,8 @@ namespace unvell.ReoGrid.IO.OpenXML.Schema
 		public string customWidth;
 		[XmlAttribute("customFormat")]
 		public string customFormat;
+		[XmlAttribute("outlineLevel")]
+		public string outlineLevel;
 	}
 
 	// <row r="3" spans="2:10" ht="33.75">
@@ -609,6 +611,8 @@ namespace unvell.ReoGrid.IO.OpenXML.Schema
 		//public string dyDescent;
 		[XmlAttribute("customFormat")]
 		public string customFormat;
+		[XmlAttribute("outlineLevel")]
+		public string outlineLevel;
 
 		[XmlElement("c")]
 		public List<Cell> cells;
