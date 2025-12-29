@@ -11,8 +11,8 @@
  *
  * Author: Jingwood <jingwood at unvell.com>
  *
- * Copyright (c) 2012-2023 Jingwood <jingwood at unvell.com>
- * Copyright (c) 2012-2023 unvell inc. All rights reserved.
+ * Copyright (c) 2012-2025 Jingwood <jingwood at unvell.com>
+ * Copyright (c) 2012-2025 UNVELL Inc. All rights reserved.
  * 
  ****************************************************************************/
 
@@ -919,7 +919,10 @@ namespace unvell.ReoGrid.Formula
 				newChildren = new List<STNode>(this.Children.Count);
 				foreach (var child in this.Children)
 				{
-					newChildren.Add((STNode)child.Clone());
+            if (child != null)
+            {
+                newChildren.Add((STNode)child.Clone());
+            }
 				}
 			}
 

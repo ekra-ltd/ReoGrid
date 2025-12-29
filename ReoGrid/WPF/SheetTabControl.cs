@@ -463,16 +463,21 @@ namespace unvell.ReoGrid.WPF
         }
 
         public void UpdateTab(int index, string title, Color backColor, Color textColor)
-        {
+    {
 			SheetTabItem item = this.canvas.Children[index] as SheetTabItem;
 			if (item != null)
-            {
-                item.ChangeTitle(title);
+      {
+        double oldWidth = item.Width;
+        item.ChangeTitle(title);
+        double newWidth = item.Width;
+
 				this.canvas.ColumnDefinitions[index].Width = new GridLength(item.Width+1);
 
-                item.BackColor = backColor;
-                item.TextColor = textColor;
-            }
+        item.BackColor = backColor;
+        item.TextColor = textColor;
+
+        //this.canvas.Width = this.canvas.Width - oldWidth + newWidth;
+        
             double width = 1;
             foreach (UIElement uiElement in canvas.Children )
             {
@@ -480,9 +485,15 @@ namespace unvell.ReoGrid.WPF
                     width += tab.Width;
             }
             canvas.Width = width;
+        
+        for (int i = index; i < this.canvas.Children.Count; i++)
+        {
+          Grid.SetColumn(this.canvas.Children[i], i);
         }
+      }
+    }
 
-        public void ClearTabs()
+    public void ClearTabs()
         {
             try
             {

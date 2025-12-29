@@ -11,8 +11,8 @@
  *
  * Author: Jingwood <jingwood at unvell.com>
  *
- * Copyright (c) 2012-2023 Jingwood <jingwood at unvell.com>
- * Copyright (c) 2012-2023 unvell inc. All rights reserved.
+ * Copyright (c) 2012-2025 Jingwood <jingwood at unvell.com>
+ * Copyright (c) 2012-2025 UNVELL Inc. All rights reserved.
  *
  ****************************************************************************/
 
@@ -1347,10 +1347,13 @@ namespace unvell.ReoGrid
 
 			base.OnResize(e);
 
-			if (this.sheetTab.Right > this.bottomPanel.Width - 40)
-			{
-				this.sheetTab.Width = this.bottomPanel.Width - 40 - this.sheetTab.Left;
-			}
+      if (this.Width > 0)
+      {
+        if (this.sheetTab.Right > this.bottomPanel.Width - 40)
+        {
+          this.sheetTab.Width = this.bottomPanel.Width - 40 - this.sheetTab.Left;
+        }
+      }
 
 			if (this.sheetTab.Width < 60) this.sheetTab.Width = 60;
 		}

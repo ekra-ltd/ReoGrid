@@ -18,6 +18,7 @@
     <MapFileExtensions>true</MapFileExtensions>
     <ApplicationRevision>0</ApplicationRevision>
     <ApplicationVersion>3.1.0.%2a</ApplicationVersion>
+    <ApplicationVersion>3.3.1.%2a</ApplicationVersion>
     <UseApplicationTrust>false</UseApplicationTrust>
     <BootstrapperEnabled>true</BootstrapperEnabled>
     <StartupObject></StartupObject>
@@ -29,21 +30,22 @@
   </PropertyGroup>
 	<PropertyGroup>
 		<Authors>Jingwood,ekra-ltd</Authors>
-		<Company>ekra-ltd</Company>
+		<Company>UNVELL Inc.,ekra-ltd</Company>
 		<PackageLicenseExpression>MIT</PackageLicenseExpression>
 		<PackageProjectUrl>https://github.com/ekra-ltd/ReoGrid</PackageProjectUrl>
 		<PackageIcon>icon.png</PackageIcon>
 		<RepositoryUrl>https://github.com/ekra-ltd/ReoGrid</RepositoryUrl>
 		<RepositoryType>git</RepositoryType>
-		<VersionPrefix>3.1.0</VersionPrefix>
+		<VersionPrefix>3.3.1</VersionPrefix>
 		<VersionSuffix></VersionSuffix>
 		<PackageId>ekra-ltd.ReoGrid.dll</PackageId>
 		<Description>Powerful and lightweight open source .NET spreadsheet component. Compatible with Excel 2007 format or later. Simple APIs to open/edit/save/print an Excel spreadsheet in the .NET application.</Description>
 		<SignAssembly>true</SignAssembly>
 		<ApplicationIcon>favicon.ico</ApplicationIcon>
-		<Copyright>2012-2023 (c) Jingwood, unvell inc., all rights reserved.</Copyright>
-		<PackageTags>spreadsheet</PackageTags>
+		<Copyright>2012-2025 (c) Jingwood, UNVELL Inc., all rights reserved.</Copyright>
+		<PackageTags>spreadsheet excel drawing grid workbook worksheet chart data formula script macro outline print</PackageTags>
 		<PackageReleaseNotes>https://github.com/ekra-ltd/ReoGrid/releases/tag/v3.1.0</PackageReleaseNotes>
+		<PackageReadmeFile>README.md</PackageReadmeFile>
 	</PropertyGroup>
 
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
@@ -51,7 +53,7 @@
     <LangVersion>default</LangVersion>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
-    <DefineConstants>TRACE;EX_SCRIPT;ALWAYS_CELL_CLIP;WINFORM;FORMULA;LANG_JP;OUTLINE;DRAWING;COMMENT;PRINT;RICHTEXT;</DefineConstants>
+    <DefineConstants>TRACE;ALWAYS_CELL_CLIP;WINFORM;FORMULA;LANG_JP;OUTLINE;DRAWING;COMMENT;PRINT;RICHTEXT;</DefineConstants>
     <DocumentationFile>bin\Release\unvell.ReoGrid.XML</DocumentationFile>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Pack|AnyCPU'">
@@ -67,14 +69,6 @@
     <OutputPath>bin\Release\</OutputPath>
   </PropertyGroup>
 	<ItemGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
-		<Reference Include="Antlr3.Runtime">
-			<HintPath>..\Ref\Antlr3.Runtime.dll</HintPath>
-		</Reference>
-		<Reference Include="unvell.ReoScript">
-			<HintPath>..\Ref\unvell.ReoScript.dll</HintPath>
-		</Reference>
-	</ItemGroup>
-	<ItemGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
 		<Reference Include="Antlr3.Runtime">
 			<HintPath>..\Ref\Antlr3.Runtime.dll</HintPath>
 		</Reference>
@@ -158,9 +152,6 @@
     <EmbeddedResource Include="Resources\EULA_EN.txt" />
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="DotNetZip" Version="1.15.0" />
-  </ItemGroup>
-  <ItemGroup>
     <None Update="Properties\Settings.settings">
       <Generator>SettingsSingleFileGenerator</Generator>
       <LastGenOutput>Settings.Designer.cs</LastGenOutput>
@@ -169,5 +160,10 @@
       <Pack>True</Pack>
       <PackagePath></PackagePath>
     </None>
+	  <None Include="..\README.md" Pack="true" PackagePath="\" />
   </ItemGroup>
+  <ItemGroup>
+    <Reference Include="System.IO.Compression" />
+  </ItemGroup>
+    
 </Project>

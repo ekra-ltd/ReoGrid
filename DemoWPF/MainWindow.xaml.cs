@@ -4,12 +4,15 @@
 
 using System;
 using System.Collections.Generic;
+using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
+using System.Windows.Shapes;
 using unvell.ReoGrid.Actions;
 using unvell.ReoGrid.CellTypes;
 using unvell.ReoGrid.Chart;
@@ -46,6 +49,7 @@ namespace unvell.ReoGrid.WPFDemo
             grid.SettingsChanged += (s, e) => UpdateMenuChecks();
             grid.CurrentWorksheetChanged += (s, e) => UpdateMenuChecks();
 
+            /*
             ///Для тестирования установки шрифтов
             foreach (var dir in Directory.GetDirectories(@"D:\DATA\fonts")) // Указать путь до папки с шрифтами
             {
@@ -65,6 +69,7 @@ namespace unvell.ReoGrid.WPFDemo
                     break;
                 }
             }
+            */
 
             //var result = FormulaUtility.EnumerateR1C1("RC").ToArray();
             //result = FormulaUtility.EnumerateR1C1("R1C").ToArray();
@@ -186,6 +191,8 @@ namespace unvell.ReoGrid.WPFDemo
 					{"Total", 25, 28, 28, 27, 27},
 			};
 
+      var filter = worksheet.CreateColumnFilter(new RangePosition("A1:F7"));
+
 			worksheet.AddOutline(RowOrColumn.Row, 3, 4);
 
 			var range = worksheet.Ranges["B3:F6"];
@@ -211,7 +218,7 @@ namespace unvell.ReoGrid.WPFDemo
 			worksheet.FloatingObjects.Add(chart);
 
 			// flow chart
-			Line line1, line2;
+      unvell.ReoGrid.Drawing.Shapes.Line line1, line2;
 
 			worksheet.FloatingObjects.Add(new RectangleShape
 			{
@@ -221,7 +228,7 @@ namespace unvell.ReoGrid.WPFDemo
 				Text = "1. Add Data Source",
 			});
 
-			worksheet.FloatingObjects.Add(line1 = new Line
+			worksheet.FloatingObjects.Add(line1 = new unvell.ReoGrid.Drawing.Shapes.Line
 			{
 				StartPoint = new Graphics.Point(180, 240),
 				EndPoint = new Graphics.Point(180, 270),
@@ -235,7 +242,7 @@ namespace unvell.ReoGrid.WPFDemo
 				Text = "2. Create Data Source",
 			});
 
-			worksheet.FloatingObjects.Add(line2 = new Line
+			worksheet.FloatingObjects.Add(line2 = new unvell.ReoGrid.Drawing.Shapes.Line
 			{
 				StartPoint = new Graphics.Point(180, 310),
 				EndPoint = new Graphics.Point(180, 340),
@@ -410,15 +417,195 @@ namespace unvell.ReoGrid.WPFDemo
 
 			// information cell
 			worksheet.SetRangeBorders(19, 0, 1, 10, BorderPositions.Top, RangeBorderStyle.GraySolid);
+
+      // dropdown cell
+      worksheet["B18"] = "Dropdown ListView:";
+      worksheet["D18"] = "Choose...";
+      worksheet["D18"] = new ListViewDropdownCell();
+      worksheet.Ranges["D18"].BorderOutside = RangeBorderStyle.GraySolid;
 		}
 
 		private void ShowText(Worksheet sheet, string text)
 		{
 			sheet[19, 0] = text;
 		}
-#endregion // Demo Sheet 3 : Built-in Cell Types
 
-#region Menu - File
+
+    class ListViewDropdownCell : DropdownCell
+    {
+      private readonly ListView listView;
+
+      public ListViewDropdownCell()
+      {
+        listView = new ListView
+        {
+          BorderThickness = new Thickness(0),
+          SelectionMode = SelectionMode.Single,
+          View = new GridView()
+        };
+
+        this.DropdownControl = listView;
+
+        var gridView = (GridView)listView.View;
+        gridView.Columns.Add(new GridViewColumn
+        {
+          Header = "Name",
+          Width = 120,
+          DisplayMemberBinding = new System.Windows.Data.Binding(nameof(ListViewItemData.Text))
+        });
+        gridView.Columns.Add(new GridViewColumn
+        {
+          Header = "Description",
+          Width = 120,
+          DisplayMemberBinding = new System.Windows.Data.Binding(nameof(ListViewItemData.SubText))
+        });
+
+        // Create data items
+        var items = new List<ListViewItemData>
+        {
+            new ListViewItemData { Group = "A", Text = "Apple", SubText = "Red fruit" },
+            new ListViewItemData { Group = "A", Text = "Banana", SubText = "Yellow fruit" },
+            new ListViewItemData { Group = "B", Text = "Watermelon", SubText = "Green fruit" },
+            new ListViewItemData { Group = "B", Text = "Grape", SubText = "Purple fruit" }
+        };
+
+        listView.ItemsSource = items;
+        this.MinimumDropdownWidth = 300;
+
+        listView.PreviewMouseDoubleClick += ListView_MouseDoubleClick;
+        listView.PreviewKeyDown += ListView_PreviewKeyDown;
+      }
+
+      private void ListView_MouseDoubleClick(object sender, System.Windows.Input.MouseButtonEventArgs e)
+      {
+        var listView = sender as ListView;
+        var depObj = e.OriginalSource as DependencyObject;
+        while (depObj != null && !(depObj is ListViewItem))
+          depObj = VisualTreeHelper.GetParent(depObj);
+
+        if (depObj is ListViewItem listViewItem)
+        {
+          listView.SelectedItem = listView.ItemContainerGenerator.ItemFromContainer(listViewItem);
+        }
+
+        CommitSelection();
+      }
+
+      private void ListView_PreviewKeyDown(object sender, System.Windows.Input.KeyEventArgs e)
+      {
+        var listView = sender as ListView;
+
+        if (e.Key == System.Windows.Input.Key.Enter)
+        {
+          CommitSelection();
+          e.Handled = true;
+        }
+        else if (e.Key == System.Windows.Input.Key.Escape)
+        {
+          PullUp();
+          e.Handled = true;
+        }
+        else if (e.Key == System.Windows.Input.Key.Up || e.Key == System.Windows.Input.Key.Down)
+        {
+          // Handle up/down key selection 
+          int currentIndex = listView.SelectedIndex;
+          int itemCount = listView.Items.Count;
+
+          if (itemCount > 0)
+          {
+            if (e.Key == System.Windows.Input.Key.Up)
+            {
+              // Up key: select previous item
+              if (currentIndex > 0)
+              {
+                listView.SelectedIndex = currentIndex - 1;
+                var item = listView.ItemContainerGenerator.ContainerFromIndex(currentIndex - 1) as ListViewItem;
+                item?.Focus();
+              }
+              else
+              {
+                // If on first item, cycle to last item 
+                listView.SelectedIndex = itemCount - 1;
+                var item = listView.ItemContainerGenerator.ContainerFromIndex(itemCount - 1) as ListViewItem;
+                item?.Focus();
+              }
+            }
+            else if (e.Key == System.Windows.Input.Key.Down)
+            {
+              // Down key: select next item 
+              if (currentIndex < itemCount - 1)
+              {
+                listView.SelectedIndex = currentIndex + 1;
+                var item = listView.ItemContainerGenerator.ContainerFromIndex(currentIndex + 1) as ListViewItem;
+                item?.Focus();
+              }
+              else
+              {
+                // If on last item, cycle to first item
+                listView.SelectedIndex = 0;
+                var item = listView.ItemContainerGenerator.ContainerFromIndex(0) as ListViewItem;
+                item?.Focus();
+              }
+            }
+
+            // Ensure selected item is visible
+            if (listView.SelectedItem != null)
+            {
+              listView.ScrollIntoView(listView.SelectedItem);
+            }
+
+            e.Handled = true;
+          }
+        }
+        else if (e.Key == System.Windows.Input.Key.Tab)
+        {
+          // Handle Tab key 
+          CommitSelection();
+          e.Handled = true;
+        }
+      }
+
+      protected override void OnDropdownControlLostFocus()
+      {
+        PullUp();
+      }
+
+      public override void PushDown()
+      {
+        base.PushDown();
+
+        // When dropdown panel opens, automatically select the item matching current cell content
+        if (this.Cell?.Data is string text && listView.ItemsSource is IEnumerable<ListViewItemData> items)
+        {
+          var itemToSelect = items.FirstOrDefault(i => i.Text == text);
+          if (itemToSelect != null)
+          {
+            listView.SelectedItem = itemToSelect;
+            listView.ScrollIntoView(itemToSelect);
+          }
+        }
+      }
+
+      private void CommitSelection()
+      {
+        if (listView.SelectedItem is ListViewItemData selectedItem)
+        {
+          this.Cell.Data = selectedItem.Text;
+          PullUp();
+        }
+      }
+
+      // Data item class
+      private class ListViewItemData
+      {
+        public string Group { get; set; }
+        public string Text { get; set; }
+        public string SubText { get; set; }
+      }
+    }
+    #endregion // Demo Sheet 3 : Built-in Cell Types
+
+    #region Menu - File
 		private void File_New_Click(object sender, RoutedEventArgs e)
 		{
 			grid.Reset();
@@ -461,6 +648,12 @@ namespace unvell.ReoGrid.WPFDemo
 				grid.Save(dlg.FileName);
 
 				//System.Diagnostics.Process.Start(dlg.FileName);
+        using Process fileopener = new Process();
+
+        fileopener.StartInfo.FileName = "explorer";
+        fileopener.StartInfo.Arguments = "\"" + dlg.FileName + "\"";
+        fileopener.Start();
+        //System.Diagnostics.Process.Start("explorer.exe", dlg.FileName);
 			}
 		}
 
@@ -672,7 +865,7 @@ namespace unvell.ReoGrid.WPFDemo
         {
             try
             {
-                if (extensionFormats.Contains(Path.GetExtension(fontFilePath)))
+                if (extensionFormats.Contains(System.IO.Path.GetExtension(fontFilePath)))
                 {
                     var typeFace = new GlyphTypeface(new Uri(fontFilePath));
                     foreach (var fontName in typeFace.FamilyNames)

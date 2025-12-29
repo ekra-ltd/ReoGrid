@@ -29,80 +29,80 @@ using unvell.ReoGrid.Formula;
 
 namespace unvell.ReoGrid
 {
-	partial class Worksheet
-	{
-		/// <summary>
-		/// Auto fill specified serial in range.
-		/// </summary>
-		/// <param name="fromAddressOrName">Range to read filling rules.</param>
-		/// <param name="toAddressOrName">Range to be filled.</param>
-		public void AutoFillSerial(string fromAddressOrName, string toAddressOrName)
-		{
-			RangePosition fromRange, toRange;
+  partial class Worksheet
+  {
+    /// <summary>
+    /// Auto fill specified serial in range. Hidden rows and columns within the ranges are automatically skipped.
+    /// </summary>
+    /// <param name="fromAddressOrName">Range to read filling rules.</param>
+    /// <param name="toAddressOrName">Range to be filled.</param>
+    public void AutoFillSerial(string fromAddressOrName, string toAddressOrName)
+    {
+      RangePosition fromRange, toRange;
 
-#region fromRange
-            if (this.TryGetNamedRange(fromAddressOrName, out var fromNRange))
-			{
-				fromRange = fromNRange.Position;
-			}
-			else if (RangePosition.IsValidAddress(fromAddressOrName))
-			{
-				fromRange = new RangePosition(fromAddressOrName);
-			}
-			else
-			{
-				throw new InvalidAddressException(fromAddressOrName);
-			}
-#endregion // fromRange
+      #region fromRange
+      if (this.TryGetNamedRange(fromAddressOrName, out var fromNRange))
+      {
+        fromRange = fromNRange.Position;
+      }
+      else if (RangePosition.IsValidAddress(fromAddressOrName))
+      {
+        fromRange = new RangePosition(fromAddressOrName);
+      }
+      else
+      {
+        throw new InvalidAddressException(fromAddressOrName);
+      }
+      #endregion // fromRange
 
-#region toRange
-            if (this.TryGetNamedRange(toAddressOrName, out var toNRange))
-			{
-				toRange = toNRange.Position;
-			}
-			else if (RangePosition.IsValidAddress(toAddressOrName))
-			{
-				toRange = new RangePosition(toAddressOrName);
-			}
-			else
-			{
-				throw new InvalidAddressException(toAddressOrName);
-			}
-#endregion // toRange
+      #region toRange
+      if (this.TryGetNamedRange(toAddressOrName, out var toNRange))
+      {
+        toRange = toNRange.Position;
+      }
+      else if (RangePosition.IsValidAddress(toAddressOrName))
+      {
+        toRange = new RangePosition(toAddressOrName);
+      }
+      else
+      {
+        throw new InvalidAddressException(toAddressOrName);
+      }
+      #endregion // toRange
 
-			this.AutoFillSerial(fromRange, toRange);
-		}
+      this.AutoFillSerial(fromRange, toRange);
+    }
 
-		/// <summary>
-		/// Auto fill specified serial in range.
-		/// </summary>
-		/// <param name="fromRange">Range to read filling rules.</param>
-		/// <param name="toRange">Range to be filled.</param>
-		public void AutoFillSerial(RangePosition fromRange, RangePosition toRange)
-		{
-			fromRange = this.FixRange(fromRange);
-			toRange = this.FixRange(toRange);
+    /// <summary>
+    /// Auto fill specified serial in range. Hidden rows and columns within the ranges are automatically skipped.
+    /// </summary>
+    /// <param name="fromRange">Range to read filling rules.</param>
+    /// <param name="toRange">Range to be filled.</param>
+    public void AutoFillSerial(RangePosition fromRange, RangePosition toRange)
+    {
+      fromRange = this.FixRange(fromRange);
+      toRange = this.FixRange(toRange);
 
-            #region Arguments Check
-            if (fromRange.IntersectWith(toRange))
-            {
-                throw new ArgumentException("fromRange and toRange cannot being intersected.");
-            }
+      #region Arguments Check
+      if (fromRange.IntersectWith(toRange))
+      {
+        throw new ArgumentException("fromRange and toRange cannot being intersected.");
+      }
 
-			if (toRange != CheckMergedRange(toRange))
-			{
-				throw new ArgumentException("cannot change a part of merged range.");
-			}
-#endregion // Arguments Check
+      if (toRange != CheckMergedRange(toRange))
+      {
+        throw new ArgumentException("cannot change a part of merged range.");
+      }
+      #endregion // Arguments Check
 
-            List<CellPosition> fromCells, toCells;
+      List<CellPosition> fromCells, toCells;
 
             if (CheckRangeReadonly(toRange))
             {
                 throw new RangeContainsReadonlyCellsException(toRange);
             }
 
-			if (fromRange.Col == toRange.Col && fromRange.Cols == toRange.Cols)
+      if (fromRange.Col == toRange.Col && fromRange.Cols == toRange.Cols)
             {
                 // for (var c = toRange.Col; c <= toRange.EndCol; c++)
                 // {
@@ -117,7 +117,7 @@ namespace unvell.ReoGrid
                 catch
                 {
                     // ignored
-                }
+      }
                 ExecuteFillByAction(fromRange, toRange, ExecuteVerticalFill);
                 try
                 {
@@ -143,7 +143,7 @@ namespace unvell.ReoGrid
                 catch
                 {
                     // ignored
-                }
+      }
                 ExecuteFillByAction(fromRange, toRange, ExecuteHorizontalFill);
                 try
                 {
@@ -155,8 +155,8 @@ namespace unvell.ReoGrid
                 }
             }
             else
-				throw new InvalidOperationException("The fromRange and toRange must be having same number of rows or same number of columns.");
-		}
+        throw new InvalidOperationException("The fromRange and toRange must be having same number of rows or same number of columns.");
+    }
 
         private void ExecuteFillByAction(RangePosition fromRange, RangePosition toRange, Action<RangePosition, RangePosition> fillExecutor)
         {
@@ -283,6 +283,11 @@ namespace unvell.ReoGrid
             var result = new List<CellPosition>();
             for (int rowIndex = fromRange.Row; rowIndex < fromRange.EndRow + 1; rowIndex++)
             {
+        if (!IsRowVisible(rowIndex))
+        {
+          continue;
+        }
+
                 var cellPosition = new CellPosition(rowIndex, columnIndex);
                 AddCellIfValid(cellPosition, result);
             }
@@ -295,9 +300,14 @@ namespace unvell.ReoGrid
             var result = new List<CellPosition>();
             for (int columnIndex = fromRange.Col; columnIndex < fromRange.EndCol + 1; columnIndex++)
             {
+        if (!IsColumnVisible(columnIndex))
+        {
+          continue;
+        }
+
                 var cellPosition = new CellPosition(rowIndex, columnIndex);
                 AddCellIfValid(cellPosition, result);
-        }
+      }
 
             return result;
         }
@@ -310,10 +320,10 @@ namespace unvell.ReoGrid
             if (cell != null && !cell.IsValidCell)
             {
                 return;
-    }
+      }
 
             result.Add(cellPosition);
-}
+    }
 
         private void AutoFillSerialCells(List<CellPosition> fromCells, List<CellPosition> toCells)
         {

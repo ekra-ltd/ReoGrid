@@ -11,8 +11,8 @@
  *
  * Author: Jingwood <jingwood at unvell.com>
  *
- * Copyright (c) 2012-2023 Jingwood <jingwood at unvell.com>
- * Copyright (c) 2012-2023 unvell inc. All rights reserved.
+ * Copyright (c) 2012-2025 Jingwood <jingwood at unvell.com>
+ * Copyright (c) 2012-2025 UNVELL Inc. All rights reserved.
  * 
  ****************************************************************************/
 
@@ -1729,8 +1729,7 @@ namespace unvell.ReoGrid.IO.OpenXML
 		{
 			Document doc = new Document()
 			{
-				//zipArchive = NET35ZipArchiveFactory.OpenOnStream(stream, FileMode.Create, FileAccess.Write, true),
-				zipArchive = MZipArchiveFactory.CreateOnStream(stream),
+				zipArchive = SystemIOZipArchiveFactory.CreateOnStream(stream),
 				_relationFile = new Relationships("_rels/.rels"),
 			};
 
