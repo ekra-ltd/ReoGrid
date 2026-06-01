@@ -172,59 +172,12 @@ namespace unvell.ReoGrid.Print
 			int endRow = sheet.pageBreakRows[this.CurrentRowIndex + 1];
 			int endCol = sheet.pageBreakCols[this.CurrentColIndex + 1];
 
-			switch (this.CurrentPrintSettings.PageOrder)
+			do
 			{
-				default:
-				case PrintPageOrder.DownThenOver:
-					{
-						if (this.CurrentRowIndex < sheet.pageBreakRows.Count - 2)
-						{
-							this.CurrentRowIndex++;
-
-							this.hasMorePages = true;
-						}
-						else
-						{
-							if (this.CurrentColIndex < sheet.pageBreakCols.Count - 2)
-							{
-								this.CurrentRowIndex = 0;
-								this.CurrentColIndex++;
-
-								this.hasMorePages = true;
-							}
-							else
-							{
-								this.hasMorePages = false;
-							}
-						}
-					}
+				NextPageUpdateIndexes(sheet);
+				if (IsPageIndexesInPrintArea(sheet))
 					break;
-
-				case PrintPageOrder.OverThenDown:
-					{
-						if (this.CurrentColIndex < sheet.pageBreakCols.Count - 2)
-						{
-							this.CurrentColIndex++;
-
-							this.hasMorePages = true;
-						}
-						else
-						{
-							if (this.CurrentRowIndex < sheet.pageBreakRows.Count - 2)
-							{
-								this.CurrentColIndex = 0;
-								this.CurrentRowIndex++;
-
-								this.hasMorePages = true;
-							}
-							else
-							{
-								this.hasMorePages = false;
-							}
-						}
-					}
-					break;
-			}
+			} while (this.hasMorePages);
 
 			if (this.DrawingContext.Graphics == null)
 			{
@@ -301,7 +254,80 @@ namespace unvell.ReoGrid.Print
 				this.hasMorePages = this.CurrentWorksheet != null;
 			}
 		}
-		#endregion // NextPage
+
+		void NextPageUpdateIndexes(Worksheet sheet)
+		{
+			switch (this.CurrentPrintSettings.PageOrder)
+			{
+				default:
+				case PrintPageOrder.DownThenOver:
+					{
+						if (this.CurrentRowIndex < sheet.pageBreakRows.Count - 2)
+						{
+							this.CurrentRowIndex++;
+
+							this.hasMorePages = true;
+						}
+						else
+						{
+							if (this.CurrentColIndex < sheet.pageBreakCols.Count - 2)
+							{
+								this.CurrentRowIndex = 0;
+								this.CurrentColIndex++;
+
+								this.hasMorePages = true;
+							}
+							else
+							{
+								this.hasMorePages = false;
+							}
+						}
+					}
+					break;
+
+				case PrintPageOrder.OverThenDown:
+					{
+						if (this.CurrentColIndex < sheet.pageBreakCols.Count - 2)
+						{
+							this.CurrentColIndex++;
+
+							this.hasMorePages = true;
+						}
+						else
+						{
+							if (this.CurrentRowIndex < sheet.pageBreakRows.Count - 2)
+							{
+								this.CurrentColIndex = 0;
+								this.CurrentRowIndex++;
+
+								this.hasMorePages = true;
+							}
+							else
+							{
+								this.hasMorePages = false;
+							}
+						}
+					}
+					break;
+			}
+		}
+
+		private bool IsPageIndexesInPrintArea(Worksheet sheet)
+		{
+			if (!sheet.PrintableRange.IsEmpty)
+			{
+				int row = sheet.pageBreakRows[this.CurrentRowIndex];
+				int col = sheet.pageBreakCols[this.CurrentColIndex];
+				int endRow = sheet.pageBreakRows[this.CurrentRowIndex + 1];
+				int endCol = sheet.pageBreakCols[this.CurrentColIndex + 1];
+
+				return sheet.PrintableRange.IntersectWith(new RangePosition(row, col, endRow - row, endCol - col));
+			}
+
+			return true;
+		}
+
+	#endregion // NextPage
 	}
 
 	internal class PrintSessionWorksheetCollection : ICollection<Worksheet>
